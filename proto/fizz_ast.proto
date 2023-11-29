@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+option go_package = "fizz/ast";
+
+message File {
+  SourceInfo source_info = 1;
+  repeated Import imports = 2;
+  repeated Constant constants = 3;
+  repeated Variable variables = 4;
+  repeated Invariant invariants = 5;
+  repeated Action actions = 6;
+  repeated Function functions = 7;
+
+}
+
+enum FairnessLevel {
+  FAIRNESS_LEVEL_UNKNOWN = 0;
+  FAIRNESS_LEVEL_UNFAIR = 1;
+  FAIRNESS_LEVEL_WEAK = 2;
+  FAIRNESS_LEVEL_STRONG = 3;
+}
+
+enum Flow {
+  FLOW_UNKNOWN = 0;
+  FLOW_SERIAL = 1;
+  FLOW_PARALLEL = 2;
+  FLOW_ATOMIC = 3;
+}
+
+message Fairness {
+  SourceInfo source_info = 1;
+  FairnessLevel level = 2;
+  repeated string variables = 3;
+}
+
+message Block {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  repeated Statement stmts = 3;
+}
+
+message Statement {
+  SourceInfo source_info = 1;
+
+  PyStmt py_stmt = 2;
+  Block block = 3;
+
+  IfStmt if_stmt = 4;
+
+  ForStmt for_stmt = 5;
+  AnyStmt any_stmt = 6;
+//  ChooseStmt choose_stmt = 7;
+
+}
+
+message IfStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated Branch branches = 3;
+}
+
+message Branch {
+  SourceInfo source_info = 1;
+  string condition = 2;
+  Block block = 3;
+}
+
+message ForStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated string loop_vars = 3;
+  string py_expr = 4;
+  Block block = 5;
+}
+
+message AnyStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated string loop_vars = 3;
+  string py_expr = 4;
+  Block block = 5;
+}
+
+message PyStmt {
+  SourceInfo source_info = 1;
+  string code = 2; 
+}
+
+message Action {
+  SourceInfo source_info = 1;
+  string name = 2;
+  Flow flow = 3;
+  Fairness fairness = 4;
+  Block block = 5;
+}
+
+message Function {
+  SourceInfo source_info = 1;
+  
+}
+
+message Invariant {
+  SourceInfo source_info = 1;
+  
+}
+
+message Variable {
+  SourceInfo source_info = 1;
+  string name = 2;
+  string expression = 3;
+}
+
+message Constant {
+  SourceInfo source_info = 1;
+  string name = 2;
+}
+
+message Import {
+  SourceInfo source_info = 1;
+  string path = 2;
+  string alias = 3;
+}
+
+message SourceInfo {
+
+}
+
