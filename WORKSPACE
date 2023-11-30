@@ -26,6 +26,8 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 # The first declaration of an external repository "wins".
 ############################################################
 
+# gazelle:repository_macro deps.bzl%go_dependencies
+#go_dependencies()
 
 go_repository(
     name = "net_starlark_go",
@@ -34,8 +36,33 @@ go_repository(
     version = "v0.0.0-20231121155337-90ade8b19d09",
 )
 
-# gazelle:repository_macro deps.bzl%go_dependencies
-#go_dependencies()
+go_repository(
+    name = "com_github_stretchr_testify",
+    importpath = "github.com/stretchr/testify",
+    sum = "h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=",
+    version = "v1.8.4",
+)
+
+go_repository(
+    name = "com_github_davecgh_go_spew",
+    importpath = "github.com/davecgh/go-spew",
+    sum = "h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=",
+    version = "v1.1.1",
+)
+
+go_repository(
+    name = "in_gopkg_yaml_v3",
+    importpath = "gopkg.in/yaml.v3",
+    sum = "h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=",
+    version = "v3.0.1",
+)
+
+go_repository(
+    name = "com_github_golang_glog",
+    importpath = "github.com/golang/glog",
+    sum = "h1:uCdmnmatrKCgMBlM4rMuJZWOkPDqdbZPnrMXDY4gI68=",
+    version = "v1.2.0",
+)
 
 go_rules_dependencies()
 
