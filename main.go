@@ -43,7 +43,10 @@ func main() {
 
 	mc := modelchecker.NewModelChecker("example")
 
-	globals := mc.ExecInit(f.Variables)
+	globals, err := mc.ExecInit(f.Variables)
+	if err != nil {
+		panic(err)
+	}
 
 	// Print the global environment.
 	fmt.Println("\nGlobals:")
