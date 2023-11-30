@@ -18,7 +18,10 @@ go_library(
 
 go_test(
     name = "modelchecker_test",
-    srcs = ["starlark_test.go"],
+    srcs = [
+        "checker_test.go",
+        "starlark_test.go",
+    ],
     embed = [":modelchecker"],
     deps = [
         "//proto:ast",
@@ -26,5 +29,6 @@ go_test(
         "@com_github_stretchr_testify//require",
         "@net_starlark_go//starlark",
         "@net_starlark_go//syntax",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
     ],
 )

@@ -2,7 +2,6 @@ package modelchecker
 
 import (
 	"fizz/ast"
-	"fmt"
 	"github.com/golang/glog"
 	"go.starlark.net/starlark"
 )
@@ -22,13 +21,13 @@ func (e *Evaluator) EvalPyExpr(filename string, src interface{}, prevState starl
 	}
 
 	// Print the global environment.
-	fmt.Printf("EvalResult GoType: %T, StarlarkType: %s, Value: %s\n", value, value.Type(), value)
+	glog.Infof("EvalResult GoType: %T, StarlarkType: %s, Value: %s\n", value, value.Type(), value)
 	return value, nil
 }
 
 func (e *Evaluator) ExecPyStmt(filename string, stmt *ast.PyStmt, prevState starlark.StringDict) (bool, error) {
 
-	fmt.Printf("\nExec Stmt: %v\n", stmt)
+	glog.Infof("\nExec Stmt: %v\n", stmt)
 
 	starCode := stmt.Code
 	globals, err := starlark.ExecFileOptions(e.options, e.thread, filename, starCode, prevState)
@@ -38,10 +37,10 @@ func (e *Evaluator) ExecPyStmt(filename string, stmt *ast.PyStmt, prevState star
 	}
 
 	// Print the global environment.
-	fmt.Println("Globals:")
+	glog.Infof("Globals:")
 	for _, name := range globals.Keys() {
 		v := globals[name]
-		fmt.Printf("%s (%s) = %s\n", name, v.Type(), v.String())
+		glog.Infof("%s (%s) = %s\n", name, v.Type(), v.String())
 
 		prevState[name] = v
 	}

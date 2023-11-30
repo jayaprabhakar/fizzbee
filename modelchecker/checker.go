@@ -3,6 +3,7 @@ package modelchecker
 import (
 	"fizz/ast"
 	"fmt"
+	"github.com/golang/glog"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 	"log"
@@ -34,6 +35,12 @@ func (e *Evaluator) ExecBlock(filename string, block *ast.Block, prevState starl
 				return false, err
 			}
 			valid = pyStmtRes || valid
+		} else if stmt.Block != nil {
+			nextedBlockRes, err := e.ExecBlock(filename, stmt.Block, prevState)
+			if err != nil {
+				return false, err
+			}
+			valid = nextedBlockRes || valid
 		} else if stmt.AnyStmt != nil {
 			anyStmtRes, err := e.ExecAnyStmt(filename, stmt.AnyStmt, prevState)
 			if err != nil {
@@ -121,7 +128,7 @@ func (e *Evaluator) ExecAnyStmt(filename string, anyStmt *ast.AnyStmt, prevState
 	return valid, nil
 }
 
-func (e *Evaluator) ExecInit(variables []*ast.Value) starlark.StringDict {
+func (e *Evaluator) ExecInit(variables []*ast.Value) (starlark.StringDict, error) {
 	var sb strings.Builder
 	for _, v := range variables {
 		fmt.Fprintf(&sb, "%s = %s\n", v.Name, v.Expression)
@@ -130,15 +137,12 @@ func (e *Evaluator) ExecInit(variables []*ast.Value) starlark.StringDict {
 
 	predeclared := starlark.StringDict{}
 
-	fmt.Println("Running Init")
+	glog.Info("Running Init")
 	globals, err := starlark.ExecFileOptions(e.options, e.thread, "apparent/filename.star", initStr, predeclared)
 	if err != nil {
-		if evalErr, ok := err.(*starlark.EvalError); ok {
-			log.Fatal(evalErr.Backtrace())
-		}
-		log.Fatal(err)
+		glog.Error("Error in init: %+v", err)
 	}
-	return globals
+	return globals, err
 }
 
 func NewModelChecker(name string) *Evaluator {
