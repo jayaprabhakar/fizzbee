@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "modelchecker",
+    srcs = [
+        "checker.go",
+        "starlark.go",
+    ],
+    importpath = "github.com/jayaprabhakar/fizzbee/modelchecker",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto:ast",
+        "@com_github_golang_glog//:glog",
+        "@net_starlark_go//starlark",
+        "@net_starlark_go//syntax",
+    ],
+)
+
+go_test(
+    name = "modelchecker_test",
+    srcs = ["starlark_test.go"],
+    embed = [":modelchecker"],
+    deps = [
+        "//proto:ast",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@net_starlark_go//starlark",
+        "@net_starlark_go//syntax",
+    ],
+)
