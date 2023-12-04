@@ -1,78 +1,88 @@
-
 # TLA+ to Fizz
 
+## Next State and Primed Variables
 
+In TLA+, next states are denoted using primed variables, e.g., `count' = count + 1`.
+To enhance clarity for programmers unfamiliar with TLA+, Fizz introduces explicit names for
+current and next states—`this` and `next` respectively. This results in a more readable
+notation: `next.count = this.count + 1`.
 
-## Next state or Primed variable
-TlA+ uses primed variables to indicate the next state variable.
-For example: `count' = count + 1`. If a programmer never saw
-TLA+ before, they won't know what it means. We can make it
-more explicit by naming them explictly. For example, 
-`this` for the current state and `next` for the next state.
-Then, the code will be `next.count = this.count + 1`.
+While TLA+ treats the `=` operator as commutative, TLC (the TLA+ model checker) does not.
+As a result, next states must always be on the left side of the equation. However, Fizz
+simplifies this by eliminating the need for explicit `this` and `next` separation in common
+cases. For example, `count = count + 1` now succinctly represents the same concept in Fizz.
 
-Even though TLA+ language says `=` operator is commutative, TLC
-does not treat it that way. So, the next state must always be on the left.
+```fizz
+# TLA+ notation
+count' = count + 1
 
-Then, can we infer it our self? Do we really need next/this separation
-for the common case?
+# Fizz explicit notation
+next.count = this.count + 1
 
-Then, this will simplify to `count = count + 1`. Every programmer
-will get this without any confusion.
-
-
-## State Variables
-Since every variable has to be initialized anyway, do we need separate
-declarations of variables and a separate init state? Almost, all
-Specs name the init action as `Init`, can we make that a convention?
-
-Since TLA+ is also untyped, and our target language python is also untyped,
-we could get rid of explicit declaration and require initialization.
-
-The spec will have a section for state variables.
+# Simplified Fizz notation
+count = count + 1
 
 ```
+
+This syntax is familiar to almost every software engineer.
+
+## State Variables
+
+TLA+ requires explicit variable declaration followed by initialization using
+an `Init` action. Fizz simplifies this process by introducing an implicit
+declaration during initialization, following a straightforward convention.
+
+State variables in Fizz are succinctly defined within a dedicated section:
+
+```fizz
+# Fizz state variables
 state:
   count = 0
   list = []
 ```
 
-## Non atomic actions
+## Non-atomic actions
+
 In TLA+, every action is atomic. In PlusCal, we can make the statements
 atomic or serial by assigning labels to block of statements.
 
-But, with TLA+ simulating error cases becomes harder as we need to
-explicitly define the error cases, which is mostly not true in the distributed
-systems world.
+This implies engineer's have to explicitly model the errors,
+making it challenging to realistically model distributed systems.
+Fizz addresses this by making failures the norm. And then introducing
+explicit labels for the order of execution, making it more aligned with
+common distributed systems scenarios.
 
 These are my observations designing distributed systems:
 
-* Murphy's law is real. Anything that can go wrong will go wrong.
-* Many operations in distributed systems are non-atomic
-* Most common way of implementing steps is sequential. For example
-  * Write a message to a DB
-  * Publish an event
-  * In practice, any of these can fail.
-* Some operations can be parallel. They can be
-  * Explicit like make multiple IO operations in parallel
-  * Implicit like publish an event, and two separate services listen to the events
-    and process them or update the DB.
+* **Murphy's law is real.** Anything that can go wrong will go wrong.
+* **Non-Atomic Operations**: Many operations in distributed systems are non-atomic
+* **Sequential Steps**: Commonly, operations follow a sequential pattern, and any step can fail. For example
+    * Write a message to a DB
+    * Publish an event
+* **Parallel Operations**:. They can be
+    * Explicit like make multiple IO operations in parallel
+    * Implicit like publish an event, and two separate services listen to the events
+      and process them or update the DB.
 * Obviously, some operations are atomic.
 
-For example: we need to model an object counter, where an object will be written
-to some persistent object store, and a counter will be update in a different key value store.
+Consider an example where we need to model an object counter. In this scenario,
+an object is written to a persistent object store, and then, a counter is updated
+in a different key-value store.
 
 TLA+:
+
 ```
 Add(b) == 
   /\ blobs' = blobs \union {b}
   /\ count' = count + 1
 ```
-With this model, count will actually always match the blobs count. Unfortunately, 
-in real system, the count update could also fail. So, unless the programmer
-actually thinks about this case, this will lead to buggy implementation.
 
-To model, the failure case, they have to explicitly write,
+With this model, count will actually always match the blobs count because in TLA+ every
+action is atomic. However, in reality, the count update could fail. Without explicit consideration
+by the programmer, this leads to a potentially buggy implementation.
+
+To account for the failure case, the programmer must explicitly write:
+
 ```
 Add(b) == 
   \/ /\ blobs' = blobs \union {b}
@@ -80,11 +90,16 @@ Add(b) ==
   \/ /\ blobs' = blobs \union {b}
      /\ UNCHANGED <<count>>
 ```
-In this case, blobs are written first and then the count is updated. And the count could fail.
 
-Alternately, since this is the most common case, in our new language we will make serial order the default.
+In this formulation, blobs are written first, and then the count is updated.
+The count update might fail - so left UNCHANGED.
+
+Recognizing that this is a common scenario, in Fizz, we default to a serial order.
+
+### Serial
 
 In Fizz:
+
 ```
 add(b):
   # A block of statements can be labeled as serial,
@@ -100,8 +115,12 @@ add_alternative(b):
   blobs.add(a)
   count = count + 1
 ```
-What if we actually want this to be atomic? Like, we use some
-transactions on the same database. Then, label the block atomic.
+
+### Atomic
+
+If the intention is to make the operation atomic, for instance, when utilizing
+transactions on the same database, the block can be labeled as atomic in Fizz.
+Here's how it would look:
 
 ```
 add(b):
@@ -109,19 +128,28 @@ add(b):
     blobs.add(b)
     count = count + 1
 ```
-In this case, if blobs are updated, count will also be updated.
 
-Then parallel. 
+In this model, if the update to blobs is successful,
+the count will also be updated atomically.
+
+### Parallel
+
+If the scenario requires parallel execution, where blobs and count can be
+updated simultaneously, the block can be labeled as parallel in our new language.
+Here's the equivalent Fizz representation:
+
 ```
 add(b):
   parallel:
     blobs.add(b)
     count = count + 1
 ```
-In this case, there is a chance count updated successfully, 
-but updating blobs failed since these steps all happened in parallel.
 
-TLA+ equivalent of it is,
+In this setup, there is a chance that the count is updated successfully, but updating blobs fails since these steps
+occur in parallel.
+
+For comparison, the TLA+ equivalent of this parallel scenario is:
+
 ```
 Add(b) == 
   \/ /\ blobs' = blobs \union {b}
@@ -132,13 +160,17 @@ Add(b) ==
      /\ UNCHANGED <<blobs>>
 ```
 
-Oneof:
-TLA+ conjunct (`/\`) is equivalent to atomic operation. Similarly, the equivalent,
-of disjunct (`\/`) is oneof
+### Oneof:
 
-The same parallel Add case can be coded in Fizz as,
+In Fizz, the equivalent of TLA+ conjunct (`/\`), representing an atomic operation,
+is denoted by the label atomic. Similarly, the equivalent of TLA+ disjunct (`\/`)
+is labeled as **`oneof`**.
+
+For instance, the parallel scenario in TLA+ can be expressed in Fizz using oneof:
+
 ```
 add(b):
+  # Equivalent of parallel with just oneoff and atomic.
   oneof:
     atomic:
       blobs.add(b)
@@ -158,49 +190,66 @@ add_alternative(b):
     count = count + 1   
 ```
 
-## UNCHANGED not required
-Unlike TLA+, we will assume, if there is no next state transition,
-then they are not changed.
+## Implicit UNCHANGED
 
-## \A and \E
-The idiomatic python for the universal qualifier `\A` is `for`.
+Unlike TLA+, Fizz assumes that if there is no specified next state transition,
+variables remain unchanged. Therefore, explicit declarations of `UNCHANGED`
+are unnecessary in Fizz, simplifying the syntax.
+
+## Universal(\A) Quantifier
+
+In Fizz, the universal quantifier `\A` in TLA+ is succinctly represented using
+the Python keyword `for`. For instance:
+
 TLA+
+
 ```
 \A n \in nodes:
   n' = [n EXCEPT !.status = 'done']
 ```
+
 Fizz
+
 ```
 for n in nodes:
   n.status = 'done'
 ```
 
-This is clearly intuitive idiomatic python, that even non-python
-programmers would instantly understand.
+This Pythonic syntax is intuitive even to non-Python programmers.
+
+## Existential(\E) Quantifier
 
 There is no equivalent for the existential qualifier `\E` in python.
-So, we are introducing an equivalent `any` that will be syntactically
-similar to `for`. The primary behavioral difference is, if there are
-5 elements in the list/set, `any` will create 5 different branches,
-with 1 element selected in each branch. 
+In Fizz, we introduce the `any` keyword as an equivalent to the existential
+quantifier \E in TLA+. The `any` keyword is syntactically similar to `for`.
+The primary difference is it creates separate branches for each element
+in a list or set. For example:
 
 TLA+
+
 ```
 \E r \in records:
   records' = records \ {r}
 ```
+
 Fizz
+
 ```
 any r in records:
   # alternately records.remove(r)
   records = records - {r}
 ```
 
-## Implicit Spec and next state actions
-All actions start with a keyword `action` similar to `def` for python functions. So, we don't need a separate
-Next state or spec.
+This simplifies the representation of existential quantification in Fizz,
+providing a clear and intuitive syntax.
 
-> Should we remove the action keyword altogether?
+## Implicit Spec and Next State Actions
+
+In Fizz, all actions now start with the keyword `action`, akin to `def`
+for Python functions. This design eliminates the need for a separate
+"Next State" or "Spec" section.
+
+> Should we remove the action keyword as well?
 
 ```
 action Add:
@@ -209,9 +258,11 @@ action Add:
 action Remove:
   # ...  
 ```
+
 Each of these will be part of the next state actions.
 
 ## Fairness
+
 > What would be a good keywords to specify to differentiate
 > between strong and weak fairness.
 
@@ -221,7 +272,7 @@ For now, in each action, you can add a modifier. `weak` or `strong`
 action FirstAction:
   # ... unfair action
 
-weak<var1, var2> SecondAction
+weak<var1, var2> action SecondAction
   # action with weak fairness
   # WF_<<var1,var2>>(Next)
   # like fair process of PlusCal 
@@ -238,58 +289,76 @@ strong action ForthAction:
   
 ```
 
-> Note: Alternate option I was considering is to have a
-> keyword fair for weak fairness, and parameterize with
-> `fair<strong=true, var1, var2...>` Request for feedback.
-> fair keyword is better than saying weak. But `fair+` for strong
-> doesn't sound right, and don't want to introduce
-> `strong_fair`, `weak_fair`.
-> Yet another alternative, parameterize action.
-> `action<fairness=strong, var1, var2,...>`
-> or `action<fairness<strong<var1,var2>>`
-> What do you all prefer and any other alternatives?
+### Alternatives being considered for defining fairness
 
+1. Using fair Keyword:
+   ```
+   fair<var1, var2> SecondAction:
+   # ... (Action with weak fairness)
+   
+   fair<strong=true, var1, var2> ForthAction:
+   # ... (Action with strong fairness)
+   ```
+2. Using fair keyword, but required weak/strong when variables specified.
+   That is, the grammar would look like
+
+   `[ 'fair' [ '<' 'weak'|'strong' [, var]*'>' ] ] 'action' `
+
+   ```
+   fair<weak, var1, var2> action SecondAction
+     # action with weak fairness
+     # WF_<<var1,var2>>(Next)
+     # like fair process of PlusCal
+    
+   fair action ThirdAction:
+     # action with weak fairness, but all
+     # declared state variables
+     # like fair process of PlusCal
+
+   fair<strong> action ForthAction:
+     # ... action with strong fairness
+     # similar to fair+ of PlusCal
+   ```
+3. Using fairness Parameter within Action
+   ```
+   action<fairness=weak, var1, var2> SecondAction:
+     # ... (Action with weak fairness)
+   ```
 
 ## Python functions
-Most builtin python functions should be available to use,
-and we will be able to add additional functions as needed.
 
-For the initial implementation, Fizz will use Starlark language
-instead of standard python, so many modules would not be
-able to be imported. We might change this to standard python
-eventually, if this is a huge limitation. But Starlark
-provide significant advantages in terms of security and being
-hermetic.
+In Fizz, most built-in Python functions are available for use,
+providing familiarity and flexibility. Additional functions can
+be easily added as needed.
 
-For now, this is not a major limitation since most important
-python functions are available, and we are building a repository
-of reusable libraries.
+However, for the initial implementation, Fizz utilizes the Starlark
+language instead of standard Python. This decision offers advantages
+in terms of security and hermeticity. While some modules may not be
+importable in Starlark, it provides a secure and controlled environment.
+
+For now, this limitation is not a major concern as essential Python functions
+are accessible, and Fizz is being equipped with a repository of reusable libraries.
+Future iterations may consider transitioning to standard Python if deemed necessary.
 
 ## Imports
-Imports will follow Go language style syntax.
-In addition, they should be able to import other fizz files,
-or other starlark files. Any starlark/python function will
-be treated as `atomic`.
+
+In Fizz, import statements will follow the syntax style of the **Go** language.
+Additionally, imports can include other **Fizz** files or other **Starlark** files.
+All Starlark/Python functions will be treated as atomic by default
 
 ## Roles
-Roles are a way to organize the components of a large distributed 
-system similar to a `class` in an object-oriented programming but
-describes a higher level system. A role could be a microservice,
-a database, a distributed cache or subcomponent of a monolith or
-even a virtual/logical subservice. 
 
-For example: in two-phase commit,
-the coordinator (transaction manager) and the participants (resource
-manager) are different roles. In practice, each participant could
-act as a coordinator and they can be part of the same service/process.
+Roles in Fizz provide a way to organize components within a large distributed system,
+analogous to a class in object-oriented programming but at a higher system level.
+Roles can represent microservices, databases, distributed caches, or subcomponents
+of a monolith, among other things.
 
-As a convenience, every module is actually a role or specifically role type.
-The module's constants (model parameters) is the same as parameters of a role.
-The module's state is the role's state, actions defined within the role
-gets called the same way.
+For example, in a two-phase commit, the coordinator (transaction manager)
+and the participants (resource managers) are different roles.
+In practice, each participant could act as a coordinator, and they can be
+part of the same service or process.
 
-In a new module or .fizz file, you can simply initialize the state with
-the roles needed. The role's actions would be enabled.
+As a convenience, every module is inherently a role or a specific role type.
 
 Within the same module or .fizz file, you can define the role with
 keyword `role`.
@@ -302,6 +371,7 @@ role TransactionManager {
   
   # Action definitions
 }
+
 # Participant
 role ResourceManager(rm) {
   state:
@@ -309,7 +379,11 @@ role ResourceManager(rm) {
   
   # Action definitions
 }
+```
 
+To instantiate roles within the same module:
+
+```
 constants:
   RM
 
@@ -319,30 +393,39 @@ state:
 
 ```
 
-
 ## Channel (Messaging channel)
+
+A channel is the mechanism to connect two roles. This simplifies
+modeling of message passing.
+
 * Blocking/NonBlocking
 * Delivery (atmost once, at least once, exactly once)
 * Ordering (unordered, pairwise, ordered)
 
+For now, we will only support blocking semantics, with non-blocking
+simulated using two separate actions for request and response.
+
 ### Default
+
 #### Intra-role call:
+
 Since calls between roles are usually in-memory call, the default
 will be reliable. `blocking exactlyonce ordered`
+
 #### Inter-role call:
-Inter role calls are usually some kind of message passing - 
- either blocking (RPC) operation or non-blocking (Message Queues)
+
+Inter role calls are usually some kind of message passing -
+either blocking (RPC) operation or non-blocking (Message Queues)
 so these are unreliable. We will default to rpc semantics.
 `blocking atmostonce unordered`
 
-
-
-
 # Alternative considered
+
 ## Separate Inputs, Guard clauses and post actions
+
 TLA+ does not separate guard clauses (preconditions) or inputs
 separately. Everything is just another state assertion.
-Many other formal languages separate preconditions, state 
+Many other formal languages separate preconditions, state
 transitions, and some even separate inputs (For example: Event-B).
 
 Separating precondition vs state transition has a significant
@@ -374,6 +457,7 @@ qualifiers.
 
 For example: Notify all subscribers in pending state to done.
 TLA+
+
 ```
 NotifySubscribers ==
   \A s \in subscribers:
@@ -381,15 +465,19 @@ NotifySubscribers ==
     /\ status' = [status EXCEPT ![s] = "done"]
 
 ```
+
 Fizz
+
 ```
 action NotifySubscribers:
   for s in subscribers:
     if status[s] == 'pending'
       status[s] = 'done'
 ```
+
 In this case, action NotifySubscribers is not ENABLED if no subscribers are in pending state.
 However, this would become a lot more verbose to separate as precondition.
+
 ```
 action NotifySubscribers:
   pre:
@@ -399,6 +487,7 @@ action NotifySubscribers:
       if status[s] == 'pending'
         status[s] = 'done'
 ```
+
 Note: As the implementation of model checker is a lot simpler if we can separate
 guard clauses.
 
@@ -408,17 +497,21 @@ For cases where preconditions seem natural, they could simply handle
 it with if block at the top.
 
 # Inputs to actions
+
 Separating inputs is actually very intuitive for programmers.
-This is mostly specified in the RPC specification. 
+This is mostly specified in the RPC specification.
 
 For example: To remove a document from stored documents.
 TLA+
+
 ```
 Remove == 
   \E d in documents:
     documents' = documents \ {d}
 ```
+
 Fizz
+
 ```
 # Fizz
 action Remove:
@@ -426,7 +519,9 @@ action Remove:
     documents.remove(d)
 
 ```
+
 Alternatives being considered:
+
 ```
 # option1: Similar to event-b
 action Remove:
@@ -444,6 +539,7 @@ action Remove(any d in documents):
 action Remove(d in documents):
   documents.remove(d)
 ```
+
 An example combining all these actions:
 
 ```
