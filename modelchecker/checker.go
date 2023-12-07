@@ -60,7 +60,7 @@ func (e *Evaluator) ExecIfStmt(filename string, ifStmt *ast.IfStmt, prevState st
 
 	for _, branch := range ifStmt.Branches {
 		val, _ := e.EvalPyExpr(filename, branch.Condition, prevState)
-		fmt.Printf("Branch: %v, value: %s", branch, val)
+		fmt.Printf("Branch: %v, value: %s\n", branch, val)
 		if val.Truth() {
 			v, _ := e.ExecBlock(filename, branch.Block, prevState)
 			return v
