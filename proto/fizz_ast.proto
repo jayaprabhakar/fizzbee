@@ -26,6 +26,7 @@ enum Flow {
   FLOW_SERIAL = 1;
   FLOW_PARALLEL = 2;
   FLOW_ATOMIC = 3;
+  FLOW_ONEOF = 4;
 }
 
 message Fairness {
