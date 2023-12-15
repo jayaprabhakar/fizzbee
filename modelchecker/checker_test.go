@@ -12,27 +12,15 @@ import (
 func TestExecInit(t *testing.T) {
 	astJson := `
     {
-        "variables": [
-			{
-			  "name": "MAX_ELEMENTS",
-			  "expression": "5"
-			},
-			{
-			  "name": "elements",
-			  "expression": "set()"
-			},
-			{
-			  "name": "count",
-			  "expression": "0"
-			}
-		]
+        "variables": {
+			"code": "MAX_ELEMENTS = 5\nelements = set()\ncount = 0"
+		}
     }
     `
 	checker := NewModelChecker("test")
 	f := &ast.File{}
 	err := protojson.Unmarshal([]byte(astJson), f)
 	require.Nil(t, err)
-
 	vars, err := checker.ExecInit(f.Variables)
 	require.Nil(t, err)
 	require.NotNil(t, vars)
