@@ -4,13 +4,17 @@ go_library(
     name = "modelchecker",
     srcs = [
         "checker.go",
+        "processor.go",
         "starlark.go",
+        "thread.go",
     ],
     importpath = "github.com/jayaprabhakar/fizzbee/modelchecker",
     visibility = ["//visibility:public"],
     deps = [
+        "//lib",
         "//proto:ast",
         "@com_github_golang_glog//:glog",
+        "@com_github_huandu_go_clone//:go-clone",
         "@net_starlark_go//starlark",
         "@net_starlark_go//syntax",
     ],

@@ -64,6 +64,13 @@ go_repository(
     version = "v1.2.0",
 )
 
+go_repository(
+    name = "com_github_huandu_go_clone",
+    importpath = "github.com/huandu/go-clone",
+    sum = "h1:3+Aq0Ed8XK+zKkLjE2dfHg0XrpIfcohBE1K+c8Usxoo=",
+    version = "v1.7.2",
+)
+
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.20.5")
