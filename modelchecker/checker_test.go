@@ -12,7 +12,7 @@ import (
 func TestExecInit(t *testing.T) {
 	astJson := `
     {
-        "variables": {
+        "states": {
 			"code": "MAX_ELEMENTS = 5\nelements = set()\ncount = 0"
 		}
     }
@@ -21,7 +21,7 @@ func TestExecInit(t *testing.T) {
 	f := &ast.File{}
 	err := protojson.Unmarshal([]byte(astJson), f)
 	require.Nil(t, err)
-	vars, err := checker.ExecInit(f.Variables)
+	vars, err := checker.ExecInit(f.States)
 	require.Nil(t, err)
 	require.NotNil(t, vars)
 	assert.Len(t, vars, 3)
