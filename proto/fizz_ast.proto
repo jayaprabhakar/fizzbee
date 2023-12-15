@@ -6,8 +6,8 @@ message File {
   SourceInfo source_info = 1;
   repeated Import imports = 2;
   repeated Constant constants = 3;
-  repeated Value states = 4;
-  repeated Value variables = 5;
+  StateVars states = 4;
+  StateVars variables = 5;
   repeated Invariant invariants = 6;
   repeated Action actions = 7;
   repeated Function functions = 8;
@@ -109,10 +109,9 @@ message Invariant {
   
 }
 
-message Value {
+message StateVars {
   SourceInfo source_info = 1;
-  string name = 2;
-  string expression = 3;
+  string code = 2;
 }
 
 message Constant {

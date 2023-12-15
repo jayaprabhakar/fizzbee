@@ -7,7 +7,6 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 	"log"
-	"strings"
 )
 
 type Evaluator struct {
@@ -128,12 +127,9 @@ func (e *Evaluator) ExecAnyStmt(filename string, anyStmt *ast.AnyStmt, prevState
 	return valid, nil
 }
 
-func (e *Evaluator) ExecInit(variables []*ast.Value) (starlark.StringDict, error) {
-	var sb strings.Builder
-	for _, v := range variables {
-		fmt.Fprintf(&sb, "%s = %s\n", v.Name, v.Expression)
-	}
-	initStr := sb.String()
+func (e *Evaluator) ExecInit(variables *ast.StateVars) (starlark.StringDict, error) {
+
+	initStr := variables.GetCode()
 
 	predeclared := starlark.StringDict{}
 
