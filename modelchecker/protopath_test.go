@@ -69,7 +69,12 @@ func TestGetNextPath(t *testing.T) {
 
 	path, v = GetNextFieldPath(file, path)
 	assert.Nil(t, v)
-	assert.Equal(t, "", path)
+	assert.Equal(t, "Actions[0].Block.Stmts[0].AnyStmt.Block.Stmts[0].IfStmt.Branches[0].Block.$", path)
+}
+
+func TestEndOfBlock(t *testing.T) {
+	assert.Equal(t, "Actions[0].Block.Stmts[0].AnyStmt.Block.Stmts[0].IfStmt.Branches[0].Block.$",
+		EndOfBlock("Actions[0].Block.Stmts[0].AnyStmt.Block.Stmts[0].IfStmt.Branches[0].Block.Stmts[0]"))
 }
 
 func readFileToAst() (*ast.File, error) {
@@ -159,10 +164,10 @@ func readFileToAst() (*ast.File, error) {
 }
 `
 
-	//  bytes,err := protojson.Marshal(f)
-	//  fmt.Println(string(bytes))
-	//  fmt.Println(err)
+	return parseAstFromString(jsonFile)
+}
 
+func parseAstFromString(jsonFile string) (*ast.File, error) {
 	f := &ast.File{}
 	err := protojson.Unmarshal([]byte(jsonFile), f)
 

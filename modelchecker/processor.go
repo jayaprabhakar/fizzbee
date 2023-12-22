@@ -14,42 +14,66 @@
 package modelchecker
 
 import (
-	"github.com/huandu/go-clone"
+	"fizz/ast"
 	"go.starlark.net/starlark"
 )
 
 type Process struct {
-	Heap    *Heap
-	Threads []*Thread
-	current int
-	Name    string
-	Parent  *Process
+	Heap      *Heap
+	Threads   []*Thread
+	current   int
+	Name      string
+	Files     []*ast.File
+	Parent    *Process
+	Evaluator *Evaluator
 }
 
-func NewProcess(name string, parent *Process) *Process {
-	thread := NewThread()
-	return &Process{
-		Name:    name,
-		Heap:    &Heap{starlark.StringDict{}},
-		Threads: []*Thread{thread},
-		current: 0,
-		Parent:  parent,
+func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
+	var mc *Evaluator
+	if parent == nil {
+		mc = NewModelChecker("example")
+	} else {
+		mc = parent.Evaluator
 	}
+	p := &Process{
+		Name:      name,
+		Heap:      &Heap{starlark.StringDict{}},
+		Threads:   []*Thread{},
+		current:   0,
+		Files:     Files,
+		Parent:    parent,
+		Evaluator: mc,
+	}
+	thread := NewThread(p, Files, 0, "")
+	p.Threads = append(p.Threads, thread)
+	return p
 }
 
 func (p *Process) Fork() *Process {
-	clonedThreads := clone.Clone(p.Threads).([]*Thread)
-	return &Process{
-		Name:    p.Name,
-		Heap:    p.Heap.Clone(),
-		Threads: clonedThreads,
-		current: p.current,
-		Parent:  p,
+	p2 := &Process{
+		Name:      p.Name,
+		Heap:      p.Heap.Clone(),
+		current:   p.current,
+		Parent:    p,
+		Evaluator: p.Evaluator,
 	}
+	clonedThreads := make([]*Thread, len(p.Threads))
+	for i, thread := range p.Threads {
+		clonedThreads[i] = thread.Clone()
+		clonedThreads[i].Process = p2
+	}
+	p2.Threads = clonedThreads
+	return p2
 }
 
 func (p *Process) currentThread() *Thread {
 	return p.Threads[p.current]
+}
+
+func (p *Process) removeCurrentThread() {
+	p.Threads = append(p.Threads[:p.current],
+		p.Threads[p.current+1:]...)
+	p.current = 0
 }
 
 // GetAllVariables returns all variables visible in the current thread.

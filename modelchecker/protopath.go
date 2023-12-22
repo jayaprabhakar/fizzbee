@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -117,7 +118,49 @@ func GetNextFieldPath(msg proto.Message, path string) (string, *reflect.Value) {
 			if nextField != nil {
 				return nextFieldName, nextField
 			}
+			nextFieldName = ""
+			if i > 0 {
+				prefix := strings.Join(parts[0:i], ".")
+				nextFieldName = fmt.Sprintf("%s.$", prefix)
+			} else {
+				nextFieldName = fmt.Sprintf("%s[%d]", fieldName, index+1)
+			}
+			return nextFieldName, nil
 		}
 	}
 	return "", nil
+}
+
+func ParentBlockPath(path string) string {
+	lastIndex := strings.LastIndex(path, ".Block")
+	if lastIndex == -1 {
+		return ""
+	}
+	return path[:lastIndex] + ".Block"
+}
+
+func RemoveLastBlock(path string) string {
+	lastIndex := strings.LastIndex(path, ".Block")
+	if lastIndex == -1 {
+		return ""
+	}
+	return path[:lastIndex]
+}
+
+func EndOfBlock(path string) string {
+	return replaceLastStmts(path, "$")
+}
+
+func replaceLastStmts(input, replacement string) string {
+	re := regexp.MustCompile(`Stmts\[\d+\]`)
+	matches := re.FindAllStringIndex(input, -1)
+
+	if matches == nil {
+		// Pattern not found
+		return input
+	}
+
+	lastMatch := matches[len(matches)-1]
+	result := input[:lastMatch[0]] + replacement + input[lastMatch[1]:]
+	return result
 }
