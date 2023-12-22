@@ -7,6 +7,7 @@ go_library(
         "processor.go",
         "protopath.go",
         "starlark.go",
+        "testconstants.go",
         "thread.go",
     ],
     importpath = "github.com/jayaprabhakar/fizzbee/modelchecker",
@@ -16,7 +17,6 @@ go_library(
         "//proto:ast",
         "@com_github_golang_glog//:glog",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_huandu_go_clone//:go-clone",
         "@net_starlark_go//starlark",
         "@net_starlark_go//syntax",
     ],
@@ -26,8 +26,10 @@ go_test(
     name = "modelchecker_test",
     srcs = [
         "checker_test.go",
+        "processor_test.go",
         "protopath_test.go",
         "starlark_test.go",
+        "thread_test.go",
     ],
     embed = [":modelchecker"],
     deps = [

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "lib",
+    srcs = ["stack.go"],
+    importpath = "github.com/jayaprabhakar/fizzbee/lib",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_huandu_go_clone//:go-clone"],
+)
