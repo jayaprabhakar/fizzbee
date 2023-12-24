@@ -71,6 +71,13 @@ go_repository(
     version = "v1.7.2",
 )
 
+go_repository(
+    name = "com_github_zeroflucs_given_generics",
+    importpath = "github.com/zeroflucs-given/generics",
+    sum = "h1:AU5l2Oil+qNjpGiZWcjpqCILzqz7knDiQjInIzFrOSM=",
+    version = "v0.0.0-20231105071439-febf5a852473",
+)
+
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.20.5")

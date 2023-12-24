@@ -1,16 +1,53 @@
 package modelchecker
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"fizz/ast"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jayaprabhakar/fizzbee/lib"
 	"go.starlark.net/starlark"
+	"hash"
+	"sort"
 	"strings"
 )
 
 type Heap struct {
 	globals starlark.StringDict
+}
+
+func StringDictToMap(stringDict starlark.StringDict) map[string]string {
+	m := make(map[string]string)
+	for k, v := range stringDict {
+		m[k] = v.String()
+	}
+	return m
+}
+
+func (h *Heap) ToJson() string {
+	bytes, err := StringDictToJson(h.globals)
+	if err != nil {
+		panic(err)
+	}
+	return string(bytes)
+}
+
+func StringDictToJson(stringDict starlark.StringDict) ([]byte, error) {
+	m := StringDictToMap(stringDict)
+	bytes, err := json.Marshal(m)
+	return bytes, err
+}
+
+func (h *Heap) String() string {
+	return h.ToJson()
+}
+
+// HashCode returns a string hash of the global state.
+func (h *Heap) HashCode() string {
+	hash := sha256.New()
+	hash.Write([]byte(h.ToJson()))
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
 func (h *Heap) update(k string, v starlark.Value) bool {
@@ -34,6 +71,36 @@ type Scope struct {
 	// On parallel execution, skipstmts contains the list of statements to skip
 	// as it is already executed.
 	skipstmts []int
+}
+
+func (s *Scope) Hash() hash.Hash {
+	var h hash.Hash
+	if s == nil {
+		return sha256.New()
+	}
+	if s.parent != nil {
+		h = s.parent.Hash()
+	} else {
+		h = sha256.New()
+	}
+	vars, err := StringDictToJson(s.vars)
+	if err != nil {
+		panic(err)
+	}
+	h.Write(vars)
+	h.Write([]byte(fmt.Sprintln(sortedCopy(s.skipstmts))))
+	return h
+}
+
+func (s *Scope) HashCode() string {
+	return fmt.Sprintf("%x", s.Hash().Sum(nil))
+}
+
+func sortedCopy(slice []int) []int {
+	sorted := make([]int, len(slice))
+	copy(sorted, slice)
+	sort.Ints(sorted)
+	return sorted
 }
 
 func (s *Scope) Lookup(name string) (starlark.Value, bool) {
@@ -82,19 +149,59 @@ type CallFrame struct {
 	scope *Scope
 }
 
+func (c *CallFrame) HashCode() string {
+	// Hash the scope and append the pc to it.
+	// This is to ensure that the same scoped variables are not treated the same
+	// if program counter is at different stmts.
+	h := c.scope.Hash()
+	h.Write([]byte(c.pc))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+type CallStack struct {
+	*lib.Stack[*CallFrame]
+}
+
+func NewCallStack() *CallStack {
+	return &CallStack{lib.NewStack[*CallFrame]()}
+}
+
+func (s *CallStack) Clone() *CallStack {
+	return &CallStack{s.Stack.Clone()}
+}
+
+func (s *CallStack) HashCode() string {
+	if s == nil {
+		return ""
+	}
+	arr := s.RawArrayCopy()
+	h := sha256.New()
+
+	for _, frame := range arr {
+		h.Write([]byte(frame.HashCode()))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 // Thread represents a thread of execution.
 type Thread struct {
 	Process *Process
 	Files   []*ast.File
-	Stack   *lib.Stack[*CallFrame]
+	Stack   *CallStack
 }
 
 func NewThread(Process *Process, files []*ast.File, fileIndex int, action string) *Thread {
-	stack := lib.NewStack[*CallFrame]()
+	stack := NewCallStack()
 	frame := &CallFrame{FileIndex: fileIndex, pc: action}
 	t := &Thread{Process: Process, Files: files, Stack: stack}
 	t.pushFrame(frame)
 	return t
+}
+
+func (t *Thread) HashCode() string {
+	h := sha256.New()
+	h.Write([]byte(t.Stack.HashCode()))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // InsertNewScope adds a new scope to the current stack frame and returns the newly created scope.
