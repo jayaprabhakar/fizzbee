@@ -135,15 +135,17 @@ func TestThread_ExecuteBlock(t *testing.T) {
 		assert.Equal(t, ast.Flow_FLOW_SERIAL, thread.currentFrame().scope.flow)
 	})
 	t.Run("oneof", func(t *testing.T) {
-		thread := baseThread.Clone()
+		thread := process.Fork().currentThread()
 		thread.currentFrame().pc = "Actions[1].Block"
 		forks := thread.executeBlock()
 		assert.Equal(t, thread.Stack.Len(), 1)
 		assert.Equal(t, thread.currentPc(), "")
 		assert.Len(t, forks, 5)
+		assert.Len(t, thread.Process.Children, 5)
 		assert.Equal(t, ast.Flow_FLOW_ONEOF, thread.currentFrame().scope.flow)
 		for i, fork := range forks {
 			assert.Equal(t, fmt.Sprintf("Actions[1].Block.Stmts[%d]", i), fork.currentThread().currentPc())
+			assert.Equal(t, fork, thread.Process.Children[i])
 		}
 	})
 	t.Run("parallel", func(t *testing.T) {
@@ -154,9 +156,11 @@ func TestThread_ExecuteBlock(t *testing.T) {
 		assert.Equal(t, thread.currentPc(), "")
 		assert.Len(t, forks, 5)
 		assert.Equal(t, ast.Flow_FLOW_PARALLEL, thread.currentFrame().scope.flow)
+		assert.Len(t, thread.Process.Children, 5)
 		for i, fork := range forks {
 			assert.Equal(t, fmt.Sprintf("Actions[3].Block.Stmts[%d]", i), fork.currentThread().currentPc())
 			assert.Equal(t, []int{i}, fork.currentThread().currentFrame().scope.skipstmts)
+			assert.Equal(t, fork, thread.Process.Children[i])
 		}
 	})
 }

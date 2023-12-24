@@ -1,0 +1,7 @@
+filegroup(
+    name = "tutorials",
+    srcs = glob([
+        "**/*.json",
+    ]),
+    visibility = ["//visibility:public"],
+)

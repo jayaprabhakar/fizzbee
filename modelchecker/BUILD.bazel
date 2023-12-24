@@ -17,6 +17,8 @@ go_library(
         "//proto:ast",
         "@com_github_golang_glog//:glog",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_zeroflucs_given_generics//collections",
+        "@com_github_zeroflucs_given_generics//collections/linkedlist",
         "@net_starlark_go//starlark",
         "@net_starlark_go//syntax",
     ],
@@ -31,6 +33,7 @@ go_test(
         "starlark_test.go",
         "thread_test.go",
     ],
+    data = ["//examples/tutorials:tutorials"],
     embed = [":modelchecker"],
     deps = [
         "//proto:ast",

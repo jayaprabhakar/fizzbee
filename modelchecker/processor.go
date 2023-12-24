@@ -14,8 +14,15 @@
 package modelchecker
 
 import (
+	"crypto/sha256"
 	"fizz/ast"
+	"fmt"
+	"github.com/zeroflucs-given/generics/collections"
+	_ "github.com/zeroflucs-given/generics/collections"
+	"github.com/zeroflucs-given/generics/collections/linkedlist"
+	_ "github.com/zeroflucs-given/generics/collections/linkedlist"
 	"go.starlark.net/starlark"
+	"sort"
 )
 
 type Process struct {
@@ -26,6 +33,7 @@ type Process struct {
 	Files     []*ast.File
 	Parent    *Process
 	Evaluator *Evaluator
+	Children  []*Process
 }
 
 func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
@@ -43,7 +51,9 @@ func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
 		Files:     Files,
 		Parent:    parent,
 		Evaluator: mc,
+		Children:  []*Process{},
 	}
+	p.Children = append(p.Children, p)
 	thread := NewThread(p, Files, 0, "")
 	p.Threads = append(p.Threads, thread)
 	return p
@@ -56,7 +66,9 @@ func (p *Process) Fork() *Process {
 		current:   p.current,
 		Parent:    p,
 		Evaluator: p.Evaluator,
+		Children:  []*Process{},
 	}
+	p.Children = append(p.Children, p2)
 	clonedThreads := make([]*Thread, len(p.Threads))
 	for i, thread := range p.Threads {
 		clonedThreads[i] = thread.Clone()
@@ -64,6 +76,33 @@ func (p *Process) Fork() *Process {
 	}
 	p2.Threads = clonedThreads
 	return p2
+}
+
+func (p *Process) HashCode() string {
+	threadHashes := make([]string, len(p.Threads))
+	for i, thread := range p.Threads {
+		threadHashes[i] = thread.HashCode()
+	}
+
+	h := sha256.New()
+
+	// Use the current thread's hash first, not the index
+	currentThreadHash := ""
+	if len(threadHashes) > 0 {
+		currentThreadHash = threadHashes[p.current]
+	}
+	h.Write([]byte(currentThreadHash))
+
+	// Sort the thread hashes to make the hash deterministic
+	sort.Strings(threadHashes)
+	for _, hash := range threadHashes {
+		h.Write([]byte(hash))
+	}
+
+	// hash the heap variables as well
+	heapHash := p.Heap.HashCode()
+	h.Write([]byte(heapHash))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (p *Process) currentThread() *Thread {
@@ -113,4 +152,163 @@ func (p *Process) updateScopedVariable(scope *Scope, key string, val starlark.Va
 		return true
 	}
 	return p.updateScopedVariable(scope.parent, key, val)
+}
+
+type Node struct {
+	*Process
+
+	inbound  []*Node
+	outbound []*Node
+
+	// The number of actions started until this node
+	// Note: This is the shorted path to this node from the root as we do BFS.
+	actionDepth int
+
+	// The number of forks until this node from the root. This will be >= actionDepth
+	// If every action is atomic, then this will be equal to actionDepth
+	// Every non-determinism includes a fork, so this will be greater than actionDepth
+	// Note: This is the shorted path to this node from the root as we do BFS.
+	forkDepth int
+}
+
+func NewNode(process *Process) *Node {
+	return &Node{
+		Process:     process,
+		inbound:     make([]*Node, 0),
+		outbound:    make([]*Node, 0),
+		actionDepth: 0,
+		forkDepth:   0,
+	}
+}
+
+func (n *Node) Merge(other *Node) *Node {
+	mergeNode := &Node{
+		inbound:     []*Node{n},
+		outbound:    []*Node{other},
+		actionDepth: n.actionDepth,
+		forkDepth:   n.forkDepth,
+	}
+	n.outbound = append(n.outbound, mergeNode)
+	other.inbound = append(other.inbound, mergeNode)
+	return mergeNode
+}
+
+func (n *Node) ForkForAction(action *ast.Action) *Node {
+	forkNode := &Node{
+		Process:     n.Process.Fork(),
+		inbound:     []*Node{n},
+		outbound:    []*Node{},
+		actionDepth: n.actionDepth + 1,
+		forkDepth:   n.forkDepth + 1,
+	}
+	forkNode.Process.Name = action.Name
+
+	n.outbound = append(n.outbound, forkNode)
+	return forkNode
+}
+
+func (n *Node) ForkForAlternatePaths(process *Process) *Node {
+	forkNode := &Node{
+		Process:     process,
+		inbound:     []*Node{n},
+		outbound:    []*Node{},
+		actionDepth: n.actionDepth,
+		forkDepth:   n.forkDepth + 1,
+	}
+
+	n.outbound = append(n.outbound, forkNode)
+	return forkNode
+}
+
+type Options struct {
+	// The maximum number of nodes to process
+	MaxNodes int
+	// The maximum number of actions to process
+	MaxActions int
+}
+
+type Processor struct {
+	Init    *Node
+	Files   []*ast.File
+	queue   collections.Queue[*Node]
+	visited map[string]*Node
+	config  *Options
+}
+
+func NewProcessor(files []*ast.File, config *Options) *Processor {
+	return &Processor{
+		Files:   files,
+		queue:   linkedlist.New[*Node](),
+		visited: make(map[string]*Node),
+		config:  config,
+	}
+}
+
+func (p *Processor) Start() *Node {
+	if p.Init != nil {
+		panic("processor already started")
+	}
+	process := NewProcess("init", p.Files, nil)
+	init := NewNode(process)
+	globals, err := process.Evaluator.ExecInit(p.Files[0].States)
+	if err != nil {
+		panic(err)
+	}
+	process.Heap.globals = globals
+	p.Init = init
+
+	_ = p.queue.Push(p.Init)
+	//p.visited[p.Init.HashCode()] = p.Init
+
+	for p.queue.Count() != 0 {
+		found, node := p.queue.Pop()
+		if !found {
+			panic("queue should not be empty")
+		}
+		process := node.Process
+		if other, ok := p.visited[process.HashCode()]; ok {
+			// how to deal with cycle?
+			// Cycle detection would be required in identifying liveness properties
+			node.Merge(other)
+			continue
+		}
+		if node.actionDepth > p.config.MaxActions {
+			// Add a node to indicate why this node was not processed
+			continue
+		}
+		p.visited[process.HashCode()] = node
+		p.processNode(node)
+	}
+	return p.Init
+}
+
+func (p *Processor) processNode(node *Node) {
+	if node.Process.currentThread().currentPc() == "" {
+
+		// This is init node, generate a fork for each action in the file
+		for i, action := range p.Files[0].Actions {
+			newNode := node.ForkForAction(action)
+			thread := newNode.currentThread()
+			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+			_ = p.queue.Push(newNode)
+		}
+		return
+	}
+	forks, yield := node.currentThread().Execute()
+	fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
+	for _, fork := range forks {
+		newNode := node.ForkForAlternatePaths(fork)
+		//thread := newNode.currentThread()
+		//thread.currentFrame().pc = fmt.Sprintf("Fork[%d]", i)
+		_ = p.queue.Push(newNode)
+
+	}
+	_ = yield
+	//for _, fork := range forks {
+	//	nodes = append(nodes, node.ForkForAlternatePaths(fork))
+	//}
+	//if yield && len(forks) > 0 {
+	//	panic("yield and fork at the same time, not sure if it is needed")
+	//}
+	//return nodes
 }

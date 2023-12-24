@@ -1,0 +1,14 @@
+
+state:
+  a = 0
+  b = 0
+
+action Add:
+  atomic:
+    a = a + 1
+    b = b + 1
+
+action Multiply:
+  atomic:
+    a = a * 2
+    b = b * 2

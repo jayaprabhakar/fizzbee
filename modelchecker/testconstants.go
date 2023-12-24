@@ -4,7 +4,7 @@ const (
 	ActionsWithMultipleBlocks = `
 {
   "states": {
-    "code": "MAX_ELEMENTS = 5\nelements = set()\ncount = 0"
+    "code": "a=0\nb=0"
   },
   "actions": [
     {

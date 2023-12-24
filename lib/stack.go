@@ -54,11 +54,15 @@ func (s *Stack[T]) Clone() *Stack[T] {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	other := NewStack[T]()
-	clonedArr := clone.Clone(s.s)
-	for _, v := range clonedArr.([]T) {
+	clonedArr := s.RawArrayCopy()
+	for _, v := range clonedArr {
 		other.Push(v)
 	}
 	return other
+}
+
+func (s *Stack[T]) RawArrayCopy() []T {
+	return clone.Clone(s.s).([]T)
 }
 
 func (s *Stack[T]) Len() int {
