@@ -4,7 +4,7 @@ states:
       b=0
 
 actions:
-  - name: Add
+  - name: Incr
     block:
       flow: FLOW_ATOMIC
       stmts:
@@ -12,11 +12,11 @@ actions:
             code: a = a + 1
         - pyStmt:
             code: b = b + 1
-  - name: Multiply
+  - name: Decr
     block:
       flow: FLOW_ATOMIC
       stmts:
         - pyStmt:
-            code: a = a * 2
+            code: a = a - 1
         - pyStmt:
-            code: b = b * 2
+            code: b = b - 1

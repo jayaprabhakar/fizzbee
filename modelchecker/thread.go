@@ -206,6 +206,9 @@ func (t *Thread) HashCode() string {
 
 // InsertNewScope adds a new scope to the current stack frame and returns the newly created scope.
 func (t *Thread) InsertNewScope() *Scope {
+	if t.currentFrame().scope != nil {
+		fmt.Printf("current frame: %+v\n", t.currentFrame())
+	}
 	scope := &Scope{parent: t.currentFrame().scope, vars: starlark.StringDict{}}
 	t.currentFrame().scope = scope
 	return scope
@@ -350,6 +353,9 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 		return nil, false
 	case ast.Flow_FLOW_PARALLEL:
 		blockPath := ParentBlockPath(t.currentPc())
+		if blockPath == "" {
+			//return nil, t.executeEndOfBlock()
+		}
 		protobuf := GetProtoFieldByPath(t.currentFileAst(), blockPath)
 		b := convertToBlock(protobuf)
 		skipstmts := t.currentFrame().scope.skipstmts
