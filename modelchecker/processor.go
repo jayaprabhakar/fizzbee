@@ -22,7 +22,10 @@ import (
 	"github.com/zeroflucs-given/generics/collections/linkedlist"
 	_ "github.com/zeroflucs-given/generics/collections/linkedlist"
 	"go.starlark.net/starlark"
+	"os"
+	"runtime"
 	"sort"
+	"strings"
 )
 
 type Process struct {
@@ -67,6 +70,7 @@ func (p *Process) Fork() *Process {
 		Parent:    p,
 		Evaluator: p.Evaluator,
 		Children:  []*Process{},
+		Files:     p.Files,
 	}
 	p.Children = append(p.Children, p2)
 	clonedThreads := make([]*Thread, len(p.Threads))
@@ -76,6 +80,12 @@ func (p *Process) Fork() *Process {
 	}
 	p2.Threads = clonedThreads
 	return p2
+}
+
+func (p *Process) NewThread() *Thread {
+	thread := NewThread(p, p.Files, 0, "")
+	p.Threads = append(p.Threads, thread)
+	return thread
 }
 
 func (p *Process) HashCode() string {
@@ -168,7 +178,8 @@ type Node struct {
 	// If every action is atomic, then this will be equal to actionDepth
 	// Every non-determinism includes a fork, so this will be greater than actionDepth
 	// Note: This is the shorted path to this node from the root as we do BFS.
-	forkDepth int
+	forkDepth  int
+	stacktrace string
 }
 
 func NewNode(process *Process) *Node {
@@ -178,6 +189,7 @@ func NewNode(process *Process) *Node {
 		outbound:    make([]*Node, 0),
 		actionDepth: 0,
 		forkDepth:   0,
+		stacktrace:  captureStackTrace(),
 	}
 }
 
@@ -200,6 +212,7 @@ func (n *Node) ForkForAction(action *ast.Action) *Node {
 		outbound:    []*Node{},
 		actionDepth: n.actionDepth + 1,
 		forkDepth:   n.forkDepth + 1,
+		stacktrace:  captureStackTrace(),
 	}
 	forkNode.Process.Name = action.Name
 
@@ -208,12 +221,14 @@ func (n *Node) ForkForAction(action *ast.Action) *Node {
 }
 
 func (n *Node) ForkForAlternatePaths(process *Process) *Node {
+
 	forkNode := &Node{
 		Process:     process,
 		inbound:     []*Node{n},
 		outbound:    []*Node{},
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth + 1,
+		stacktrace:  captureStackTrace(),
 	}
 
 	n.outbound = append(n.outbound, forkNode)
@@ -267,11 +282,10 @@ func (p *Processor) Start() *Node {
 		}
 		process := node.Process
 		if other, ok := p.visited[process.HashCode()]; ok {
-			// how to deal with cycle?
-			// Cycle detection would be required in identifying liveness properties
 			node.Merge(other)
 			continue
 		}
+
 		if node.actionDepth > p.config.MaxActions {
 			// Add a node to indicate why this node was not processed
 			continue
@@ -283,12 +297,13 @@ func (p *Processor) Start() *Node {
 }
 
 func (p *Processor) processNode(node *Node) {
-	if node.Process.currentThread().currentPc() == "" {
-
+	if node.Process.currentThread().currentPc() == "" && node.Name == "init" {
 		// This is init node, generate a fork for each action in the file
 		for i, action := range p.Files[0].Actions {
 			newNode := node.ForkForAction(action)
-			thread := newNode.currentThread()
+			newNode.Process.removeCurrentThread()
+			thread := newNode.Process.NewThread()
+			//thread := newNode.currentThread()
 			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
 			_ = p.queue.Push(newNode)
 		}
@@ -296,14 +311,26 @@ func (p *Processor) processNode(node *Node) {
 	}
 	forks, yield := node.currentThread().Execute()
 	fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
-	for _, fork := range forks {
-		newNode := node.ForkForAlternatePaths(fork)
-		//thread := newNode.currentThread()
-		//thread.currentFrame().pc = fmt.Sprintf("Fork[%d]", i)
-		_ = p.queue.Push(newNode)
-
+	if !yield {
+		for _, fork := range forks {
+			newNode := node.ForkForAlternatePaths(fork)
+			_ = p.queue.Push(newNode)
+		}
+		return
 	}
-	_ = yield
+
+	if yield {
+		if len(forks) > 0 {
+			fmt.Println("yield and fork at the same time")
+			for _, fork := range forks {
+				p.YieldFork(node, fork)
+			}
+		} else {
+			p.YieldNode(node)
+		}
+
+		return
+	}
 	//for _, fork := range forks {
 	//	nodes = append(nodes, node.ForkForAlternatePaths(fork))
 	//}
@@ -311,4 +338,79 @@ func (p *Processor) processNode(node *Node) {
 	//	panic("yield and fork at the same time, not sure if it is needed")
 	//}
 	//return nodes
+}
+
+func (p *Processor) YieldNode(node *Node) {
+	for i, thread := range node.Threads {
+		if thread.currentPc() == "" {
+			continue
+		}
+		newNode := node.ForkForAlternatePaths(thread.Process.Fork())
+		newNode.current = i
+
+		_ = p.queue.Push(newNode)
+	}
+	if node.actionDepth >= p.config.MaxActions {
+		return
+	}
+	for i, action := range p.Files[0].Actions {
+		newNode := node.ForkForAction(action)
+		newNode.Process.NewThread()
+		newNode.Process.current = len(newNode.Process.Threads) - 1
+		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+
+		if strings.Contains(newNode.currentThread().currentPc(), ".$") {
+			fmt.Println("PC contains $")
+			fmt.Printf("node: %+v\n", newNode)
+			fmt.Printf("node.heap: %+v\n", newNode.Heap.String())
+			fmt.Printf("node.currentThread().currentPc(): %+v\n", newNode.currentThread().currentPc())
+			_, _ = fmt.Fprintf(os.Stderr, "node.currentThread().currentPc(): %v\n", newNode.currentThread().currentPc())
+		}
+
+		_ = p.queue.Push(newNode)
+	}
+}
+
+func (p *Processor) YieldFork(node *Node, process *Process) {
+	for i, thread := range process.Threads {
+		if thread.currentPc() == "" {
+			continue
+		}
+		newNode := node.ForkForAlternatePaths(thread.Process.Fork())
+		newNode.current = i
+
+		_ = p.queue.Push(newNode)
+	}
+	if node.actionDepth >= p.config.MaxActions {
+		return
+	}
+	for i, action := range p.Files[0].Actions {
+		newNode := node.ForkForAction(action)
+		newNode.Process.NewThread()
+		newNode.Process.current = len(newNode.Process.Threads) - 1
+		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+
+		_ = p.queue.Push(newNode)
+	}
+}
+
+func captureStackTrace() string {
+	const depth = 32
+	var pcs [depth]uintptr
+	n := runtime.Callers(2, pcs[:])
+	if n == 0 {
+		return "Unable to capture stack trace"
+	}
+
+	var sb strings.Builder
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(&sb, "- %s:%d %s\n", frame.File, frame.Line, frame.Function)
+		if !more {
+			break
+		}
+	}
+
+	return sb.String()
 }
