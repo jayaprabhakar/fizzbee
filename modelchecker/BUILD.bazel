@@ -33,7 +33,7 @@ go_test(
         "starlark_test.go",
         "thread_test.go",
     ],
-    data = ["//examples/tutorials:tutorials"],
+    data = ["//examples/tutorials"],
     embed = [":modelchecker"],
     deps = [
         "//proto:ast",

@@ -96,7 +96,7 @@ func TestProcessor_Start(t *testing.T) {
 	})
 	root := p1.Start()
 	assert.NotNil(t, root)
-	assert.Equal(t, 163, len(p1.visited))
+	assert.Equal(t, 148, len(p1.visited))
 }
 
 func printFileNames(rootDir string) error {
@@ -119,71 +119,71 @@ func TestProcessor_Tutorials(t *testing.T) {
 		expectedNodes int
 	}{
 		{
-			filename:      "examples/tutorials/01-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
 			maxActions:    1,
 			expectedNodes: 2, // 2 nodes: 1 for the init and 1 for the first action
 		},
 		{
-			filename:      "examples/tutorials/01-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
 			maxActions:    3,
 			expectedNodes: 4, // 2 nodes: 1 for the init and 1 for each action
 		},
 		{
-			filename:      "examples/tutorials/01-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
 			maxActions:    100,
 			expectedNodes: 101, // 0.01s
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    1,
 			expectedNodes: 3,
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    2,
 			expectedNodes: 5,
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    10,
 			expectedNodes: 179, // 0.01s
 			// 20 actions, 21893 nodes, 3.79s
 			// 30 actions, 179 nodes, 0.01s
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    2,
 			expectedNodes: 7,
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    10,
 			expectedNodes: 39,
 			// 20 actions, 79 nodes, 0.01s
 			// this grows much slower than multiply counter, because any combination of inc / dec forms a loop
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    3,
 			expectedNodes: 7,
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    3,
 			expectedNodes: 11,
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
 			maxActions:    1,
 			expectedNodes: 7, // 3 nodes: 1 for the init and 3 for each action (block + 2 stmts)
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
 			maxActions:    2,
 			expectedNodes: 43,
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
 			maxActions:    3,
 			expectedNodes: 163,
 			// 4 actions, 463 nodes, .03s
@@ -192,34 +192,34 @@ func TestProcessor_Tutorials(t *testing.T) {
 			// 10 actions, 19735 nodes, 14s
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
 			maxActions:    1,
 			expectedNodes: 7, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
 			maxActions:    2,
 			expectedNodes: 19, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
 			maxActions:    10,
 			expectedNodes: 2725,
 		},
 		{
-			filename:   "examples/tutorials/05-multiple-parallel-counters/ThreeSidedDie_ast.json",
+			filename:   "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions: 1,
 			// 11 nodes: 1 for the init and 1 for each action, then within each action, 4 possible combinations of stmts
 			// [s1], [s2], [s1, s2], [s2, s1]. So, 1 + 2 + 4 + 4 = 11
 			expectedNodes: 13,
 		},
 		{
-			filename:      "examples/tutorials/05-multiple-parallel-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    2,
 			expectedNodes: 117,
 		},
 		{
-			filename:      "examples/tutorials/05-multiple-parallel-counters/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    3,
 			expectedNodes: 681, // .03s
 			// 4 actions 2933 nodes, .18s
