@@ -28,12 +28,12 @@
         "stmts": [
           {
             "pyStmt": {
-              "code": "a = a - 1"
+              "code": "a = a * 2"
             }
           },
           {
             "pyStmt": {
-              "code": "b = b - 1"
+              "code": "b = b * 2"
             }
           }
         ]

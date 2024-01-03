@@ -4,6 +4,7 @@ go_library(
     name = "modelchecker",
     srcs = [
         "checker.go",
+        "graph.go",
         "processor.go",
         "protopath.go",
         "starlark.go",
@@ -28,6 +29,7 @@ go_test(
     name = "modelchecker_test",
     srcs = [
         "checker_test.go",
+        "graph_test.go",
         "processor_test.go",
         "protopath_test.go",
         "starlark_test.go",
