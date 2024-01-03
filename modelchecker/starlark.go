@@ -14,6 +14,14 @@ func (e *Evaluator) EvalPyExpr(filename string, src interface{}, prevState starl
 	//	FirstCol:  5,
 	//}
 
+	//f, err := e.options.Parse(filename, src, 0)
+	//if err != nil {
+	//	glog.Errorf("Error parsing expr: %+v", err)
+	//	return nil, err
+	//}
+	//
+	//err := starlark.ExecREPLChunk(f, e.thread, prevState)
+
 	value, err := starlark.EvalOptions(e.options, e.thread, filename, src, prevState)
 	if err != nil {
 		glog.Errorf("Error evaluating expr: %+v", err)
@@ -28,9 +36,17 @@ func (e *Evaluator) EvalPyExpr(filename string, src interface{}, prevState starl
 func (e *Evaluator) ExecPyStmt(filename string, stmt *ast.PyStmt, prevState starlark.StringDict) (bool, error) {
 
 	glog.Infof("\nExec Stmt: %v\n", stmt)
-
 	starCode := stmt.Code
-	globals, err := starlark.ExecFileOptions(e.options, e.thread, filename, starCode, prevState)
+
+	f, err := e.options.Parse(filename, starCode, 0)
+	if err != nil {
+		glog.Errorf("Error parsing expr: %+v", err)
+		return false, err
+	}
+
+	err = starlark.ExecREPLChunk(f, e.thread, prevState)
+	globals := prevState
+	//globals, err := starlark.ExecFileOptions(e.options, e.thread, filename, starCode, prevState)
 	if err != nil {
 		glog.Errorf("Error executing stmt: %+v", err)
 		return false, err
