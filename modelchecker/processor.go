@@ -88,6 +88,35 @@ func (p *Process) NewThread() *Thread {
 	return thread
 }
 
+// String method for Process
+func (n *Node) String() string {
+	p := n.Process
+	if p == nil {
+		return "DUPLICATE"
+	}
+	buf := strings.Builder{}
+	buf.WriteString(fmt.Sprintf("Process: %s\n", p.Name))
+	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
+
+	// Your original JSON string
+	jsonString := p.Heap.String()
+
+	// Escape double quotes
+	escapedString := strings.ReplaceAll(jsonString, "\"", "\\\"")
+	buf.WriteString(escapedString)
+
+	return buf.String()
+}
+
+// GetName returns the name
+func (n *Node) GetName() string {
+	p := n.Process
+	if p == nil {
+		return ""
+	}
+	return p.Name
+}
+
 func (p *Process) HashCode() string {
 	threadHashes := make([]string, len(p.Threads))
 	for i, thread := range p.Threads {
@@ -280,28 +309,30 @@ func (p *Processor) Start() *Node {
 		if !found {
 			panic("queue should not be empty")
 		}
-		process := node.Process
-		if other, ok := p.visited[process.HashCode()]; ok {
-			node.Merge(other)
-			continue
-		}
+		//process := node.Process
+		//if other, ok := p.visited[process.HashCode()]; ok {
+		//	node.Merge(other)
+		//	continue
+		//}
 
 		if node.actionDepth > p.config.MaxActions {
 			// Add a node to indicate why this node was not processed
 			continue
 		}
-		p.visited[process.HashCode()] = node
+		//p.visited[process.HashCode()] = node
 		p.processNode(node)
+		p.visited[node.HashCode()] = node
 	}
 	return p.Init
 }
 
 func (p *Processor) processNode(node *Node) {
 	if node.Process.currentThread().currentPc() == "" && node.Name == "init" {
+		node.Process.removeCurrentThread()
 		// This is init node, generate a fork for each action in the file
 		for i, action := range p.Files[0].Actions {
 			newNode := node.ForkForAction(action)
-			newNode.Process.removeCurrentThread()
+			//newNode.Process.removeCurrentThread()
 			thread := newNode.Process.NewThread()
 			//thread := newNode.currentThread()
 			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
@@ -310,7 +341,12 @@ func (p *Processor) processNode(node *Node) {
 		return
 	}
 	forks, yield := node.currentThread().Execute()
-	fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
+	//fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
+	if other, ok := p.visited[node.HashCode()]; ok {
+		// Check if visited before scheduling children
+		node.Merge(other)
+		return
+	}
 	if !yield {
 		for _, fork := range forks {
 			newNode := node.ForkForAlternatePaths(fork)
@@ -321,7 +357,7 @@ func (p *Processor) processNode(node *Node) {
 
 	if yield {
 		if len(forks) > 0 {
-			fmt.Println("yield and fork at the same time")
+			//fmt.Println("yield and fork at the same time")
 			for _, fork := range forks {
 				p.YieldFork(node, fork)
 			}
@@ -341,6 +377,11 @@ func (p *Processor) processNode(node *Node) {
 }
 
 func (p *Processor) YieldNode(node *Node) {
+	if other, ok := p.visited[node.HashCode()]; ok {
+		// Check if visited before scheduling children
+		node.Merge(other)
+		return
+	}
 	for i, thread := range node.Threads {
 		if thread.currentPc() == "" {
 			continue

@@ -206,9 +206,6 @@ func (t *Thread) HashCode() string {
 
 // InsertNewScope adds a new scope to the current stack frame and returns the newly created scope.
 func (t *Thread) InsertNewScope() *Scope {
-	if t.currentFrame().scope != nil {
-		fmt.Printf("current frame: %+v\n", t.currentFrame())
-	}
 	scope := &Scope{parent: t.currentFrame().scope, vars: starlark.StringDict{}}
 	t.currentFrame().scope = scope
 	return scope
@@ -252,12 +249,12 @@ func (t *Thread) Clone() *Thread {
 }
 
 func (t *Thread) Execute() ([]*Process, bool) {
-	fmt.Println(t.Process.Heap.globals)
+	//fmt.Println(t.Process.Heap.globals)
 	var forks []*Process
 	yield := false
 	for t.Stack.Len() > 0 {
-		fmt.Println(t.Process.Heap.globals)
-		fmt.Println(t.currentPc())
+		//fmt.Println(t.Process.Heap.globals)
+		//fmt.Println(t.currentPc())
 		if t.currentFrame().pc == "" || strings.HasSuffix(t.currentFrame().pc, ".Block.$") {
 			yield = t.executeEndOfBlock()
 			if yield {
@@ -304,7 +301,7 @@ func (t *Thread) executeBlock() []*Process {
 			forks[i] = t.Process.Fork()
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 		}
-		t.currentFrame().pc = ""
+		//t.currentFrame().pc = ""
 		return forks
 	case ast.Flow_FLOW_PARALLEL:
 		forks := make([]*Process, len(b.Stmts))
@@ -313,7 +310,7 @@ func (t *Thread) executeBlock() []*Process {
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 			forks[i].currentThread().currentFrame().scope.skipstmts = append(forks[i].currentThread().currentFrame().scope.skipstmts, i)
 		}
-		t.currentFrame().pc = ""
+		//t.currentFrame().pc = ""
 		return forks
 	default:
 		panic("Unknown flow type")
@@ -334,6 +331,24 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		t.currentFrame().pc = t.currentFrame().pc + ".Block"
 		forks := t.executeBlock()
 		return forks, false
+	} else if stmt.IfStmt != nil {
+		if stmt.IfStmt.Flow != ast.Flow_FLOW_ATOMIC {
+			panic("Only atomic flow is supported for if statements")
+		}
+		for i, branch := range stmt.IfStmt.Branches {
+			vars := t.Process.GetAllVariables()
+			cond, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", branch.Condition, vars)
+			PanicOnError(err)
+			t.Process.updateAllVariablesInScope(vars)
+			if cond.Truth() {
+				t.currentFrame().pc = fmt.Sprintf("%s.IfStmt.Branches[%d].Block", t.currentPc(), i)
+				return nil, false
+			}
+		}
+
+		//t.currentFrame().pc = t.currentFrame().pc + ".Block"
+		//forks := t.executeBlock()
+		//return forks, false
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v", stmt))
 	}
@@ -435,6 +450,9 @@ func (t *Thread) FindNextProgramCounter() string {
 		convertToBlock(protobuf)
 		return frame.pc + ".Stmts[0]"
 	case *ast.Statement:
+		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
+		return path
+	case *ast.Branch:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
 		return path
 	}

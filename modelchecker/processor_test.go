@@ -96,7 +96,7 @@ func TestProcessor_Start(t *testing.T) {
 	})
 	root := p1.Start()
 	assert.NotNil(t, root)
-	assert.Equal(t, 148, len(p1.visited))
+	assert.Equal(t, 109, len(p1.visited))
 }
 
 func printFileNames(rootDir string) error {
@@ -119,6 +119,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 		expectedNodes int
 	}{
 		{
+			filename:      "examples/tutorials/00-no-op/Counter_ast.json",
+			maxActions:    3,
+			expectedNodes: 1, // 1 nodes: 1 for the init
+		},
+		{
 			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
 			maxActions:    1,
 			expectedNodes: 2, // 2 nodes: 1 for the init and 1 for the first action
@@ -136,56 +141,60 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    1,
+			expectedNodes: 2,
+		},
+		{
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			maxActions:    2,
 			expectedNodes: 3,
 		},
 		{
 			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
-			maxActions:    2,
-			expectedNodes: 5,
+			maxActions:    4,
+			expectedNodes: 8,
 		},
 		{
 			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    10,
-			expectedNodes: 179, // 0.01s
-			// 20 actions, 21893 nodes, 3.79s
-			// 30 actions, 179 nodes, 0.01s
+			expectedNodes: 144, // 0.01s
+			// 20 actions, 17711 nodes, 3.79s
 		},
 		{
 			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 7,
+			expectedNodes: 5,
 		},
 		{
 			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    10,
-			expectedNodes: 39,
-			// 20 actions, 79 nodes, 0.01s
+			expectedNodes: 21,
+			// 20 actions, 41 nodes, 0.01s
 			// this grows much slower than multiply counter, because any combination of inc / dec forms a loop
 		},
 		{
 			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
 			maxActions:    3,
-			expectedNodes: 7,
+			expectedNodes: 5,
 		},
 		{
 			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
 			maxActions:    3,
-			expectedNodes: 11,
+			expectedNodes: 7,
 		},
 		{
 			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
 			maxActions:    1,
-			expectedNodes: 7, // 3 nodes: 1 for the init and 3 for each action (block + 2 stmts)
+			expectedNodes: 6,
 		},
 		{
 			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 43,
+			expectedNodes: 40,
 		},
 		{
 			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
-			maxActions:    3,
-			expectedNodes: 163,
+			maxActions:    4,
+			expectedNodes: 1481,
 			// 4 actions, 463 nodes, .03s
 			// 5 actions, 1093 nodes, 0.09s
 			// 6 actions, 2269 nodes, 0.27s
@@ -194,39 +203,65 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
 			maxActions:    1,
-			expectedNodes: 7, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
+			expectedNodes: 5, // 5 nodes: 1 for the init and 1 for each action and 1 for each stmt in add. multipy counteres end up being no-op
 		},
 		{
 			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 19, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
+			expectedNodes: 12, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
 		},
 		{
 			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
-			maxActions:    10,
-			expectedNodes: 2725,
+			maxActions:    3,
+			expectedNodes: 24,
 		},
 		{
 			filename:   "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions: 1,
 			// 11 nodes: 1 for the init and 1 for each action, then within each action, 4 possible combinations of stmts
 			// [s1], [s2], [s1, s2], [s2, s1]. So, 1 + 2 + 4 + 4 = 11
-			expectedNodes: 13,
+			expectedNodes: 10,
+		},
+		{
+			filename:   "examples/tutorials/09-inc-dec-parallel-counters/Counter_ast.json",
+			maxActions: 1,
+			// 11 nodes: 1 for the init and 1 for each action, then within each action, 4 possible combinations of stmts
+			// [s1], [s2], [s1, s2], [s2, s1]. So, 1 + 2 + 4 + 4 = 11
+			expectedNodes: 11,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 117,
+			expectedNodes: 70,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    3,
-			expectedNodes: 681, // .03s
-			// 4 actions 2933 nodes, .18s
-			// 5 actions 10293 nodes, 1.18s
-			// 6 actions 31005 nodes, 8s
-			// 7 actions 83029 nodes, 67s
+			expectedNodes: 428, // .03s
+			// 4 actions 2607 nodes, .17s
+			// 5 actions 15354 nodes, 2.2s
+			// 6 actions 85710 nodes, 67s
 			//  actions times out after 5m
+		},
+		{
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			maxActions:    1,
+			expectedNodes: 4, // 2 nodes: 1 for the init and 1 for the Toss action and 1 for each fork
+		},
+		{
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			maxActions:    2,
+			expectedNodes: 9,
+		},
+		{
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			maxActions:    3,
+			expectedNodes: 9,
+		},
+		{
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			maxActions:    10,
+			expectedNodes: 9,
 		},
 	}
 
@@ -242,6 +277,16 @@ func TestProcessor_Tutorials(t *testing.T) {
 			root := p1.Start()
 			assert.NotNil(t, root)
 			assert.Equal(t, test.expectedNodes, len(p1.visited))
+
+			//dotString := generateDotFile(root, make(map[*Node]bool))
+			//fmt.Printf("\n%s\n", dotString)
+			//
+			//RemoveMergeNodes(root)
+			//
+			//// Print the modified graph
+			//fmt.Println("\nModified Graph:")
+			//dotString = generateDotFile(root, make(map[*Node]bool))
+			//fmt.Printf("\n%s\n", dotString)
 		})
 	}
 }
