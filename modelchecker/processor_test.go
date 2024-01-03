@@ -263,6 +263,66 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    10,
 			expectedNodes: 9,
 		},
+		{
+			filename:      "examples/tutorials/13-any-stmt/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 7,
+		},
+		{
+			filename:      "examples/tutorials/13-any-stmt/Counter_ast.json",
+			maxActions:    10,
+			expectedNodes: 63,
+		},
+		{
+			filename:      "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 5,
+		},
+		{
+			filename:      "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			maxActions:    3,
+			expectedNodes: 21,
+		},
+		{
+			filename:   "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			maxActions: 10,
+			// Just one more node than 3 actions, because maximum unique state is 3 added followed by 1 remove
+			expectedNodes: 22,
+		},
+		{
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 15,
+		},
+		{
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			maxActions:    2,
+			expectedNodes: 191,
+		},
+		{
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			maxActions:    3,
+			expectedNodes: 1727,
+			// 4 actions, 11461 nodes, 3.37s
+			// 5 actions, 62233 nodes, 65s
+		},
+		{
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 17,
+		},
+		{
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:    2,
+			expectedNodes: 212,
+		},
+		{
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:    3,
+			expectedNodes: 2044, // 0.16s
+			// 4 actions, 17579 nodes, 2.8s
+			// 5 actions, 131991 nodes, 2.5m
+		},
 	}
 
 	for _, test := range tests {

@@ -133,6 +133,29 @@ func (e *Evaluator) ExecInit(variables *ast.StateVars) (starlark.StringDict, err
 
 	predeclared := starlark.StringDict{}
 
+	f, err := e.options.Parse("apparent/filename.star", initStr, 0)
+	if err != nil {
+		glog.Errorf("Error parsing expr: %+v", err)
+		return nil, err
+	}
+
+	err = starlark.ExecREPLChunk(f, e.thread, predeclared)
+	return predeclared, err
+
+	//glog.Info("Running Init")
+	//globals, err := starlark.ExecFileOptions(e.options, e.thread, "apparent/filename.star", initStr, predeclared)
+	//if err != nil {
+	//	glog.Error("Error in init: %+v", err)
+	//}
+	//return globals, err
+}
+
+func (e *Evaluator) ExecInitOld(variables *ast.StateVars) (starlark.StringDict, error) {
+
+	initStr := variables.GetCode()
+
+	predeclared := starlark.StringDict{}
+
 	glog.Info("Running Init")
 	globals, err := starlark.ExecFileOptions(e.options, e.thread, "apparent/filename.star", initStr, predeclared)
 	if err != nil {

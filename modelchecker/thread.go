@@ -20,6 +20,19 @@ type Heap struct {
 func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 	m := make(map[string]string)
 	for k, v := range stringDict {
+		if v.Type() == "set" {
+			// Convert set to a list.
+			iter := v.(starlark.Iterable).Iterate()
+			defer iter.Done()
+			var x starlark.Value
+			var list []string
+			for iter.Next(&x) {
+				list = append(list, x.String())
+			}
+			sort.Strings(list)
+			m[k] = fmt.Sprintf("%v", list)
+			continue
+		}
 		m[k] = v.String()
 	}
 	return m
@@ -135,6 +148,20 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 		to = make(starlark.StringDict)
 	}
 	for k, v := range from {
+		if v.Type() == "set" {
+			// Clone a set.
+			//to[k] = v.(*starlark.Set).Clone()
+			iter := v.(starlark.Iterable).Iterate()
+			defer iter.Done()
+			var x starlark.Value
+			newSet := starlark.NewSet(10)
+			for iter.Next(&x) {
+				err := newSet.Insert(x)
+				PanicOnError(err)
+			}
+			to[k] = newSet
+			continue
+		}
 		to[k] = v
 	}
 	return to
@@ -255,7 +282,7 @@ func (t *Thread) Execute() ([]*Process, bool) {
 	for t.Stack.Len() > 0 {
 		//fmt.Println(t.Process.Heap.globals)
 		//fmt.Println(t.currentPc())
-		if t.currentFrame().pc == "" || strings.HasSuffix(t.currentFrame().pc, ".Block.$") {
+		for t.currentFrame().pc == "" || strings.HasSuffix(t.currentFrame().pc, ".Block.$") {
 			yield = t.executeEndOfBlock()
 			if yield {
 				return forks, yield
@@ -349,6 +376,38 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		//t.currentFrame().pc = t.currentFrame().pc + ".Block"
 		//forks := t.executeBlock()
 		//return forks, false
+	} else if stmt.AnyStmt != nil {
+		if stmt.AnyStmt.Flow != ast.Flow_FLOW_ATOMIC {
+			panic("Only atomic flow is supported for any statements")
+		}
+		if len(stmt.AnyStmt.LoopVars) != 1 {
+			panic("Loop variables must be exactly one")
+		}
+		vars := t.Process.GetAllVariables()
+		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.AnyStmt.PyExpr, vars)
+		PanicOnError(err)
+		rangeVal, _ := val.(starlark.Iterable)
+		iter := rangeVal.Iterate()
+		defer iter.Done()
+
+		//scope := t.InsertNewScope()
+		//scope.flow = stmt.AnyStmt.Flow
+		forks := make([]*Process, 0)
+		var x starlark.Value
+		for iter.Next(&x) {
+			//fmt.Printf("anyVariable: x: %s\n", x.String())
+			fork := t.Process.Fork()
+			fork.currentThread().currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", t.currentPc())
+			fork.currentThread().currentFrame().scope.vars[stmt.AnyStmt.LoopVars[0]] = x
+			forks = append(forks, fork)
+
+		}
+		if len(forks) > 0 {
+			return forks, false
+		}
+
+		//scope.vars[stmt.AnyStmt.LoopVars[0]] = val
+		//t.currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", t.currentPc())
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v", stmt))
 	}
@@ -391,7 +450,7 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 		t.currentFrame().pc = ""
 		return forks, true
 	default:
-		panic("Unknown flow type")
+		panic(fmt.Sprintf("Unknown flow type at %s", t.currentPc()))
 	}
 }
 
@@ -450,6 +509,9 @@ func (t *Thread) FindNextProgramCounter() string {
 		convertToBlock(protobuf)
 		return frame.pc + ".Stmts[0]"
 	case *ast.Statement:
+		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
+		return path
+	case *ast.AnyStmt:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
 		return path
 	case *ast.Branch:
