@@ -140,7 +140,15 @@ func ParentBlockPath(path string) string {
 }
 
 func RemoveLastBlock(path string) string {
-	lastIndex := strings.LastIndex(path, ".Block")
+	return RemoveLastSegment(path, ".Block")
+}
+
+func RemoveLastForStmt(path string) string {
+	return RemoveLastSegment(path, ".ForStmt")
+}
+
+func RemoveLastSegment(path string, substr string) string {
+	lastIndex := strings.LastIndex(path, substr)
 	if lastIndex == -1 {
 		return ""
 	}

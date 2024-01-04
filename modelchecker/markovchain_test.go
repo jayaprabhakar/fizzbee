@@ -35,8 +35,13 @@ func TestSteadyStateDistribution(t *testing.T) {
 			})
 			root := p1.Start()
 			RemoveMergeNodes(root)
+
+			dotString := generateDotFile(root, make(map[*Node]bool))
+			fmt.Printf("\n%s\n", dotString)
+
 			steadyStateDist := steadyStateDistribution(root)
 			fmt.Println(steadyStateDist)
+
 		})
 	}
 }

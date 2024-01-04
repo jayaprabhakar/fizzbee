@@ -8,6 +8,7 @@ import (
 	"go.starlark.net/starlark"
 	"google.golang.org/protobuf/encoding/protojson"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -120,7 +121,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 	}{
 		{
 			filename:      "examples/tutorials/00-no-op/Counter_ast.json",
-			maxActions:    3,
+			maxActions:    5,
 			expectedNodes: 1, // 1 nodes: 1 for the init
 		},
 		{
@@ -323,8 +324,41 @@ func TestProcessor_Tutorials(t *testing.T) {
 			// 4 actions, 17579 nodes, 2.8s
 			// 5 actions, 131991 nodes, 2.5m
 		},
+		{
+			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop_ast.json",
+			maxActions:    5,
+			expectedNodes: 2, // Only 2 nodes, because the for loop is executed as a single action
+		},
+		{
+			filename:   "examples/tutorials/18-for-stmt-serial/ForLoop_ast.json",
+			maxActions: 2,
+			// The main reason for the significant increase in the nodes is because, the two threads can execute
+			// concurrently. So, in one thread might have deleted first element, then the second thread would start
+			// the loop, then both the threads would start interleaving between the two threads for each iteration.
+			expectedNodes: 100,
+		},
+		{
+			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
+			maxActions:    1,
+			expectedNodes: 6, // Only 8 nodes, because 5 for each iteration and 1 for each block nesting
+		},
+		{
+			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
+			maxActions:    2,
+			expectedNodes: 20,
+		},
+		{
+			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop_ast.json",
+			maxActions:    1,
+			expectedNodes: 24,
+		},
+		{
+			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop_ast.json",
+			maxActions:    2,
+			expectedNodes: 150,
+		},
 	}
-
+	//tempDir := CreateTempDirectory(t)
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
 			filename := filepath.Join(runfilesDir, "_main", test.filename)
@@ -338,15 +372,16 @@ func TestProcessor_Tutorials(t *testing.T) {
 			assert.NotNil(t, root)
 			assert.Equal(t, test.expectedNodes, len(p1.visited))
 
-			//dotString := generateDotFile(root, make(map[*Node]bool))
+			dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("\n%s\n", dotString)
-			//
-			//RemoveMergeNodes(root)
-			//
-			//// Print the modified graph
-			//fmt.Println("\nModified Graph:")
-			//dotString = generateDotFile(root, make(map[*Node]bool))
-			//fmt.Printf("\n%s\n", dotString)
+
+			RemoveMergeNodes(root)
+			// Print the modified graph
+			fmt.Println("\nModified Graph:")
+			dotString = generateDotFile(root, make(map[*Node]bool))
+			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
+			//WriteFile(t, tempDir, dotFileName, []byte(dotString))
+			fmt.Printf("\n%s\n", dotString)
 		})
 	}
 }
@@ -361,4 +396,28 @@ func readAstFromFile(filename string) (*ast.File, error) {
 	f := &ast.File{}
 	err = protojson.Unmarshal(bytes, f)
 	return f, err
+}
+
+func CreateTempDirectory(t *testing.T) string {
+	tempDir, err := ioutil.TempDir("", "test_artifacts_")
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	//defer os.RemoveAll(tempDir)
+	return tempDir
+}
+
+func WriteFile(t *testing.T, tempDir string, filename string, content []byte) {
+	fullPath := filepath.Join(tempDir, filename)
+	dir := filepath.Dir(fullPath)
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		fmt.Printf("Error creating directory %s: %v\n", dir, err)
+		return
+	}
+	fmt.Println("Writing file: ", fullPath)
+	err = os.WriteFile(fullPath, content, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
 }

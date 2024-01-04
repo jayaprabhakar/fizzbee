@@ -84,6 +84,10 @@ type Scope struct {
 	// On parallel execution, skipstmts contains the list of statements to skip
 	// as it is already executed.
 	skipstmts []int
+
+	loopVars []string
+	// loopRange contains the range of values for the loop variables (probably a tuple when multiple loopVars).
+	loopRange []starlark.Value
 }
 
 func (s *Scope) Hash() hash.Hash {
@@ -102,6 +106,7 @@ func (s *Scope) Hash() hash.Hash {
 	}
 	h.Write(vars)
 	h.Write([]byte(fmt.Sprintln(sortedCopy(s.skipstmts))))
+	h.Write([]byte(fmt.Sprintln(s.loopRange)))
 	return h
 }
 
@@ -298,6 +303,10 @@ func (t *Thread) Execute() ([]*Process, bool) {
 			forks = t.executeBlock()
 		case *ast.Statement:
 			forks, yield = t.executeStatement()
+		case *ast.ForStmt:
+			forks, yield = t.executeForStatement()
+		default:
+			panic(fmt.Sprintf("Unknown protobuf type: %v", protobuf))
 		}
 		if len(forks) > 0 || yield {
 			break
@@ -408,13 +417,79 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 
 		//scope.vars[stmt.AnyStmt.LoopVars[0]] = val
 		//t.currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", t.currentPc())
+	} else if stmt.ForStmt != nil {
+		if stmt.ForStmt.Flow == ast.Flow_FLOW_ONEOF {
+			panic("Oneof flow is supported for any statements")
+		}
+		if len(stmt.ForStmt.LoopVars) != 1 {
+			panic("Loop variables must be exactly one. TODO: Support multiple loop variables")
+		}
+		vars := t.Process.GetAllVariables()
+		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ForStmt.PyExpr, vars)
+		PanicOnError(err)
+		rangeVal, _ := val.(starlark.Iterable)
+		iter := rangeVal.Iterate()
+		defer iter.Done()
+
+		scope := t.InsertNewScope()
+		scope.flow = stmt.ForStmt.Flow
+		scope.loopVars = stmt.ForStmt.LoopVars
+		var x starlark.Value
+		for iter.Next(&x) {
+			scope.loopRange = append(scope.loopRange, x)
+			fmt.Printf("forVariable: x: %s\n", x.String())
+		}
+		t.currentFrame().pc = t.currentFrame().pc + ".ForStmt"
+		return nil, false
+
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v", stmt))
 	}
 	return t.executeEndOfStatement()
 }
 
+func (t *Thread) executeForStatement() ([]*Process, bool) {
+	if len(t.currentFrame().scope.loopRange) == 0 {
+		t.currentFrame().scope = t.currentFrame().scope.parent
+		t.currentFrame().pc = RemoveLastForStmt(t.currentPc())
+		return t.executeEndOfStatement()
+		//return nil, false
+	}
+	scope := t.currentFrame().scope
+	t.currentFrame().pc = fmt.Sprintf("%s.Block", t.currentPc())
+
+	// only atomic flow is supported for now.
+	if scope.flow == ast.Flow_FLOW_ATOMIC || scope.flow == ast.Flow_FLOW_SERIAL {
+		scope.vars[scope.loopVars[0]] = scope.loopRange[0]
+		scope.loopRange = scope.loopRange[1:]
+		return nil, false
+	}
+	forks := make([]*Process, 0)
+	for i, x := range scope.loopRange {
+		fork := t.Process.Fork()
+		fork.currentThread().currentFrame().scope.vars[scope.loopVars[0]] = x
+		//newSlice := slices.Clone(scope.loopRange)
+		newSlice := removeElement(scope.loopRange, i)
+		fork.currentThread().currentFrame().scope.loopRange = newSlice
+
+		forks = append(forks, fork)
+	}
+	return forks, false
+}
+
+func removeElement[T any](slice []T, index int) []T {
+	if index < 0 || index >= len(slice) {
+		// Index out of bounds
+		return slice
+	}
+	newSlice := make([]T, 0, len(slice)-1)
+	newSlice = append(newSlice, slice[:index]...)
+	// Create a new slice with the element at the specified index removed
+	return append(newSlice, slice[index+1:]...)
+}
+
 func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
+
 	switch t.currentFrame().scope.flow {
 	case ast.Flow_FLOW_ATOMIC:
 		t.currentFrame().pc = t.FindNextProgramCounter()
@@ -426,6 +501,10 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 		t.currentFrame().pc = EndOfBlock(t.currentPc())
 		return nil, false
 	case ast.Flow_FLOW_PARALLEL:
+		// if currentPc ends with .ForStmt do not execute end of statement.
+		if strings.HasSuffix(t.currentPc(), ".ForStmt") {
+			return nil, true
+		}
 		blockPath := ParentBlockPath(t.currentPc())
 		if blockPath == "" {
 			//return nil, t.executeEndOfBlock()
@@ -514,6 +593,9 @@ func (t *Thread) FindNextProgramCounter() string {
 	case *ast.AnyStmt:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
 		return path
+	case *ast.ForStmt:
+		// ForStmt is in the same instruction counter, only the iteration variable changes.
+		return frame.pc
 	case *ast.Branch:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
 		return path
