@@ -63,8 +63,13 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 
 		nodeID := fmt.Sprintf("\"%p\"", n)
 
-		// Add node with label
-		dotGraph += fmt.Sprintf("  %s [label=\"%s\"];\n", nodeID, n.String())
+		if n.Process.HasFailedInvariants() {
+			// Add node with label and color
+			dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"red\"];\n", nodeID, n.String())
+		} else {
+			// Add node with label
+			dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"black\"];\n", nodeID, n.String())
+		}
 
 		// Recursively visit outbound nodes
 		for _, child := range n.outbound {

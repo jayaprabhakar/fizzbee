@@ -29,14 +29,15 @@ import (
 )
 
 type Process struct {
-	Heap      *Heap
-	Threads   []*Thread
-	current   int
-	Name      string
-	Files     []*ast.File
-	Parent    *Process
-	Evaluator *Evaluator
-	Children  []*Process
+	Heap             *Heap
+	Threads          []*Thread
+	current          int
+	Name             string
+	Files            []*ast.File
+	Parent           *Process
+	Evaluator        *Evaluator
+	Children         []*Process
+	FailedInvariants map[int][]int
 }
 
 func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
@@ -60,6 +61,18 @@ func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
 	thread := NewThread(p, Files, 0, "")
 	p.Threads = append(p.Threads, thread)
 	return p
+}
+
+func (p *Process) HasFailedInvariants() bool {
+	if p == nil || p.FailedInvariants == nil {
+		return false
+	}
+	for _, invIndex := range p.FailedInvariants {
+		if len(invIndex) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *Process) Fork() *Process {
@@ -301,6 +314,11 @@ func (p *Processor) Start() *Node {
 	process.Heap.globals = globals
 	p.Init = init
 
+	failed := CheckInvariants(process)
+	if len(failed[0]) > 0 {
+		panic(fmt.Sprintf("Invariant failed: %v", failed))
+	}
+
 	_ = p.queue.Push(p.Init)
 	//p.visited[p.Init.HashCode()] = p.Init
 
@@ -320,13 +338,16 @@ func (p *Processor) Start() *Node {
 			continue
 		}
 		//p.visited[process.HashCode()] = node
-		p.processNode(node)
+		abort := p.processNode(node)
 		p.visited[node.HashCode()] = node
+		if abort {
+			break
+		}
 	}
 	return p.Init
 }
 
-func (p *Processor) processNode(node *Node) {
+func (p *Processor) processNode(node *Node) bool {
 	if node.Process.currentThread().currentPc() == "" && node.Name == "init" {
 		node.Process.removeCurrentThread()
 		// This is init node, generate a fork for each action in the file
@@ -338,21 +359,27 @@ func (p *Processor) processNode(node *Node) {
 			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
 			_ = p.queue.Push(newNode)
 		}
-		return
+		return false
 	}
 	forks, yield := node.currentThread().Execute()
+	failedInvariants := CheckInvariants(node.Process)
+	if len(failedInvariants[0]) > 0 {
+		//panic(fmt.Sprintf("Invariant failed: %v", failedInvariants))
+		node.Process.FailedInvariants = failedInvariants
+		return true
+	}
 	//fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
 		node.Merge(other)
-		return
+		return false
 	}
 	if !yield {
 		for _, fork := range forks {
 			newNode := node.ForkForAlternatePaths(fork)
 			_ = p.queue.Push(newNode)
 		}
-		return
+		return false
 	}
 
 	if yield {
@@ -365,15 +392,9 @@ func (p *Processor) processNode(node *Node) {
 			p.YieldNode(node)
 		}
 
-		return
+		return false
 	}
-	//for _, fork := range forks {
-	//	nodes = append(nodes, node.ForkForAlternatePaths(fork))
-	//}
-	//if yield && len(forks) > 0 {
-	//	panic("yield and fork at the same time, not sure if it is needed")
-	//}
-	//return nodes
+	return false
 }
 
 func (p *Processor) YieldNode(node *Node) {

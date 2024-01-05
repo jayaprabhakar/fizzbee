@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "checker.go",
         "graph.go",
+        "invariants.go",
         "markovchain.go",
         "processor.go",
         "protopath.go",
@@ -31,6 +32,7 @@ go_test(
     srcs = [
         "checker_test.go",
         "graph_test.go",
+        "invariants_test.go",
         "markovchain_test.go",
         "processor_test.go",
         "protopath_test.go",

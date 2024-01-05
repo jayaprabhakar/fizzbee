@@ -106,7 +106,10 @@ message Function {
 
 message Invariant {
   SourceInfo source_info = 1;
-  
+  bool always = 2;
+  bool eventually = 3;
+  string pyExpr = 4;
+  Invariant nested = 5;
 }
 
 message StateVars {
