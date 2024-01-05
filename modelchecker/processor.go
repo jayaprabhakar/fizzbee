@@ -278,6 +278,10 @@ func (n *Node) ForkForAlternatePaths(process *Process) *Node {
 }
 
 type Options struct {
+	// If true, continue processing even if an invariant fails
+	IgnoreInvariantFailures bool
+	// If true, continue processing other paths even if an invariant fails
+	ContinueOnInvariantFailure bool
 	// The maximum number of nodes to process
 	MaxNodes int
 	// The maximum number of actions to process
@@ -337,10 +341,9 @@ func (p *Processor) Start() *Node {
 			// Add a node to indicate why this node was not processed
 			continue
 		}
-		//p.visited[process.HashCode()] = node
-		abort := p.processNode(node)
+		invariantFailure := p.processNode(node)
 		p.visited[node.HashCode()] = node
-		if abort {
+		if invariantFailure && !p.config.ContinueOnInvariantFailure {
 			break
 		}
 	}
@@ -366,7 +369,9 @@ func (p *Processor) processNode(node *Node) bool {
 	if len(failedInvariants[0]) > 0 {
 		//panic(fmt.Sprintf("Invariant failed: %v", failedInvariants))
 		node.Process.FailedInvariants = failedInvariants
-		return true
+		if !p.config.IgnoreInvariantFailures {
+			return true
+		}
 	}
 	//fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
 	if other, ok := p.visited[node.HashCode()]; ok {

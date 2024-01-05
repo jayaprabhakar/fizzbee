@@ -4,6 +4,10 @@ state:
   toss2 = -1
   value = -1
 
+invariants:
+  always value in [-1, 1, 2, 3]
+  always (toss2 == -1 or value in [1, 2, 3])
+
 atomic action Toss:
     if value <= 0:
         if toss1 == -1:

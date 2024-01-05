@@ -2,6 +2,16 @@
   "states": {
     "code": "toss1=-1\ntoss2 = -1\nvalue=-1\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "value in [-1, 1, 2, 3]\n"
+    },
+    {
+      "always": true,
+      "pyExpr": "toss2 == -1 or value in [1, 2, 3]"
+    }
+  ],
   "actions": [
     {
       "name": "Toss",

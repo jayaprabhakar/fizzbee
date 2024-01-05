@@ -2,7 +2,10 @@ states:
   code: |
     elements = set([1, 2, 3, 4, 5])
     count=5
-
+invariants:
+  - always: True
+    pyExpr: |
+      count == len(elements)
 actions:
   - name: Remove
     block:
