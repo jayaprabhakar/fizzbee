@@ -154,8 +154,7 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 	}
 	for k, v := range from {
 		if v.Type() == "set" {
-			// Clone a set.
-			//to[k] = v.(*starlark.Set).Clone()
+			// This might need to happen recursively.
 			iter := v.(starlark.Iterable).Iterate()
 			defer iter.Done()
 			var x starlark.Value
