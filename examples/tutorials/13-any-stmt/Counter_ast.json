@@ -2,6 +2,12 @@
   "states": {
     "code": "elements = set([1, 2, 3, 4, 5])\ncount = 5\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "count == len(elements)\n"
+    }
+  ],
   "actions": [
     {
       "name": "Remove",
