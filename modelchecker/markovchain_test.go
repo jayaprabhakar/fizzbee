@@ -19,9 +19,17 @@ func TestSteadyStateDistribution(t *testing.T) {
 	}{
 
 		{
-			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
-			maxActions:    10,
-			expectedNodes: 9,
+			filename:   "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			maxActions: 10,
+		},
+		{
+			filename:   "examples/tutorials/10.1-coins-to-dice-atomic-6sided/Die_ast.json",
+			maxActions: 10,
+		},
+
+		{
+			filename:   "examples/tutorials/21-unfair-coin/FairCoin_ast.json",
+			maxActions: 10,
 		},
 	}
 	for _, test := range tests {
@@ -31,7 +39,9 @@ func TestSteadyStateDistribution(t *testing.T) {
 			require.Nil(t, err)
 			files := []*ast.File{file}
 			p1 := NewProcessor(files, &Options{
-				MaxActions: test.maxActions,
+				IgnoreInvariantFailures:    true,
+				ContinueOnInvariantFailure: true,
+				MaxActions:                 test.maxActions,
 			})
 			root := p1.Start()
 			RemoveMergeNodes(root)
@@ -41,7 +51,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 
 			steadyStateDist := steadyStateDistribution(root)
 			fmt.Println(steadyStateDist)
-
+			allNodes := getAllNodes(root)
+			for j, prob := range steadyStateDist {
+				if prob > 1e-6 {
+					fmt.Printf("%2d: prob: %1.6f, state: %s\n", j, prob, allNodes[j].Heap.String())
+				}
+			}
 		})
 	}
 }

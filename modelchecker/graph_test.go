@@ -12,9 +12,9 @@ func TestRemoveMergeNodes(t *testing.T) {
 		// Example usage
 		// Construct your graph as needed
 		nodeC := &Node{Process: &Process{Name: "C"}}
-		nodeB := &Node{outbound: []*Node{nodeC}}
-		nodeA := &Node{Process: &Process{Name: "A"}, outbound: []*Node{nodeB}}
-		nodeN1 := &Node{Process: &Process{Name: "init"}, outbound: []*Node{nodeA}}
+		nodeB := &Node{outbound: []*Link{&Link{Node: nodeC}}}
+		nodeA := &Node{Process: &Process{Name: "A"}, outbound: []*Link{&Link{Node: nodeB}}}
+		nodeN1 := &Node{Process: &Process{Name: "init"}, outbound: []*Link{&Link{Node: nodeA}}}
 
 		// Print the original graph
 		fmt.Println("Original Graph:")
@@ -27,20 +27,20 @@ func TestRemoveMergeNodes(t *testing.T) {
 		fmt.Println("\nModified Graph:")
 		printGraph(nodeN1)
 		assert.Equal(t, "init", nodeN1.Process.Name)
-		assert.Equal(t, "C", nodeN1.outbound[0].Process.Name)
-		assert.Len(t, nodeN1.outbound[0].outbound, 0)
+		assert.Equal(t, "C", nodeN1.outbound[0].Node.Process.Name)
+		assert.Len(t, nodeN1.outbound[0].Node.outbound, 0)
 	})
 	t.Run("TestRemoveMergeNodes", func(t *testing.T) {
 		// Example usage
 		// Construct your graph as needed
 		nodeF := &Node{Process: &Process{Name: "F"}}
-		nodeE := &Node{outbound: []*Node{nodeF}}
-		nodeD := &Node{Process: &Process{Name: "D"}, outbound: []*Node{nodeE}}
+		nodeE := &Node{outbound: []*Link{&Link{Node: nodeF}}}
+		nodeD := &Node{Process: &Process{Name: "D"}, outbound: []*Link{&Link{Node: nodeE}}}
 
-		nodeC := &Node{Process: &Process{Name: "C"}, outbound: []*Node{nodeD}}
-		nodeB := &Node{outbound: []*Node{nodeC}}
-		nodeA := &Node{Process: &Process{Name: "A"}, outbound: []*Node{nodeB}}
-		nodeN1 := &Node{Process: &Process{Name: "init"}, outbound: []*Node{nodeA}}
+		nodeC := &Node{Process: &Process{Name: "C"}, outbound: []*Link{&Link{Node: nodeD}}}
+		nodeB := &Node{outbound: []*Link{&Link{Node: nodeC}}}
+		nodeA := &Node{Process: &Process{Name: "A"}, outbound: []*Link{&Link{Node: nodeB}}}
+		nodeN1 := &Node{Process: &Process{Name: "init"}, outbound: []*Link{&Link{Node: nodeA}}}
 
 		// Print the original graph
 		fmt.Println("Original Graph:")
@@ -53,9 +53,9 @@ func TestRemoveMergeNodes(t *testing.T) {
 		fmt.Println("\nModified Graph:")
 		printGraph(nodeN1)
 		assert.Equal(t, "init", nodeN1.Process.Name)
-		assert.Equal(t, "C", nodeN1.outbound[0].Process.Name)
-		assert.Equal(t, "F", nodeN1.outbound[0].outbound[0].Process.Name)
-		assert.Len(t, nodeN1.outbound[0].outbound[0].outbound, 0)
+		assert.Equal(t, "C", nodeN1.outbound[0].Node.Process.Name)
+		assert.Equal(t, "F", nodeN1.outbound[0].Node.outbound[0].Node.Process.Name)
+		assert.Len(t, nodeN1.outbound[0].Node.outbound[0].Node.outbound, 0)
 	})
 
 }

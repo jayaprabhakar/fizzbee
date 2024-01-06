@@ -209,8 +209,8 @@ func (p *Process) updateScopedVariable(scope *Scope, key string, val starlark.Va
 type Node struct {
 	*Process
 
-	inbound  []*Node
-	outbound []*Node
+	inbound  []*Link
+	outbound []*Link
 
 	// The number of actions started until this node
 	// Note: This is the shorted path to this node from the root as we do BFS.
@@ -224,11 +224,16 @@ type Node struct {
 	stacktrace string
 }
 
+type Link struct {
+	Node *Node
+	Name string
+}
+
 func NewNode(process *Process) *Node {
 	return &Node{
 		Process:     process,
-		inbound:     make([]*Node, 0),
-		outbound:    make([]*Node, 0),
+		inbound:     make([]*Link, 0),
+		outbound:    make([]*Link, 0),
 		actionDepth: 0,
 		forkDepth:   0,
 		stacktrace:  captureStackTrace(),
@@ -237,43 +242,43 @@ func NewNode(process *Process) *Node {
 
 func (n *Node) Merge(other *Node) *Node {
 	mergeNode := &Node{
-		inbound:     []*Node{n},
-		outbound:    []*Node{other},
+		inbound:     []*Link{&Link{Node: n}},
+		outbound:    []*Link{&Link{Node: other}},
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth,
 	}
-	n.outbound = append(n.outbound, mergeNode)
-	other.inbound = append(other.inbound, mergeNode)
+	n.outbound = append(n.outbound, &Link{Node: mergeNode})
+	other.inbound = append(other.inbound, &Link{Node: mergeNode})
 	return mergeNode
 }
 
 func (n *Node) ForkForAction(action *ast.Action) *Node {
 	forkNode := &Node{
 		Process:     n.Process.Fork(),
-		inbound:     []*Node{n},
-		outbound:    []*Node{},
+		inbound:     []*Link{&Link{Node: n, Name: action.Name}},
+		outbound:    []*Link{},
 		actionDepth: n.actionDepth + 1,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
 	forkNode.Process.Name = action.Name
 
-	n.outbound = append(n.outbound, forkNode)
+	n.outbound = append(n.outbound, &Link{Node: forkNode, Name: action.Name})
 	return forkNode
 }
 
-func (n *Node) ForkForAlternatePaths(process *Process) *Node {
+func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 
 	forkNode := &Node{
 		Process:     process,
-		inbound:     []*Node{n},
-		outbound:    []*Node{},
+		inbound:     []*Link{&Link{Node: n, Name: name}},
+		outbound:    []*Link{},
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
 
-	n.outbound = append(n.outbound, forkNode)
+	n.outbound = append(n.outbound, &Link{Node: forkNode, Name: name})
 	return forkNode
 }
 
@@ -381,7 +386,7 @@ func (p *Processor) processNode(node *Node) bool {
 	}
 	if !yield {
 		for _, fork := range forks {
-			newNode := node.ForkForAlternatePaths(fork)
+			newNode := node.ForkForAlternatePaths(fork, "")
 			_ = p.queue.Push(newNode)
 		}
 		return false
@@ -403,6 +408,7 @@ func (p *Processor) processNode(node *Node) bool {
 }
 
 func (p *Processor) YieldNode(node *Node) {
+	node.Name = "yield"
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
 		node.Merge(other)
@@ -412,7 +418,8 @@ func (p *Processor) YieldNode(node *Node) {
 		if thread.currentPc() == "" {
 			continue
 		}
-		newNode := node.ForkForAlternatePaths(thread.Process.Fork())
+		name := fmt.Sprintf("thread-%d", i)
+		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
 		newNode.current = i
 
 		_ = p.queue.Push(newNode)
@@ -443,7 +450,8 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		if thread.currentPc() == "" {
 			continue
 		}
-		newNode := node.ForkForAlternatePaths(thread.Process.Fork())
+		name := fmt.Sprintf("thread-%d", i)
+		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
 		newNode.current = i
 
 		_ = p.queue.Push(newNode)
