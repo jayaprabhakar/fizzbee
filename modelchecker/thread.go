@@ -23,7 +23,7 @@ func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 		if v.Type() == "set" {
 			// Convert set to a list.
 			iter := v.(starlark.Iterable).Iterate()
-			defer iter.Done()
+
 			var x starlark.Value
 			var list []string
 			for iter.Next(&x) {
@@ -31,6 +31,7 @@ func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 			}
 			sort.Strings(list)
 			m[k] = fmt.Sprintf("%v", list)
+			iter.Done()
 			continue
 		}
 		m[k] = v.String()
@@ -58,9 +59,9 @@ func (h *Heap) String() string {
 
 // HashCode returns a string hash of the global state.
 func (h *Heap) HashCode() string {
-	hash := sha256.New()
-	hash.Write([]byte(h.ToJson()))
-	return fmt.Sprintf("%x", hash.Sum(nil))
+	hashBuf := sha256.New()
+	hashBuf.Write([]byte(h.ToJson()))
+	return fmt.Sprintf("%x", hashBuf.Sum(nil))
 }
 
 func (h *Heap) update(k string, v starlark.Value) bool {
@@ -156,7 +157,6 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 		if v.Type() == "set" {
 			// This might need to happen recursively.
 			iter := v.(starlark.Iterable).Iterate()
-			defer iter.Done()
 			var x starlark.Value
 			newSet := starlark.NewSet(10)
 			for iter.Next(&x) {
@@ -164,6 +164,7 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 				PanicOnError(err)
 			}
 			to[k] = newSet
+			iter.Done()
 			continue
 		}
 		to[k] = v
@@ -280,12 +281,9 @@ func (t *Thread) Clone() *Thread {
 }
 
 func (t *Thread) Execute() ([]*Process, bool) {
-	//fmt.Println(t.Process.Heap.globals)
 	var forks []*Process
 	yield := false
 	for t.Stack.Len() > 0 {
-		//fmt.Println(t.Process.Heap.globals)
-		//fmt.Println(t.currentPc())
 		for t.currentFrame().pc == "" || strings.HasSuffix(t.currentFrame().pc, ".Block.$") {
 			yield = t.executeEndOfBlock()
 			if yield {
@@ -332,20 +330,18 @@ func (t *Thread) executeBlock() []*Process {
 		return nil
 	case ast.Flow_FLOW_ONEOF:
 		forks := make([]*Process, len(b.Stmts))
-		for i, _ := range b.Stmts {
+		for i := range b.Stmts {
 			forks[i] = t.Process.Fork()
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 		}
-		//t.currentFrame().pc = ""
 		return forks
 	case ast.Flow_FLOW_PARALLEL:
 		forks := make([]*Process, len(b.Stmts))
-		for i, _ := range b.Stmts {
+		for i := range b.Stmts {
 			forks[i] = t.Process.Fork()
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 			forks[i].currentThread().currentFrame().scope.skipstmts = append(forks[i].currentThread().currentFrame().scope.skipstmts, i)
 		}
-		//t.currentFrame().pc = ""
 		return forks
 	default:
 		panic("Unknown flow type")
@@ -465,9 +461,18 @@ func (t *Thread) executeForStatement() ([]*Process, bool) {
 	}
 	forks := make([]*Process, 0)
 	for i, x := range scope.loopRange {
+		// TODO(jp): This is a hack. We should not be forking for each iteration,
+		// instead, create a new thread for each iteration.
+		// That is because, even though, for the correctness analysis, the current formulation is fine,
+		// if we eventually want to reason about performance, this formulation is not sufficient.
+		// That is, in the current formulation, a loop on n elements means, there are n! permutations in which,
+		// they can be executed sequentially. That is, if each iteration takes 1 second, then it would imply, the total
+		// time will take n seconds. But we need a way to capture they are actually happening in parallel, so they
+		// should take only 1 second. Technically max time taken for each iteration.
+		// This is a subtle difference, but it will be important in the future for performance analysis. After all,
+		// if anyone uses parallel flow, it is to speed up.
 		fork := t.Process.Fork()
 		fork.currentThread().currentFrame().scope.vars[scope.loopVars[0]] = x
-		//newSlice := slices.Clone(scope.loopRange)
 		newSlice := removeElement(scope.loopRange, i)
 		fork.currentThread().currentFrame().scope.loopRange = newSlice
 
@@ -516,7 +521,7 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 			return nil, true
 		}
 		forks := make([]*Process, 0, len(b.Stmts)-len(skipstmts))
-		for i, _ := range b.Stmts {
+		for i := range b.Stmts {
 			if ContainsInt(skipstmts, i) {
 				continue
 			}
