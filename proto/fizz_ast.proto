@@ -51,7 +51,7 @@ message Statement {
 
   ForStmt for_stmt = 5;
   AnyStmt any_stmt = 6;
-//  ChooseStmt choose_stmt = 7;
+  WhileStmt while_stmt = 7;
 
 }
 
@@ -84,6 +84,14 @@ message AnyStmt {
   repeated string loop_vars = 3;
   string py_expr = 4;
   Block block = 5;
+}
+
+message WhileStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+
+  string py_expr = 3;
+  Block block = 4;
 }
 
 message PyStmt {

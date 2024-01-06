@@ -147,6 +147,10 @@ func RemoveLastForStmt(path string) string {
 	return RemoveLastSegment(path, ".ForStmt")
 }
 
+func RemoveLastWhileStmt(path string) string {
+	return RemoveLastSegment(path, ".WhileStmt")
+}
+
 func RemoveLastSegment(path string, substr string) string {
 	lastIndex := strings.LastIndex(path, substr)
 	if lastIndex == -1 {

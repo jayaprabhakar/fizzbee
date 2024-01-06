@@ -1,0 +1,24 @@
+
+state:
+  value = -1
+
+invariants:
+  always value in [-1, 1, 2, 3]
+  always (toss2 == -1 or value in [1, 2, 3])
+
+atomic action Toss:
+    atomic while toss1 == toss2:
+        atomic:
+            oneof:
+                toss1 = 0
+                toss1 = 1
+            oneof:
+                toss2 = 0
+                toss2 = 1
+
+            if toss1 == toss2:
+                toss1 = -1
+                toss2 = -1
+            else:
+                value = toss2
+

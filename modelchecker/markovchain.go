@@ -150,6 +150,9 @@ func createTransitionMatrix(nodes []*Node) [][]float64 {
 	}
 
 	for _, node := range nodes {
+		if len(node.outbound) == 0 {
+			matrix[indexMap[node]][indexMap[node]] = 1.0
+		}
 		for _, outboundNode := range node.outbound {
 			matrix[indexMap[node]][indexMap[outboundNode.Node]] += 1.0 / float64(len(node.outbound))
 		}
