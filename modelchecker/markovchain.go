@@ -105,7 +105,7 @@ func steadyStateDistribution(root *Node) []float64 {
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
 		fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
-		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-6 {
+		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
 		}
 
@@ -151,7 +151,7 @@ func createTransitionMatrix(nodes []*Node) [][]float64 {
 
 	for _, node := range nodes {
 		for _, outboundNode := range node.outbound {
-			matrix[indexMap[node]][indexMap[outboundNode]] += 1.0 / float64(len(node.outbound))
+			matrix[indexMap[node]][indexMap[outboundNode.Node]] += 1.0 / float64(len(node.outbound))
 		}
 	}
 
@@ -195,6 +195,6 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node) {
 	*result = append(*result, node)
 
 	for _, outboundNode := range node.outbound {
-		traverseDFS(outboundNode, visited, result)
+		traverseDFS(outboundNode.Node, visited, result)
 	}
 }

@@ -23,13 +23,13 @@ func removeMergeNodes(currentNode *Node, parentNode *Node, visited map[*Node]boo
 	removed := false
 	visited[currentNode] = true
 	for _, child := range currentNode.outbound {
-		if child.Process == nil && len(child.outbound) == 1 {
+		if child.Node.Process == nil && len(child.Node.outbound) == 1 {
 			for j, p := range parentNode.outbound {
-				if p == currentNode {
-					parentNode.outbound[j] = child.outbound[0]
+				if p.Node == currentNode {
+					parentNode.outbound[j].Node = child.Node.outbound[0].Node
 				}
 			}
-			child.outbound[0].inbound = append(child.outbound[0].inbound, parentNode)
+			child.Node.outbound[0].Node.inbound = append(child.Node.outbound[0].Node.inbound, &Link{Node: parentNode})
 			//if parentNode == nil || len(parentNode.outbound) != 1 {
 			//	fmt.Printf("parentNode: %p, %s\n", parentNode, parentNode.String())
 			//	fmt.Printf("currentNode: %p, %s\n", currentNode, currentNode.String())
@@ -39,12 +39,12 @@ func removeMergeNodes(currentNode *Node, parentNode *Node, visited map[*Node]boo
 
 			//child = child.outbound[0]
 			removed = true
-			removeMergeNodes(child.outbound[0], parentNode, visited)
+			removeMergeNodes(child.Node.outbound[0].Node, parentNode, visited)
 			continue
-		} else if child.Process == nil {
+		} else if child.Node.Process == nil {
 			panic(fmt.Sprintf("Expecting only one outbound node for the parent node %p, %s", parentNode, parentNode.String()))
 		} else {
-			removed = removed || removeMergeNodes(child, currentNode, visited)
+			removed = removed || removeMergeNodes(child.Node, currentNode, visited)
 		}
 		//removeMergeNodes(child, currentNode, visited)
 	}
@@ -76,9 +76,9 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 			//for child.Process == nil && len(child.outbound) == 1 {
 			//	child = child.outbound[0]
 			//}
-			childID := fmt.Sprintf("\"%p\"", child)
-			dotGraph += fmt.Sprintf("  %s -> %s;\n", nodeID, childID)
-			dfs(child)
+			childID := fmt.Sprintf("\"%p\"", child.Node)
+			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", nodeID, childID, child.Name)
+			dfs(child.Node)
 		}
 	}
 
@@ -101,6 +101,6 @@ func printGraph(node *Node) {
 	fmt.Printf("Node: %p, Process: %p (%s)\n", node, node.Process, name)
 	for _, outbound := range node.outbound {
 		fmt.Printf("  -> ")
-		printGraph(outbound)
+		printGraph(outbound.Node)
 	}
 }
