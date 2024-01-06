@@ -302,6 +302,8 @@ func (t *Thread) Execute() ([]*Process, bool) {
 			forks, yield = t.executeStatement()
 		case *ast.ForStmt:
 			forks, yield = t.executeForStatement()
+		case *ast.WhileStmt:
+			forks, yield = t.executeWhileStatement()
 		default:
 			panic(fmt.Sprintf("Unknown protobuf type: %v", protobuf))
 		}
@@ -436,7 +438,11 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		t.currentFrame().pc = t.currentFrame().pc + ".ForStmt"
 		return nil, false
-
+	} else if stmt.WhileStmt != nil {
+		scope := t.InsertNewScope()
+		scope.flow = stmt.WhileStmt.Flow
+		t.currentFrame().pc = fmt.Sprintf("%s.WhileStmt", t.currentPc())
+		return nil, false
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v", stmt))
 	}
@@ -479,6 +485,26 @@ func (t *Thread) executeForStatement() ([]*Process, bool) {
 		forks = append(forks, fork)
 	}
 	return forks, false
+}
+
+func (t *Thread) executeWhileStatement() ([]*Process, bool) {
+	protobuf := GetProtoFieldByPath(t.currentFileAst(), t.currentPc())
+	stmt := convertToWhileStmt(protobuf)
+
+	if stmt.Flow == ast.Flow_FLOW_PARALLEL || stmt.Flow == ast.Flow_FLOW_ONEOF {
+		panic("Only atomic/serial flow is supported for while statements")
+	}
+	vars := t.Process.GetAllVariables()
+	cond, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.PyExpr, vars)
+	PanicOnError(err)
+	t.Process.updateAllVariablesInScope(vars)
+	if cond.Truth() {
+		t.currentFrame().pc = fmt.Sprintf("%s.Block", t.currentPc())
+		return nil, false
+	}
+	t.currentFrame().scope = t.currentFrame().scope.parent
+	t.currentFrame().pc = RemoveLastWhileStmt(t.currentPc())
+	return t.executeEndOfStatement()
 }
 
 func removeElement[T any](slice []T, index int) []T {
@@ -600,6 +626,8 @@ func (t *Thread) FindNextProgramCounter() string {
 	case *ast.ForStmt:
 		// ForStmt is in the same instruction counter, only the iteration variable changes.
 		return frame.pc
+	case *ast.WhileStmt:
+		return frame.pc
 	case *ast.Branch:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
 		return path
@@ -613,4 +641,8 @@ func convertToBlock(message proto.Message) *ast.Block {
 
 func convertToStatement(message proto.Message) *ast.Statement {
 	return message.(*ast.Statement)
+}
+
+func convertToWhileStmt(message proto.Message) *ast.WhileStmt {
+	return message.(*ast.WhileStmt)
 }

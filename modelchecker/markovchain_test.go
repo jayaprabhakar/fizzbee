@@ -26,10 +26,13 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:   "examples/tutorials/10.1-coins-to-dice-atomic-6sided/Die_ast.json",
 			maxActions: 10,
 		},
-
 		{
 			filename:   "examples/tutorials/21-unfair-coin/FairCoin_ast.json",
 			maxActions: 10,
+		},
+		{
+			filename:   "examples/tutorials/24-while-stmt-atomic/FairCoin_ast.json",
+			maxActions: 1,
 		},
 	}
 	for _, test := range tests {

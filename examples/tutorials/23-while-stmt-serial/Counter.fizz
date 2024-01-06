@@ -1,0 +1,8 @@
+
+state:
+  count = 0
+
+action Toss:
+  serial while count < 5:
+    atomic:
+      count = count + 1
