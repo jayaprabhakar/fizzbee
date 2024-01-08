@@ -34,6 +34,14 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:   "examples/tutorials/24-while-stmt-atomic/FairCoin_ast.json",
 			maxActions: 1,
 		},
+		{
+			filename:   "examples/tutorials/26-unfair-coin-toss-while/FairCoin_ast.json",
+			maxActions: 1,
+		},
+		{
+			filename:   "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin_ast.json",
+			maxActions: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {

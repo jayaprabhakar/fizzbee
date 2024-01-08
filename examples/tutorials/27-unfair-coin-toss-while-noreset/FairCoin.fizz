@@ -1,7 +1,5 @@
 
 state:
-  toss1 = -1
-  toss2 = -1
   value = -1
 
 invariants:
@@ -9,19 +7,18 @@ invariants:
   always (toss2 == -1 or value in [0, 1])
 
 atomic action Toss:
-    if value < 0:
-        if toss1 == -1:
+    toss1 = -1
+    toss2 = -1
+    atomic while toss1 == toss2:
+        atomic:
             oneof:
                 toss1 = 0
                 toss1 = 1
-        else:
             oneof:
                 toss2 = 0
                 toss2 = 1
 
-            if toss1 == toss2:
-                toss1 = -1
-                toss2 = -1
-            else:
+            if toss1 != toss2:
                 value = toss2
+                return
 

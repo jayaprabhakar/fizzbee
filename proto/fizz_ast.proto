@@ -11,7 +11,6 @@ message File {
   repeated Invariant invariants = 6;
   repeated Action actions = 7;
   repeated Function functions = 8;
-
 }
 
 enum FairnessLevel {
@@ -53,6 +52,9 @@ message Statement {
   AnyStmt any_stmt = 6;
   WhileStmt while_stmt = 7;
 
+  BreakStmt break_stmt = 8;
+  ContinueStmt continue_stmt = 9;
+  ReturnStmt return_stmt = 10;
 }
 
 message IfStmt {
@@ -92,6 +94,19 @@ message WhileStmt {
 
   string py_expr = 3;
   Block block = 4;
+}
+
+message BreakStmt {
+  SourceInfo source_info = 1;
+}
+
+message ContinueStmt {
+  SourceInfo source_info = 1;
+}
+
+message ReturnStmt {
+  SourceInfo source_info = 1;
+  string py_expr = 2;
 }
 
 message PyStmt {
