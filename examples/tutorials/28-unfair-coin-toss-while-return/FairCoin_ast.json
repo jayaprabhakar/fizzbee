@@ -1,10 +1,7 @@
 {
-  "states": {
-    "code": "value = -1\n"
-  },
   "actions": [
     {
-      "name": "Toss",
+      "name": "FairToss",
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
@@ -74,18 +71,31 @@
                       "flow": "FLOW_ATOMIC",
                       "branches": [
                         {
-                          "condition": "toss1 != toss2",
+                          "condition": "toss1 == toss2",
                           "block": {
                             "flow": "FLOW_ATOMIC",
                             "stmts": [
                               {
                                 "pyStmt": {
-                                  "code": "value = toss2"
+                                  "code": "toss1 = -1"
                                 }
                               },
                               {
+                                "pyStmt": {
+                                  "code": "toss2 = -1"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "condition": "True",
+                          "block": {
+                            "flow": "FLOW_ATOMIC",
+                            "stmts": [
+                              {
                                 "returnStmt": {
-                                  "pyExpr": "None"
+                                  "pyExpr": "toss2"
                                 }
                               }
                             ]

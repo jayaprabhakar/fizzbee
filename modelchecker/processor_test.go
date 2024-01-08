@@ -394,13 +394,18 @@ func TestProcessor_Tutorials(t *testing.T) {
 		},
 		{
 			filename:      "examples/tutorials/26-unfair-coin-toss-while/FairCoin_ast.json",
-			maxActions:    2,
+			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
 			filename:      "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin_ast.json",
-			maxActions:    5,
+			maxActions:    1,
 			expectedNodes: 12,
+		},
+		{
+			filename:      "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin_ast.json",
+			maxActions:    1,
+			expectedNodes: 6,
 		},
 	}
 	//tempDir := CreateTempDirectory(t)

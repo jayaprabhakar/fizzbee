@@ -42,4 +42,4 @@ actions:
                               - pyStmt:
                                   code: value = toss2
                               - returnStmt:
-                                  pyExpr: ""
+                                  pyExpr: "None"

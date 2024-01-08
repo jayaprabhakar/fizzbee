@@ -38,6 +38,7 @@ type Process struct {
 	Evaluator        *Evaluator
 	Children         []*Process
 	FailedInvariants map[int][]int
+	Returns          starlark.StringDict
 }
 
 func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
@@ -56,6 +57,7 @@ func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
 		Parent:    parent,
 		Evaluator: mc,
 		Children:  []*Process{},
+		Returns:   make(starlark.StringDict),
 	}
 	p.Children = append(p.Children, p)
 	thread := NewThread(p, Files, 0, "")
@@ -84,6 +86,7 @@ func (p *Process) Fork() *Process {
 		Evaluator: p.Evaluator,
 		Children:  []*Process{},
 		Files:     p.Files,
+		Returns:   make(starlark.StringDict),
 	}
 	p.Children = append(p.Children, p2)
 	clonedThreads := make([]*Thread, len(p.Threads))
@@ -111,12 +114,20 @@ func (n *Node) String() string {
 	buf.WriteString(fmt.Sprintf("Process: %s\n", p.Name))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 
-	// Your original JSON string
-	jsonString := p.Heap.String()
-
-	// Escape double quotes
-	escapedString := strings.ReplaceAll(jsonString, "\"", "\\\"")
-	buf.WriteString(escapedString)
+	if len(p.Heap.globals) > 0 {
+		jsonString := p.Heap.String()
+		// Escape double quotes
+		escapedString := strings.ReplaceAll(jsonString, "\"", "\\\"")
+		buf.WriteString("State: ")
+		buf.WriteString(escapedString)
+	}
+	if len(p.Returns) > 0 {
+		jsonString := StringDictToJsonString(p.Returns)
+		// Escape double quotes
+		escapedString := strings.ReplaceAll(jsonString, "\"", "\\\"")
+		buf.WriteString("Returns: ")
+		buf.WriteString(escapedString)
+	}
 
 	return buf.String()
 }
@@ -150,6 +161,8 @@ func (p *Process) HashCode() string {
 	for _, hash := range threadHashes {
 		h.Write([]byte(hash))
 	}
+
+	h.Write([]byte(StringDictToJsonString(p.Returns)))
 
 	// hash the heap variables as well
 	heapHash := p.Heap.HashCode()
