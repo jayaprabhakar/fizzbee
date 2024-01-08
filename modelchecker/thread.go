@@ -424,7 +424,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		vars := t.Process.GetAllVariables()
 		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ForStmt.PyExpr, vars)
 		PanicOnError(err)
-		rangeVal, _ := val.(starlark.Iterable)
+		rangeVal, ok := val.(starlark.Iterable)
+		PanicIfFalse(ok, fmt.Sprintf("Loop variable must be iterable, got %s", val.Type()))
 		iter := rangeVal.Iterate()
 		defer iter.Done()
 
@@ -443,8 +444,30 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		scope.flow = stmt.WhileStmt.Flow
 		t.currentFrame().pc = fmt.Sprintf("%s.WhileStmt", t.currentPc())
 		return nil, false
+	} else if stmt.BreakStmt != nil {
+		for !(strings.HasSuffix(t.currentPc(), ".ForStmt") || strings.HasSuffix(t.currentPc(), ".WhileStmt")) {
+			t.currentFrame().pc = RemoveLastBlock(t.currentPc())
+			t.currentFrame().scope = t.currentFrame().scope.parent
+		}
+		t.currentFrame().scope = t.currentFrame().scope.parent
+		t.currentFrame().pc = RemoveLastLoop(t.currentPc())
+		return t.executeEndOfStatement()
+
+	} else if stmt.ContinueStmt != nil {
+		for {
+			t.currentFrame().pc = RemoveLastBlock(t.currentPc())
+			if strings.HasSuffix(t.currentPc(), ".ForStmt") || strings.HasSuffix(t.currentPc(), ".WhileStmt") {
+				break
+			}
+			t.currentFrame().scope = t.currentFrame().scope.parent
+		}
+		t.currentFrame().pc = t.currentPc() + ".Block.$"
+		return nil, false
+	} else if stmt.ReturnStmt != nil {
+		t.popFrame()
+		return nil, false
 	} else {
-		panic(fmt.Sprintf("Unknown statement type: %v", stmt))
+		panic(fmt.Sprintf("Unknown statement type: %v at path %s", stmt, t.currentPc()))
 	}
 	return t.executeEndOfStatement()
 }

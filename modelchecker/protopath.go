@@ -151,6 +151,25 @@ func RemoveLastWhileStmt(path string) string {
 	return RemoveLastSegment(path, ".WhileStmt")
 }
 
+func RemoveLastLoop(path string) string {
+	if strings.LastIndex(path, ".ForStmt") > strings.LastIndex(path, ".WhileStmt") {
+		return RemoveLastSegment(path, ".ForStmt")
+	} else {
+		return RemoveLastSegment(path, ".WhileStmt")
+	}
+}
+
+func RemoveLastLoopBlock(path string) string {
+	if strings.LastIndex(path, ".ForStmt") > strings.LastIndex(path, ".WhileStmt") {
+		newPath := RemoveLastSegment(path, ".ForStmt")
+		return fmt.Sprintf("%s.ForStmt.Block.$", newPath)
+	} else {
+		newPath := RemoveLastSegment(path, ".WhileStmt")
+		return fmt.Sprintf("%s.WhileStmt.Block.$", newPath)
+	}
+
+}
+
 func RemoveLastSegment(path string, substr string) string {
 	lastIndex := strings.LastIndex(path, substr)
 	if lastIndex == -1 {

@@ -7,6 +7,8 @@ invariants:
   always (toss2 == -1 or value in [1, 2, 3])
 
 atomic action Toss:
+    toss1 = -1
+    toss2 = -1
     atomic while toss1 == toss2:
         atomic:
             oneof:

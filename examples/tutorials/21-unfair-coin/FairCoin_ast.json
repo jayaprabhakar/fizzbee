@@ -5,11 +5,11 @@
   "invariants": [
     {
       "always": true,
-      "pyExpr": "value in [-1, 1, 2, 3]\n"
+      "pyExpr": "value in [-1, 0, 1]\n"
     },
     {
       "always": true,
-      "pyExpr": "toss2 == -1 or value in [1, 2, 3]\n"
+      "pyExpr": "toss2 == -1 or value in [0, 1]\n"
     }
   ],
   "actions": [
