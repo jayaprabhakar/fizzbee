@@ -407,6 +407,26 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    1,
 			expectedNodes: 6,
 		},
+		{
+			filename:      "examples/tutorials/29-simple-function/FlipCoin_ast.json",
+			maxActions:    1,
+			expectedNodes: 4,
+		},
+		{
+			filename:      "examples/tutorials/30-unfair-coin-toss-method/FairCoin_ast.json",
+			maxActions:    1,
+			expectedNodes: 6,
+		},
+		{
+			filename:      "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie_ast.json",
+			maxActions:    1,
+			expectedNodes: 14,
+		},
+		{
+			filename:      "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
+			maxActions:    1,
+			expectedNodes: 28,
+		},
 	}
 	//tempDir := CreateTempDirectory(t)
 	for _, test := range tests {

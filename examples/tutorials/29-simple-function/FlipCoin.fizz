@@ -1,0 +1,9 @@
+
+atomic func Toss():
+    oneof:
+        return 0
+        return 1
+
+atomic action FlipCoin:
+    toss1 = Toss()
+    return toss1

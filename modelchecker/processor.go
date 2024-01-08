@@ -28,6 +28,20 @@ import (
 	"strings"
 )
 
+// Color is a custom enum-like type
+type DefType string
+
+const (
+	Function DefType = "function"
+)
+
+type Definition struct {
+	DefType   DefType
+	name      string
+	fileIndex int
+	path      string
+}
+
 type Process struct {
 	Heap             *Heap
 	Threads          []*Thread
@@ -39,25 +53,40 @@ type Process struct {
 	Children         []*Process
 	FailedInvariants map[int][]int
 	Returns          starlark.StringDict
+	SymbolTable      map[string]*Definition
 }
 
 func NewProcess(name string, Files []*ast.File, parent *Process) *Process {
 	var mc *Evaluator
+	var symbolTable map[string]*Definition
 	if parent == nil {
 		mc = NewModelChecker("example")
+		symbolTable = make(map[string]*Definition)
+		for i, file := range Files {
+			for j, function := range file.Functions {
+				symbolTable[function.Name] = &Definition{
+					DefType:   Function,
+					name:      function.Name,
+					fileIndex: i,
+					path:      fmt.Sprintf("Functions[%d]", j),
+				}
+			}
+		}
 	} else {
 		mc = parent.Evaluator
+		symbolTable = parent.SymbolTable
 	}
 	p := &Process{
-		Name:      name,
-		Heap:      &Heap{starlark.StringDict{}},
-		Threads:   []*Thread{},
-		current:   0,
-		Files:     Files,
-		Parent:    parent,
-		Evaluator: mc,
-		Children:  []*Process{},
-		Returns:   make(starlark.StringDict),
+		Name:        name,
+		Heap:        &Heap{starlark.StringDict{}},
+		Threads:     []*Thread{},
+		current:     0,
+		Files:       Files,
+		Parent:      parent,
+		Evaluator:   mc,
+		Children:    []*Process{},
+		Returns:     make(starlark.StringDict),
+		SymbolTable: symbolTable,
 	}
 	p.Children = append(p.Children, p)
 	thread := NewThread(p, Files, 0, "")
@@ -79,14 +108,15 @@ func (p *Process) HasFailedInvariants() bool {
 
 func (p *Process) Fork() *Process {
 	p2 := &Process{
-		Name:      p.Name,
-		Heap:      p.Heap.Clone(),
-		current:   p.current,
-		Parent:    p,
-		Evaluator: p.Evaluator,
-		Children:  []*Process{},
-		Files:     p.Files,
-		Returns:   make(starlark.StringDict),
+		Name:        p.Name,
+		Heap:        p.Heap.Clone(),
+		current:     p.current,
+		Parent:      p,
+		Evaluator:   p.Evaluator,
+		Children:    []*Process{},
+		Files:       p.Files,
+		Returns:     make(starlark.StringDict),
+		SymbolTable: p.SymbolTable,
 	}
 	p.Children = append(p.Children, p2)
 	clonedThreads := make([]*Thread, len(p.Threads))
@@ -111,7 +141,7 @@ func (n *Node) String() string {
 		return "DUPLICATE"
 	}
 	buf := strings.Builder{}
-	buf.WriteString(fmt.Sprintf("Process: %s\n", p.Name))
+	buf.WriteString(fmt.Sprintf("%s\n", p.Name))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 
 	if len(p.Heap.globals) > 0 {
