@@ -1,9 +1,6 @@
-states:
-  code: |
-    value = -1  
 
 actions:
-  - name: Toss
+  - name: FairToss
     block:
       flow: FLOW_ATOMIC
       stmts:
@@ -47,7 +44,5 @@ actions:
                           block:
                             flow: FLOW_ATOMIC
                             stmts:
-                              - pyStmt:
-                                  code: value = toss2
                               - returnStmt:
-                                  pyExpr: "None"
+                                  pyExpr: "toss2"

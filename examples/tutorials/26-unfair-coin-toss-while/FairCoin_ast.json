@@ -36,11 +36,6 @@
                         },
                         {
                           "pyStmt": {
-                            "code": "toss1 = 0"
-                          }
-                        },
-                        {
-                          "pyStmt": {
                             "code": "toss1 = 1"
                           }
                         }
@@ -51,11 +46,6 @@
                     "block": {
                       "flow": "FLOW_ONEOF",
                       "stmts": [
-                        {
-                          "pyStmt": {
-                            "code": "toss2 = 0"
-                          }
-                        },
                         {
                           "pyStmt": {
                             "code": "toss2 = 0"
@@ -103,7 +93,7 @@
                               },
                               {
                                 "returnStmt": {
-                                  "pyExpr": ""
+                                  "pyExpr": "None"
                                 }
                               }
                             ]

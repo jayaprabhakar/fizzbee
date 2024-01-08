@@ -40,7 +40,11 @@ func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 }
 
 func (h *Heap) ToJson() string {
-	bytes, err := StringDictToJson(h.globals)
+	return StringDictToJsonString(h.globals)
+}
+
+func StringDictToJsonString(stringDict starlark.StringDict) string {
+	bytes, err := StringDictToJson(stringDict)
 	if err != nil {
 		panic(err)
 	}
@@ -464,7 +468,21 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		t.currentFrame().pc = t.currentPc() + ".Block.$"
 		return nil, false
 	} else if stmt.ReturnStmt != nil {
+		vars := t.Process.GetAllVariables()
+		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ReturnStmt.PyExpr, vars)
+		PanicOnError(err)
+		actionPath := strings.Split(t.currentFrame().pc, ".")[0]
+		action := GetProtoFieldByPath(t.currentFileAst(), actionPath)
 		t.popFrame()
+		if t.Stack.Len() == 0 {
+			t.Process.removeCurrentThread()
+			if val != starlark.None {
+				t.Process.Returns[convertToAction(action).Name] = val
+			}
+			return nil, true
+		} else {
+			panic("Return statement not supported in method calls")
+		}
 		return nil, false
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v at path %s", stmt, t.currentPc()))
@@ -656,6 +674,10 @@ func (t *Thread) FindNextProgramCounter() string {
 		return path
 	}
 	return ""
+}
+
+func convertToAction(message proto.Message) *ast.Action {
+	return message.(*ast.Action)
 }
 
 func convertToBlock(message proto.Message) *ast.Block {
