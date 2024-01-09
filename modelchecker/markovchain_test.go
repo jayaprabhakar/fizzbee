@@ -46,6 +46,22 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:   "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin_ast.json",
 			maxActions: 1,
 		},
+		{
+			filename:   "examples/tutorials/29-simple-function/FlipCoin_ast.json",
+			maxActions: 1,
+		},
+		{
+			filename:   "examples/tutorials/30-unfair-coin-toss-method/FairCoin_ast.json",
+			maxActions: 1,
+		},
+		{
+			filename:   "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie_ast.json",
+			maxActions: 1,
+		},
+		{
+			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
+			maxActions: 1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
@@ -69,7 +85,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 			allNodes := getAllNodes(root)
 			for j, prob := range steadyStateDist {
 				if prob > 1e-6 {
-					fmt.Printf("%2d: prob: %1.6f, state: %s\n", j, prob, allNodes[j].Heap.String())
+					fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
 				}
 			}
 		})

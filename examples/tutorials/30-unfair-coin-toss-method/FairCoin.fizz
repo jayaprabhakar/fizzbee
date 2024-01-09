@@ -1,0 +1,15 @@
+
+atomic func UnfairToss():
+    oneof:
+        return 0
+        return 0
+        return 1
+
+atomic action FairToss:
+    while True:
+        toss1 = UnfairToss()
+        toss2 = UnfairToss()
+
+        if toss1 != toss2:
+            return toss2
+

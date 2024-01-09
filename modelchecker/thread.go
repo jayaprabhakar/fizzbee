@@ -183,6 +183,11 @@ type CallFrame struct {
 	pc string
 	// scope is the lexical scope of the current frame
 	scope *Scope
+	// vars is the dictionary of arguments passed to the function.
+	// This should eventually replace local variables from the scope as python doesn't have block scope.
+	vars starlark.StringDict
+
+	callerAssignVarNames []string
 }
 
 func (c *CallFrame) HashCode() string {
@@ -473,7 +478,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		PanicOnError(err)
 		actionPath := strings.Split(t.currentFrame().pc, ".")[0]
 		action := GetProtoFieldByPath(t.currentFileAst(), actionPath)
-		t.popFrame()
+		oldFrame := t.popFrame()
 		if t.Stack.Len() == 0 {
 			t.Process.removeCurrentThread()
 			if val != starlark.None {
@@ -481,8 +486,29 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			}
 			return nil, true
 		} else {
-			panic("Return statement not supported in method calls")
+			if len(oldFrame.callerAssignVarNames) > 1 {
+				panic("Multiple return values not supported yet")
+			}
+			for _, name := range oldFrame.callerAssignVarNames {
+				t.currentFrame().scope.vars[name] = val
+			}
+			return t.executeEndOfStatement()
 		}
+		return nil, false
+	} else if stmt.CallStmt != nil {
+		if len(stmt.CallStmt.Args) != 0 {
+			panic("CallStmt with args not supported")
+		}
+		frame := t.currentFrame()
+		if frame.scope.flow != ast.Flow_FLOW_ATOMIC {
+			panic("Only atomic flow is supported for call statements for now")
+		}
+		def := t.Process.SymbolTable[stmt.CallStmt.Name]
+		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block"}
+		newFrame.callerAssignVarNames = stmt.CallStmt.Vars
+		// TODO: Handle args
+		t.pushFrame(newFrame)
+
 		return nil, false
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v at path %s", stmt, t.currentPc()))

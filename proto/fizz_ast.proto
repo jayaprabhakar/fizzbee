@@ -55,6 +55,8 @@ message Statement {
   BreakStmt break_stmt = 8;
   ContinueStmt continue_stmt = 9;
   ReturnStmt return_stmt = 10;
+
+  CallStmt call_stmt = 11;
 }
 
 message IfStmt {
@@ -109,6 +111,21 @@ message ReturnStmt {
   string py_expr = 2;
 }
 
+message CallStmt {
+  SourceInfo source_info = 1;
+  repeated string vars = 2;
+  string name = 3;
+  repeated Argument args = 4;
+}
+
+// The actual arguments to a function/method call.
+// For example, in `foo(4, 5)`, `4` and `5` are arguments.
+message Argument {
+  SourceInfo source_info = 1;
+  string name = 2;
+  string py_expr = 3;
+}
+
 message PyStmt {
   SourceInfo source_info = 1;
   string code = 2; 
@@ -124,7 +141,17 @@ message Action {
 
 message Function {
   SourceInfo source_info = 1;
-  
+  string name = 2;
+  Flow flow = 3;
+  repeated Parameter params = 4;
+  Block block = 5;
+}
+
+// Variables in the function/method declaration.
+// For example, in `def foo(x, y)`, `x` and `y` are parameters.
+message Parameter {
+  SourceInfo source_info = 1;
+  string name = 2;
 }
 
 message Invariant {
