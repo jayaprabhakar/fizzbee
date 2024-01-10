@@ -1,6 +1,6 @@
 
 state:
-  ELEMENTS = set([1, 2, 3, 4, 5])
+  ELEMENTS = set([1, 2, 3])
   elements = set([])
   count = 0
 

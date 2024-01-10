@@ -2,6 +2,12 @@
   "states": {
     "code": "ELEMENTS = set([1, 2, 3])\nelements = set([])\ncount=0\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "count == len(elements)\n"
+    }
+  ],
   "actions": [
     {
       "name": "Add",

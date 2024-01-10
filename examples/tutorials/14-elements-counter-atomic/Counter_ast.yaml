@@ -4,6 +4,11 @@ states:
     elements = set([])
     count=0
 
+invariants:
+  - always: True
+    pyExpr: |
+      count == len(elements)
+
 actions:
   - name: Add
     block:

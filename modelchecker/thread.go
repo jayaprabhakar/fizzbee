@@ -611,7 +611,7 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 		skipstmts := t.currentFrame().scope.skipstmts
 		if len(skipstmts) == len(b.Stmts) {
 			t.currentFrame().pc = EndOfBlock(t.currentPc())
-			return nil, true
+			return nil, false
 		}
 		forks := make([]*Process, 0, len(b.Stmts)-len(skipstmts))
 		for i := range b.Stmts {
