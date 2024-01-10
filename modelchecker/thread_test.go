@@ -316,7 +316,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 		assert.Equal(t, "Actions[3].Block.$", currentThread.currentPc())
 
 		assert.Len(t, forks, 0)
-		assert.True(t, yield)
+		assert.False(t, yield)
 
 	})
 

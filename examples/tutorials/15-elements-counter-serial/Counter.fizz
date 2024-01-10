@@ -1,8 +1,11 @@
 
 state:
-  ELEMENTS = set([1, 2, 3, 4, 5])
+  ELEMENTS = set([1, 2, 3])
   elements = set([])
   count = 0
+
+invariants:
+  always count == len(elements)
 
 action Add:
    any e in (ELEMENTS - elements):

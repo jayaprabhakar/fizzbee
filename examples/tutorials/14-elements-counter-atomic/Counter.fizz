@@ -4,6 +4,9 @@ state:
   elements = set([])
   count = 0
 
+invariants:
+  always count == len(elements)
+
 atomic action Add:
    any e in (ELEMENTS - elements):
      elements.add(e)

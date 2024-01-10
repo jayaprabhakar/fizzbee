@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // TestRemoveCurrentThread is a unit test for Process.removeCurrentThread.
@@ -97,7 +98,7 @@ func TestProcessor_Start(t *testing.T) {
 	})
 	root := p1.Start()
 	assert.NotNil(t, root)
-	assert.Equal(t, 109, len(p1.visited))
+	assert.Equal(t, 93, len(p1.visited))
 }
 
 func printFileNames(rootDir string) error {
@@ -115,9 +116,10 @@ func printFileNames(rootDir string) error {
 func TestProcessor_Tutorials(t *testing.T) {
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
-		filename      string
-		maxActions    int
-		expectedNodes int
+		filename             string
+		maxActions           int
+		expectedNodes        int
+		maxConcurrentActions int
 	}{
 		{
 			filename:      "examples/tutorials/00-no-op/Counter_ast.json",
@@ -217,28 +219,24 @@ func TestProcessor_Tutorials(t *testing.T) {
 			expectedNodes: 24,
 		},
 		{
-			filename:   "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
-			maxActions: 1,
-			// 11 nodes: 1 for the init and 1 for each action, then within each action, 4 possible combinations of stmts
-			// [s1], [s2], [s1, s2], [s2, s1]. So, 1 + 2 + 4 + 4 = 11
-			expectedNodes: 10,
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 8,
 		},
 		{
-			filename:   "examples/tutorials/09-inc-dec-parallel-counters/Counter_ast.json",
-			maxActions: 1,
-			// 11 nodes: 1 for the init and 1 for each action, then within each action, 4 possible combinations of stmts
-			// [s1], [s2], [s1, s2], [s2, s1]. So, 1 + 2 + 4 + 4 = 11
-			expectedNodes: 11,
+			filename:      "examples/tutorials/09-inc-dec-parallel-counters/Counter_ast.json",
+			maxActions:    1,
+			expectedNodes: 9,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 70,
+			expectedNodes: 39,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    3,
-			expectedNodes: 428, // .03s
+			expectedNodes: 141, // .03s
 			// 4 actions 2607 nodes, .17s
 			// 5 actions 15354 nodes, 2.2s
 			// 6 actions 85710 nodes, 67s
@@ -310,19 +308,19 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
 			maxActions:    1,
-			expectedNodes: 17,
+			expectedNodes: 14,
 		},
 		{
-			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
-			maxActions:    2,
-			expectedNodes: 212,
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:           20,
+			expectedNodes:        6760,
+			maxConcurrentActions: 3,
 		},
 		{
-			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
-			maxActions:    3,
-			expectedNodes: 2044, // 0.16s
-			// 4 actions, 17579 nodes, 2.8s
-			// 5 actions, 131991 nodes, 2.5m
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:           20,
+			maxConcurrentActions: 2,
+			expectedNodes:        1174, // 0.16s
 		},
 		{
 			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop_ast.json",
@@ -428,33 +426,42 @@ func TestProcessor_Tutorials(t *testing.T) {
 			expectedNodes: 28,
 		},
 	}
-	//tempDir := CreateTempDirectory(t)
+	tempDir := CreateTempDirectory(t)
+	_ = tempDir
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
 			filename := filepath.Join(runfilesDir, "_main", test.filename)
 			file, err := readAstFromFile(filename)
 			require.Nil(t, err)
 			files := []*ast.File{file}
+			maxThreads := test.maxConcurrentActions
+			if maxThreads == 0 {
+				maxThreads = test.maxActions
+			}
 			p1 := NewProcessor(files, &Options{
-				MaxActions: test.maxActions,
-
+				MaxActions:                 test.maxActions,
+				MaxConcurrentActions:       maxThreads,
 				IgnoreInvariantFailures:    true,
 				ContinueOnInvariantFailure: true,
 			})
+			startTime := time.Now()
 			root := p1.Start()
 			assert.NotNil(t, root)
-			assert.Len(t, p1.visited, test.expectedNodes)
-
-			dotString := generateDotFile(root, make(map[*Node]bool))
+			assert.Equal(t, test.expectedNodes, len(p1.visited))
+			fmt.Printf("Completed Nodes: %d, elapsed: %s\n", len(p1.visited), time.Since(startTime))
+			//dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("\n%s\n", dotString)
 
-			RemoveMergeNodes(root)
-			// Print the modified graph
-			fmt.Println("\nModified Graph:")
-			dotString = generateDotFile(root, make(map[*Node]bool))
+			//RemoveMergeNodes(root)
+			//// Print the modified graph
+			//fmt.Println("\nModified Graph:")
+			//fmt.Printf("Removing merge nodes, elapsed: %s\n", time.Since(startTime))
+			//dotString := generateDotFile(root, make(map[*Node]bool))
+			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
 			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
 			//WriteFile(t, tempDir, dotFileName, []byte(dotString))
-			fmt.Printf("\n%s\n", dotString)
+			//fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
+			//fmt.Printf("\n%s\n", dotString)
 		})
 	}
 }

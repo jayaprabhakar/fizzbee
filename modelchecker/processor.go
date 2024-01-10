@@ -14,32 +14,33 @@
 package modelchecker
 
 import (
-	"crypto/sha256"
-	"fizz/ast"
-	"fmt"
-	"github.com/zeroflucs-given/generics/collections"
-	_ "github.com/zeroflucs-given/generics/collections"
-	"github.com/zeroflucs-given/generics/collections/linkedlist"
-	_ "github.com/zeroflucs-given/generics/collections/linkedlist"
-	"go.starlark.net/starlark"
-	"os"
-	"runtime"
-	"sort"
-	"strings"
+    "crypto/sha256"
+    "fizz/ast"
+    "fmt"
+    "github.com/zeroflucs-given/generics/collections"
+    _ "github.com/zeroflucs-given/generics/collections"
+    "github.com/zeroflucs-given/generics/collections/linkedlist"
+    _ "github.com/zeroflucs-given/generics/collections/linkedlist"
+    "go.starlark.net/starlark"
+    "os"
+    "runtime"
+    "sort"
+    "strings"
+    "time"
 )
 
-// Color is a custom enum-like type
+// DefType is a custom enum-like type
 type DefType string
 
 const (
-	Function DefType = "function"
+    Function DefType = "function"
 )
 
 type Definition struct {
-	DefType   DefType
-	name      string
-	fileIndex int
-	path      string
+    DefType   DefType
+    name      string
+    fileIndex int
+    path      string
 }
 
 type Process struct {
@@ -129,9 +130,9 @@ func (p *Process) Fork() *Process {
 }
 
 func (p *Process) NewThread() *Thread {
-	thread := NewThread(p, p.Files, 0, "")
-	p.Threads = append(p.Threads, thread)
-	return thread
+    thread := NewThread(p, p.Files, 0, "")
+    p.Threads = append(p.Threads, thread)
+    return thread
 }
 
 // String method for Process
@@ -326,14 +327,16 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 }
 
 type Options struct {
-	// If true, continue processing even if an invariant fails
-	IgnoreInvariantFailures bool
-	// If true, continue processing other paths even if an invariant fails
-	ContinueOnInvariantFailure bool
-	// The maximum number of nodes to process
-	MaxNodes int
-	// The maximum number of actions to process
-	MaxActions int
+    // If true, continue processing even if an invariant fails
+    IgnoreInvariantFailures bool
+    // If true, continue processing other paths even if an invariant fails
+    ContinueOnInvariantFailure bool
+    // The maximum number of nodes to process
+    MaxNodes int
+    // The maximum number of actions to process
+    MaxActions int
+
+    MaxConcurrentActions int
 }
 
 type Processor struct {
@@ -354,48 +357,57 @@ func NewProcessor(files []*ast.File, config *Options) *Processor {
 }
 
 func (p *Processor) Start() *Node {
-	if p.Init != nil {
-		panic("processor already started")
-	}
-	process := NewProcess("init", p.Files, nil)
-	init := NewNode(process)
-	globals, err := process.Evaluator.ExecInit(p.Files[0].States)
-	if err != nil {
-		panic(err)
-	}
-	process.Heap.globals = globals
-	p.Init = init
+    if p.Init != nil {
+        panic("processor already started")
+    }
+    startTime := time.Now()
+    process := NewProcess("init", p.Files, nil)
+    init := NewNode(process)
+    globals, err := process.Evaluator.ExecInit(p.Files[0].States)
+    if err != nil {
+        panic(err)
+    }
+    process.Heap.globals = globals
+    p.Init = init
 
-	failed := CheckInvariants(process)
-	if len(failed[0]) > 0 {
-		panic(fmt.Sprintf("Invariant failed: %v", failed))
-	}
+    failed := CheckInvariants(process)
 
-	_ = p.queue.Push(p.Init)
-	//p.visited[p.Init.HashCode()] = p.Init
+    if len(failed[0]) > 0 {
+        init.Process.FailedInvariants = failed
+        if !p.config.IgnoreInvariantFailures {
+            return p.Init
+        }
+    }
 
-	for p.queue.Count() != 0 {
-		found, node := p.queue.Pop()
-		if !found {
-			panic("queue should not be empty")
-		}
-		//process := node.Process
-		//if other, ok := p.visited[process.HashCode()]; ok {
-		//	node.Merge(other)
-		//	continue
-		//}
+    _ = p.queue.Push(p.Init)
+    //p.visited[p.Init.HashCode()] = p.Init
 
-		if node.actionDepth > p.config.MaxActions {
-			// Add a node to indicate why this node was not processed
-			continue
-		}
-		invariantFailure := p.processNode(node)
-		p.visited[node.HashCode()] = node
-		if invariantFailure && !p.config.ContinueOnInvariantFailure {
-			break
-		}
-	}
-	return p.Init
+    for p.queue.Count() != 0 {
+        found, node := p.queue.Pop()
+        if !found {
+            panic("queue should not be empty")
+        }
+        //process := node.Process
+        //if other, ok := p.visited[process.HashCode()]; ok {
+        //	node.Merge(other)
+        //	continue
+        //}
+
+        if node.actionDepth > p.config.MaxActions {
+            // Add a node to indicate why this node was not processed
+            continue
+        }
+        if len(p.visited)%1000 == 0 {
+            fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
+        }
+        invariantFailure := p.processNode(node)
+        p.visited[node.HashCode()] = node
+        if invariantFailure && !p.config.ContinueOnInvariantFailure {
+            break
+        }
+    }
+    fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
+    return p.Init
 }
 
 func (p *Processor) processNode(node *Node) bool {
@@ -451,65 +463,68 @@ func (p *Processor) processNode(node *Node) bool {
 }
 
 func (p *Processor) YieldNode(node *Node) {
-	node.Name = "yield"
-	if other, ok := p.visited[node.HashCode()]; ok {
-		// Check if visited before scheduling children
-		node.Merge(other)
-		return
-	}
-	for i, thread := range node.Threads {
-		if thread.currentPc() == "" {
-			continue
-		}
-		name := fmt.Sprintf("thread-%d", i)
-		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
-		newNode.current = i
+    node.Name = "yield"
+    if other, ok := p.visited[node.HashCode()]; ok {
+        // Check if visited before scheduling children
+        node.Merge(other)
+        return
+    }
+    for i, thread := range node.Threads {
+        if thread.currentPc() == "" {
+            continue
+        }
+        name := fmt.Sprintf("thread-%d", i)
+        newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
+        newNode.current = i
 
-		_ = p.queue.Push(newNode)
-	}
-	if node.actionDepth >= p.config.MaxActions {
-		return
-	}
-	for i, action := range p.Files[0].Actions {
-		newNode := node.ForkForAction(action)
-		newNode.Process.NewThread()
-		newNode.Process.current = len(newNode.Process.Threads) - 1
-		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+        _ = p.queue.Push(newNode)
+    }
 
-		if strings.Contains(newNode.currentThread().currentPc(), ".$") {
-			fmt.Println("PC contains $")
-			fmt.Printf("node: %+v\n", newNode)
-			fmt.Printf("node.heap: %+v\n", newNode.Heap.String())
-			fmt.Printf("node.currentThread().currentPc(): %+v\n", newNode.currentThread().currentPc())
-			_, _ = fmt.Fprintf(os.Stderr, "node.currentThread().currentPc(): %v\n", newNode.currentThread().currentPc())
-		}
+    if node.actionDepth >= p.config.MaxActions || len(node.Threads) >= p.config.MaxConcurrentActions {
+        return
+    }
+    for i, action := range p.Files[0].Actions {
+        newNode := node.ForkForAction(action)
+        newNode.Process.NewThread()
+        newNode.Process.current = len(newNode.Process.Threads) - 1
+        newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
 
-		_ = p.queue.Push(newNode)
-	}
+        if strings.Contains(newNode.currentThread().currentPc(), ".$") {
+            fmt.Println("PC contains $")
+            fmt.Printf("node: %+v\n", newNode)
+            fmt.Printf("node.heap: %+v\n", newNode.Heap.String())
+            fmt.Printf("node.currentThread().currentPc(): %+v\n", newNode.currentThread().currentPc())
+            _, _ = fmt.Fprintf(os.Stderr, "node.currentThread().currentPc(): %v\n", newNode.currentThread().currentPc())
+        }
+
+        _ = p.queue.Push(newNode)
+    }
 }
 
 func (p *Processor) YieldFork(node *Node, process *Process) {
-	for i, thread := range process.Threads {
-		if thread.currentPc() == "" {
-			continue
-		}
-		name := fmt.Sprintf("thread-%d", i)
-		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
-		newNode.current = i
+    for i, thread := range process.Threads {
+        if thread.currentPc() == "" {
+            continue
+        }
+        name := fmt.Sprintf("thread-%d", i)
+        newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
+        newNode.current = i
 
-		_ = p.queue.Push(newNode)
-	}
-	if node.actionDepth >= p.config.MaxActions {
-		return
-	}
-	for i, action := range p.Files[0].Actions {
-		newNode := node.ForkForAction(action)
-		newNode.Process.NewThread()
-		newNode.Process.current = len(newNode.Process.Threads) - 1
-		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+        _ = p.queue.Push(newNode)
+    }
+    if node.actionDepth >= p.config.MaxActions ||
+        len(process.Threads) >= p.config.MaxConcurrentActions {
 
-		_ = p.queue.Push(newNode)
-	}
+        return
+    }
+    for i, action := range p.Files[0].Actions {
+        newNode := node.ForkForAction(action)
+        newNode.Process.NewThread()
+        newNode.Process.current = len(newNode.Process.Threads) - 1
+        newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+
+        _ = p.queue.Push(newNode)
+    }
 }
 
 func captureStackTrace() string {

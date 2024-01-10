@@ -2,7 +2,7 @@
 state:
   count = 0
 
-action Toss:
+action Incr:
   serial while count < 5:
     atomic:
       count = count + 1
