@@ -1,7 +1,14 @@
 {
   "states": {
-    "code": "ELEMENTS = set([1,2,3])\nelements = set([])\ncount=0\n"
+    "code": "ELEMENTS = set([1, 2, 3])\nelements = set([])\ncount=0\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "eventually": true,
+      "pyExpr": "len(elements) == count"
+    }
+  ],
   "actions": [
     {
       "name": "Add",

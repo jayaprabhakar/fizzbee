@@ -45,40 +45,6 @@ func printMatrix(matrix [][]float64) {
 	fmt.Println("]")
 }
 
-//func matrixPower(mat [][]float64, power int) [][]float64 {
-//	result := make([][]float64, len(mat))
-//	for i := range mat {
-//		result[i] = make([]float64, len(mat[i]))
-//		copy(result[i], mat[i])
-//	}
-//
-//	for p := 1; p < power; p++ {
-//		result = matrixMultiply(result, mat)
-//	}
-//
-//	return result
-//}
-//
-//func matrixMultiply(a, b [][]float64) [][]float64 {
-//	rowsA, colsA := len(a), len(a[0])
-//	_, colsB := len(b), len(b[0])
-//
-//	result := make([][]float64, rowsA)
-//	for i := range result {
-//		result[i] = make([]float64, colsB)
-//	}
-//
-//	for i := 0; i < rowsA; i++ {
-//		for j := 0; j < colsB; j++ {
-//			for k := 0; k < colsA; k++ {
-//				result[i][j] += a[i][k] * b[k][j]
-//			}
-//		}
-//	}
-//
-//	return result
-//}
-
 func steadyStateDistribution(root *Node) []float64 {
 
 	// Create the transition matrix
@@ -88,12 +54,11 @@ func steadyStateDistribution(root *Node) []float64 {
 	}
 
 	transitionMatrix := createTransitionMatrix(nodes)
-	fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
+	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
-	//fmt.Printf("\nTranspose Matrix:\n%v\n", transitionMatrix)
-	printMatrix(transitionMatrix)
+	//printMatrix(transitionMatrix)
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
-	iterations := 2000
+	iterations := 20000
 
 	initialDistribution := make([]float64, len(nodes))
 	initialDistribution[0] = 1.0 // Start from the root node
@@ -103,7 +68,7 @@ func steadyStateDistribution(root *Node) []float64 {
 	fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-		fmt.Println(i, nextDistribution)
+		//fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -112,13 +77,50 @@ func steadyStateDistribution(root *Node) []float64 {
 		currentDistribution = nextDistribution
 	}
 
-	//resultMatrix := matrixPower(transitionMatrix, power)
-	//
-	//// Extract the steady state distribution from the resulting matrix
-	//steadyStateDist := make(map[*Node]float64)
-	//for i, node := range nodes {
-	//	steadyStateDist[node] = resultMatrix[0][i]
-	//}
+	return currentDistribution
+}
+
+func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
+	// Create the transition matrix
+	nodes := getAllNodes(root)
+
+	transitionMatrix := createTransitionMatrix(nodes)
+	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
+	transitionMatrix = transpose(transitionMatrix)
+	for i, matrix := range transitionMatrix {
+		if nodes[i].Witness[fileId][invariantId] {
+			for j := range matrix {
+				//if i == j {
+				//	matrix[j] = 1.0
+				//} else {
+				matrix[j] = 0.0
+				//}
+			}
+		}
+	}
+	//printMatrix(transitionMatrix)
+
+	// Compute the matrix power (raise the matrix to a sufficiently large power)
+	iterations := 2000
+
+	initialDistribution := make([]float64, len(nodes))
+	for i, _ := range initialDistribution {
+		initialDistribution[i] = 1.0 / float64(len(nodes)) // Set every node to 1.0
+	}
+
+	// Iterate to find the steady-state distribution
+	currentDistribution := initialDistribution
+	fmt.Println(currentDistribution)
+	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
+		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
+
+		// Check for convergence (you may define a suitable threshold)
+		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
+			break
+		}
+
+		currentDistribution = nextDistribution
+	}
 
 	return currentDistribution
 }
@@ -137,6 +139,7 @@ func vectorDifference(a, b []float64) []float64 {
 	}
 	return result
 }
+
 func createTransitionMatrix(nodes []*Node) [][]float64 {
 	n := len(nodes)
 	matrix := make([][]float64, n)
@@ -156,6 +159,7 @@ func createTransitionMatrix(nodes []*Node) [][]float64 {
 		for _, outboundNode := range node.outbound {
 			matrix[indexMap[node]][indexMap[outboundNode.Node]] += 1.0 / float64(len(node.outbound))
 		}
+
 	}
 
 	return matrix

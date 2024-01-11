@@ -10,6 +10,11 @@
     {
       "always": true,
       "pyExpr": "toss2 == -1 or value in [1, 2, 3]"
+    },
+    {
+      "always": true,
+      "eventually": true,
+      "pyExpr": "value in [1, 2, 3]"
     }
   ],
   "actions": [

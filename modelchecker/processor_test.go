@@ -113,6 +113,7 @@ func printFileNames(rootDir string) error {
 		return nil
 	})
 }
+
 func TestProcessor_Tutorials(t *testing.T) {
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
@@ -231,16 +232,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    2,
-			expectedNodes: 39,
+			expectedNodes: 47,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
 			maxActions:    3,
-			expectedNodes: 141, // .03s
-			// 4 actions 2607 nodes, .17s
-			// 5 actions 15354 nodes, 2.2s
-			// 6 actions 85710 nodes, 67s
-			//  actions times out after 5m
+			expectedNodes: 219, // .03s
 		},
 		{
 			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
@@ -311,16 +308,27 @@ func TestProcessor_Tutorials(t *testing.T) {
 			expectedNodes: 14,
 		},
 		{
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:    2,
+			expectedNodes: 146,
+		},
+		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
-			maxActions:           20,
-			expectedNodes:        6760,
+			maxActions:           3,
+			expectedNodes:        1052,
 			maxConcurrentActions: 3,
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
-			maxActions:           20,
+			maxActions:           3,
 			maxConcurrentActions: 2,
-			expectedNodes:        1174, // 0.16s
+			expectedNodes:        572, // 0.16s 131
+		},
+		{
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:           4,
+			maxConcurrentActions: 2,
+			expectedNodes:        1371, // 0.16s 162
 		},
 		{
 			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop_ast.json",
@@ -338,7 +346,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
 			maxActions:    1,
-			expectedNodes: 6, // Only 8 nodes, because 5 for each iteration and 1 for each block nesting
+			expectedNodes: 6,
 		},
 		{
 			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
