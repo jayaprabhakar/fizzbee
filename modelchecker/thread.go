@@ -343,6 +343,7 @@ func (t *Thread) executeBlock() []*Process {
 		forks := make([]*Process, len(b.Stmts))
 		for i := range b.Stmts {
 			forks[i] = t.Process.Fork()
+			forks[i].Name = fmt.Sprintf("Stmt:%d", i)
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 		}
 		return forks
@@ -350,6 +351,7 @@ func (t *Thread) executeBlock() []*Process {
 		forks := make([]*Process, len(b.Stmts))
 		for i := range b.Stmts {
 			forks[i] = t.Process.Fork()
+			forks[i].Name = fmt.Sprintf("Stmt:%d", i)
 			forks[i].currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", t.currentPc(), i)
 			forks[i].currentThread().currentFrame().scope.skipstmts = append(forks[i].currentThread().currentFrame().scope.skipstmts, i)
 		}
@@ -412,6 +414,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		for iter.Next(&x) {
 			//fmt.Printf("anyVariable: x: %s\n", x.String())
 			fork := t.Process.Fork()
+			fork.Name = fmt.Sprintf("Any:%s", x.String())
 			fork.currentThread().currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", t.currentPc())
 			fork.currentThread().currentFrame().scope.vars[stmt.AnyStmt.LoopVars[0]] = x
 			forks = append(forks, fork)
@@ -546,6 +549,7 @@ func (t *Thread) executeForStatement() ([]*Process, bool) {
 		// if anyone uses parallel flow, it is to speed up.
 		fork := t.Process.Fork()
 		fork.currentThread().currentFrame().scope.vars[scope.loopVars[0]] = x
+		fork.Name = fmt.Sprintf("For:%s", x.String())
 		newSlice := removeElement(scope.loopRange, i)
 		fork.currentThread().currentFrame().scope.loopRange = newSlice
 
@@ -619,6 +623,7 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 				continue
 			}
 			fork := t.Process.Fork()
+			fork.Name = fmt.Sprintf("Stmt:%d", i)
 			fork.currentThread().currentFrame().pc = fmt.Sprintf("%s.Stmts[%d]", blockPath, i)
 			fork.currentThread().currentFrame().scope.skipstmts = append(fork.currentThread().currentFrame().scope.skipstmts, i)
 			forks = append(forks, fork)
@@ -638,10 +643,13 @@ func (t *Thread) executeEndOfBlock() bool {
 	for {
 		frame.scope = frame.scope.parent
 		if frame.scope == nil {
+			//t.popFrame()
+			actionPath := strings.Split(t.currentFrame().pc, ".")[0]
+			_ = GetProtoFieldByPath(t.currentFileAst(), actionPath)
 			t.popFrame()
-
 			if t.Stack.Len() == 0 {
 				t.Process.removeCurrentThread()
+				//t.Process.Returns[convertToAction(action).Name] = starlark.None
 				return true
 			}
 		}

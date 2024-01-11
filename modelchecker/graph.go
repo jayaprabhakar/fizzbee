@@ -63,13 +63,23 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 
 		nodeID := fmt.Sprintf("\"%p\"", n)
 
+		color := "black"
 		if n.Process.HasFailedInvariants() {
-			// Add node with label and color
-			dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"red\"];\n", nodeID, n.String())
-		} else {
-			// Add node with label
-			dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"black\"];\n", nodeID, n.String())
+			color = "red"
 		}
+		if n.Process != nil && n.Process.Witness != nil {
+			for _, w := range n.Process.Witness {
+				for _, pass := range w {
+					if pass {
+						color = "green"
+						// Ideally this should break from outerloop, for now okay. not sure if go has labelled stmts
+						break
+					}
+				}
+			}
+		}
+
+		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\"];\n", nodeID, n.String(), color)
 
 		// Recursively visit outbound nodes
 		for _, child := range n.outbound {
@@ -77,7 +87,10 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 			//	child = child.outbound[0]
 			//}
 			childID := fmt.Sprintf("\"%p\"", child.Node)
+			//if color != "green" {
 			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", nodeID, childID, child.Name)
+			//}
+
 			dfs(child.Node)
 		}
 	}

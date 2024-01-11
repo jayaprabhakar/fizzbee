@@ -9,6 +9,10 @@ invariants:
   - always: True
     pyExpr: |
       toss2 == -1 or value in [1, 2, 3]
+  - always: True
+    eventually: True
+    pyExpr: |
+      value in [1, 2, 3]
 actions:
   - name: Toss
     block:

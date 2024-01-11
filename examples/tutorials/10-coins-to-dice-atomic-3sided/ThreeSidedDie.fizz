@@ -7,6 +7,7 @@ state:
 invariants:
   always value in [-1, 1, 2, 3]
   always (toss2 == -1 or value in [1, 2, 3])
+  always eventually value in [1, 2, 3]
 
 atomic action Toss:
     if value <= 0:

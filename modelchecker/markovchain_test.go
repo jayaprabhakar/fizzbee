@@ -13,9 +13,10 @@ func TestSteadyStateDistribution(t *testing.T) {
 
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
-		filename      string
-		maxActions    int
-		expectedNodes int
+		filename             string
+		maxActions           int
+		expectedNodes        int
+		maxConcurrentActions int
 	}{
 
 		{
@@ -62,6 +63,11 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
 			maxActions: 1,
 		},
+		{
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions:    2,
+			expectedNodes: 146,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
@@ -69,10 +75,15 @@ func TestSteadyStateDistribution(t *testing.T) {
 			file, err := readAstFromFile(filename)
 			require.Nil(t, err)
 			files := []*ast.File{file}
+			maxThreads := test.maxConcurrentActions
+			if maxThreads == 0 {
+				maxThreads = test.maxActions
+			}
 			p1 := NewProcessor(files, &Options{
 				IgnoreInvariantFailures:    true,
 				ContinueOnInvariantFailure: true,
 				MaxActions:                 test.maxActions,
+				MaxConcurrentActions:       maxThreads,
 			})
 			root := p1.Start()
 			RemoveMergeNodes(root)
@@ -86,6 +97,19 @@ func TestSteadyStateDistribution(t *testing.T) {
 			for j, prob := range steadyStateDist {
 				if prob > 1e-6 {
 					fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
+				}
+			}
+			for k, inv := range files[0].Invariants {
+				if !inv.Eventually {
+					continue
+				}
+				liveness := checkLiveness(root, 0, k)
+				fmt.Println(liveness)
+				fmt.Println("Liveness")
+				for j, prob := range liveness {
+					if prob > 1e-6 {
+						fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
+					}
 				}
 			}
 		})
