@@ -4,6 +4,9 @@ state:
   elements = set([])
   count = 0
 
+invariants:
+  always eventually count == len(elements)
+
 action Add:
    any e in (ELEMENTS - elements):
      parallel:

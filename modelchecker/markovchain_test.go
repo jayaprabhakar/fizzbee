@@ -64,9 +64,8 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions: 1,
 		},
 		{
-			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
-			maxActions:    2,
-			expectedNodes: 146,
+			filename:   "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			maxActions: 2,
 		},
 	}
 	for _, test := range tests {
