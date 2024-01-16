@@ -1,0 +1,25 @@
+#load("@rules_python//python:rules.bzl", "py_library")
+
+py_library(
+    name = "fizz",
+    srcs = [
+        "FizzLexer.py",
+        "FizzParser.py",
+        "FizzParserListener.py",
+        "FizzParserVisitor.py",
+        "PythonLexerBase.py",
+        "PythonParserBase.py",
+        "BuildAstVisitor.py",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto:ast_py_proto",
+    ],
+)
+
+py_binary(
+    name = "parser_bin",
+    srcs = ["main.py"],
+    main = "main.py",
+    deps = [":fizz"],
+)
