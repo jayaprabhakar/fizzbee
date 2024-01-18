@@ -1,10 +1,10 @@
 
-state:
-  a = 0
-  b = 0
-
-action NoOp:
-  atomic:
+init:
     a = 0
+    b = 0
+
+atomic action NoOp:
+  atomic:
+    a =0
     b = 0
 
