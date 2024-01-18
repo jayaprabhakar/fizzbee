@@ -1,5 +1,5 @@
 
-state:
+init:
   toss1 = -1
   toss2 = -1
   value = -1
