@@ -9,5 +9,5 @@ invariants:
 action Add:
   atomic:
     a = a + 1
-    b = b - 1
+    b = b + 1
 

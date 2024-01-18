@@ -123,80 +123,80 @@ func TestProcessor_Tutorials(t *testing.T) {
 		maxConcurrentActions int
 	}{
 		{
-			filename:      "examples/tutorials/00-no-op/Counter_ast.json",
+			filename:      "examples/tutorials/00-no-op/Counter.json",
 			maxActions:    5,
 			expectedNodes: 1, // 1 nodes: 1 for the init
 		},
 		{
-			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 2, // 2 nodes: 1 for the init and 1 for the first action
 		},
 		{
-			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 4, // 2 nodes: 1 for the init and 1 for each action
 		},
 		{
-			filename:      "examples/tutorials/01-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
 			maxActions:    100,
 			expectedNodes: 101, // 0.01s
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 2,
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter.json",
 			maxActions:    2,
 			expectedNodes: 3,
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter.json",
 			maxActions:    4,
 			expectedNodes: 8,
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter.json",
 			maxActions:    10,
 			expectedNodes: 144, // 0.01s
 			// 20 actions, 17711 nodes, 3.79s
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter.json",
 			maxActions:    2,
 			expectedNodes: 5,
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter.json",
 			maxActions:    10,
 			expectedNodes: 21,
 			// 20 actions, 41 nodes, 0.01s
 			// this grows much slower than multiply counter, because any combination of inc / dec forms a loop
 		},
 		{
-			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/02-multiple-atomic-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 5,
 		},
 		{
-			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter_ast.json",
+			filename:      "examples/tutorials/06-inc-dec-atomic-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 7,
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter.json",
 			maxActions:    2,
 			expectedNodes: 40,
 		},
 		{
-			filename:      "examples/tutorials/03-multiple-serial-counters/Counter_ast.json",
+			filename:      "examples/tutorials/03-multiple-serial-counters/Counter.json",
 			maxActions:    4,
 			expectedNodes: 1481,
 			// 4 actions, 463 nodes, .03s
@@ -205,37 +205,37 @@ func TestProcessor_Tutorials(t *testing.T) {
 			// 10 actions, 19735 nodes, 14s
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 5, // 5 nodes: 1 for the init and 1 for each action and 1 for each stmt in add. multipy counteres end up being no-op
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter.json",
 			maxActions:    2,
 			expectedNodes: 12, // 7 nodes: 1 for the init and 1 for each action and 1 for each stmt in each action
 		},
 		{
-			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter_ast.json",
+			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 24,
 		},
 		{
-			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 8,
 		},
 		{
-			filename:      "examples/tutorials/09-inc-dec-parallel-counters/Counter_ast.json",
+			filename:      "examples/tutorials/09-inc-dec-parallel-counters/Counter.json",
 			maxActions:    1,
 			expectedNodes: 9,
 		},
 		{
-			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter.json",
 			maxActions:    2,
 			expectedNodes: 47,
 		},
 		{
-			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter_ast.json",
+			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 219, // .03s
 		},
