@@ -15,7 +15,7 @@ atomic action Toss:
             oneof:
                 toss1 = 0
                 toss1 = 1
-        else:
+        elif toss1 >= 0:
             oneof:
                 toss2 = 0
                 toss2 = 1

@@ -95,6 +95,12 @@ type Scope struct {
 	loopRange []starlark.Value
 }
 
+func (s *Scope) SetFlow(flow ast.Flow) {
+	if flow != ast.Flow_FLOW_UNKNOWN {
+		s.flow = flow
+	}
+}
+
 func (s *Scope) Hash() hash.Hash {
 	var h hash.Hash
 	if s == nil {
@@ -249,6 +255,9 @@ func (t *Thread) HashCode() string {
 func (t *Thread) InsertNewScope() *Scope {
 	scope := &Scope{parent: t.currentFrame().scope, vars: starlark.StringDict{}}
 	t.currentFrame().scope = scope
+	if scope.parent != nil {
+		scope.flow = scope.parent.flow
+	}
 	return scope
 }
 
@@ -331,8 +340,8 @@ func (t *Thread) executeBlock() []*Process {
 	newScope := t.InsertNewScope()
 	protobuf := GetProtoFieldByPath(t.currentFileAst(), t.currentPc())
 	b := convertToBlock(protobuf)
-	newScope.flow = b.Flow
-	switch b.Flow {
+	newScope.SetFlow(b.Flow)
+	switch newScope.flow {
 	case ast.Flow_FLOW_ATOMIC:
 		t.currentFrame().pc = t.currentPc() + ".Stmts[0]"
 		return nil
@@ -376,7 +385,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		forks := t.executeBlock()
 		return forks, false
 	} else if stmt.IfStmt != nil {
-		if stmt.IfStmt.Flow != ast.Flow_FLOW_ATOMIC {
+		if stmt.IfStmt.Flow != ast.Flow_FLOW_ATOMIC && t.currentFrame().scope.flow != ast.Flow_FLOW_ATOMIC {
 			panic("Only atomic flow is supported for if statements")
 		}
 		for i, branch := range stmt.IfStmt.Branches {
@@ -394,9 +403,10 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		//forks := t.executeBlock()
 		//return forks, false
 	} else if stmt.AnyStmt != nil {
-		if stmt.AnyStmt.Flow != ast.Flow_FLOW_ATOMIC {
-			panic("Only atomic flow is supported for any statements")
-		}
+		//if stmt.AnyStmt.Flow != ast.Flow_FLOW_ATOMIC && t.currentFrame().scope.flow != ast.Flow_FLOW_ATOMIC {
+		//	// TODO: Is this actually needed?
+		//	panic("Only atomic flow is supported for any statements")
+		//}
 		if len(stmt.AnyStmt.LoopVars) != 1 {
 			panic("Loop variables must be exactly one")
 		}
@@ -442,7 +452,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		defer iter.Done()
 
 		scope := t.InsertNewScope()
-		scope.flow = stmt.ForStmt.Flow
+		scope.SetFlow(stmt.ForStmt.Flow)
 		scope.loopVars = stmt.ForStmt.LoopVars
 		var x starlark.Value
 		for iter.Next(&x) {
@@ -453,7 +463,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		return nil, false
 	} else if stmt.WhileStmt != nil {
 		scope := t.InsertNewScope()
-		scope.flow = stmt.WhileStmt.Flow
+		scope.SetFlow(stmt.WhileStmt.Flow)
 		t.currentFrame().pc = fmt.Sprintf("%s.WhileStmt", t.currentPc())
 		return nil, false
 	} else if stmt.BreakStmt != nil {
@@ -477,8 +487,12 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		return nil, false
 	} else if stmt.ReturnStmt != nil {
 		vars := t.Process.GetAllVariables()
-		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ReturnStmt.PyExpr, vars)
-		PanicOnError(err)
+		var val starlark.Value = starlark.None
+		if stmt.ReturnStmt.PyExpr != ""	{
+			v, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ReturnStmt.PyExpr, vars)
+			PanicOnError(err)
+			val = v
+		}
 		actionPath := strings.Split(t.currentFrame().pc, ".")[0]
 		action := GetProtoFieldByPath(t.currentFileAst(), actionPath)
 		oldFrame := t.popFrame()

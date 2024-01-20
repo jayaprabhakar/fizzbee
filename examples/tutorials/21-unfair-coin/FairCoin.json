@@ -1,35 +1,33 @@
 {
   "states": {
-    "code": "toss1=-1\ntoss2=-1\nvalue=-1\n"
+    "code": "toss1 = -1\ntoss2 = -1\nvalue = -1\n\n"
   },
   "invariants": [
     {
       "always": true,
-      "pyExpr": "value in [-1, 0, 1]\n"
+      "pyExpr": "value in [-1, 0, 1]"
     },
     {
       "always": true,
-      "pyExpr": "toss2 == -1 or value in [0, 1]\n"
+      "pyExpr": "(toss2 == -1 or value in [0, 1])"
     }
   ],
   "actions": [
     {
       "name": "Toss",
+      "flow": "FLOW_ATOMIC",
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
           {
             "ifStmt": {
-              "flow": "FLOW_ATOMIC",
               "branches": [
                 {
                   "condition": "value < 0",
                   "block": {
-                    "flow": "FLOW_ATOMIC",
                     "stmts": [
                       {
                         "ifStmt": {
-                          "flow": "FLOW_ATOMIC",
                           "branches": [
                             {
                               "condition": "toss1 == -1",
@@ -52,13 +50,7 @@
                             {
                               "condition": "True",
                               "block": {
-                                "flow": "FLOW_ATOMIC",
                                 "stmts": [
-                                  {
-                                    "pyStmt": {
-                                      "code": "toss2 = -1"
-                                    }
-                                  },
                                   {
                                     "block": {
                                       "flow": "FLOW_ONEOF",
@@ -78,12 +70,10 @@
                                   },
                                   {
                                     "ifStmt": {
-                                      "flow": "FLOW_ATOMIC",
                                       "branches": [
                                         {
                                           "condition": "toss1 == toss2",
                                           "block": {
-                                            "flow": "FLOW_ATOMIC",
                                             "stmts": [
                                               {
                                                 "pyStmt": {
@@ -101,7 +91,6 @@
                                         {
                                           "condition": "True",
                                           "block": {
-                                            "flow": "FLOW_ATOMIC",
                                             "stmts": [
                                               {
                                                 "pyStmt": {

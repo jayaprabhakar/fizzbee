@@ -6,7 +6,7 @@ atomic func Toss():
 
 atomic action Roll:
   toss0 = Toss()
-  while (True):
+  while True:
     toss1 = Toss()
     toss2 = Toss()
 

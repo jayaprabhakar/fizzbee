@@ -240,103 +240,103 @@ func TestProcessor_Tutorials(t *testing.T) {
 			expectedNodes: 219, // .03s
 		},
 		{
-			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
 			maxActions:    1,
 			expectedNodes: 4, // 2 nodes: 1 for the init and 1 for the Toss action and 1 for each fork
 		},
 		{
-			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
 			maxActions:    2,
 			expectedNodes: 9,
 		},
 		{
-			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
 			maxActions:    3,
 			expectedNodes: 9,
 		},
 		{
-			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
 			maxActions:    10,
 			expectedNodes: 9,
 		},
 		{
-			filename:      "examples/tutorials/13-any-stmt/Counter_ast.json",
+			filename:      "examples/tutorials/13-any-stmt/Counter.json",
 			maxActions:    1,
 			expectedNodes: 7,
 		},
 		{
-			filename:      "examples/tutorials/13-any-stmt/Counter_ast.json",
+			filename:      "examples/tutorials/13-any-stmt/Counter.json",
 			maxActions:    10,
 			expectedNodes: 63,
 		},
 		{
-			filename:      "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			filename:      "examples/tutorials/14-elements-counter-atomic/Counter.json",
 			maxActions:    1,
 			expectedNodes: 5,
 		},
 		{
-			filename:      "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			filename:      "examples/tutorials/14-elements-counter-atomic/Counter.json",
 			maxActions:    3,
 			expectedNodes: 21,
 		},
 		{
-			filename:   "examples/tutorials/14-elements-counter-atomic/Counter_ast.json",
+			filename:   "examples/tutorials/14-elements-counter-atomic/Counter.json",
 			maxActions: 10,
 			// Just one more node than 3 actions, because maximum unique state is 3 added followed by 1 remove
 			expectedNodes: 22,
 		},
 		{
-			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    1,
 			expectedNodes: 15,
 		},
 		{
-			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    2,
 			expectedNodes: 191,
 		},
 		{
-			filename:      "examples/tutorials/15-elements-counter-serial/Counter_ast.json",
+			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    3,
 			expectedNodes: 1727,
 			// 4 actions, 11461 nodes, 3.37s
 			// 5 actions, 62233 nodes, 65s
 		},
 		{
-			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:    1,
-			expectedNodes: 14,
+			expectedNodes: 18,
 		},
 		{
-			filename:      "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:      "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:    2,
-			expectedNodes: 146,
+			expectedNodes: 263,
 		},
 		{
-			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
-			expectedNodes:        1052,
+			expectedNodes:        2686,
 			maxConcurrentActions: 3,
 		},
 		{
-			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
 			maxConcurrentActions: 2,
-			expectedNodes:        572, // 0.16s 131
+			expectedNodes:        1142, // 0.16s 131
 		},
 		{
-			filename:             "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           4,
 			maxConcurrentActions: 2,
-			expectedNodes:        1371, // 0.16s 162
+			expectedNodes:        2884, // 0.16s 162
 		},
 		{
-			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop_ast.json",
+			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop.json",
 			maxActions:    5,
 			expectedNodes: 2, // Only 2 nodes, because the for loop is executed as a single action
 		},
 		{
-			filename:   "examples/tutorials/18-for-stmt-serial/ForLoop_ast.json",
+			filename:   "examples/tutorials/18-for-stmt-serial/ForLoop.json",
 			maxActions: 2,
 			// The main reason for the significant increase in the nodes is because, the two threads can execute
 			// concurrently. So, in one thread might have deleted first element, then the second thread would start
@@ -344,92 +344,92 @@ func TestProcessor_Tutorials(t *testing.T) {
 			expectedNodes: 100,
 		},
 		{
-			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
+			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop_ast.json",
+			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop.json",
 			maxActions:    2,
 			expectedNodes: 20,
 		},
 		{
-			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop_ast.json",
+			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop.json",
 			maxActions:    1,
-			expectedNodes: 24,
+			expectedNodes: 25,
 		},
 		{
-			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop_ast.json",
+			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop.json",
 			maxActions:    2,
-			expectedNodes: 150,
+			expectedNodes: 182,
 		},
 		{
-			filename:      "examples/tutorials/21-unfair-coin/FairCoin_ast.json",
+			filename:      "examples/tutorials/21-unfair-coin/FairCoin.json",
 			maxActions:    10,
 			expectedNodes: 8,
 		},
 		{
-			filename:      "examples/tutorials/22-while-stmt-atomic/Counter_ast.json",
+			filename:      "examples/tutorials/22-while-stmt-atomic/Counter.json",
 			maxActions:    1,
 			expectedNodes: 2,
 		},
 		{
-			filename:      "examples/tutorials/22-while-stmt-atomic/Counter_ast.json",
+			filename:      "examples/tutorials/22-while-stmt-atomic/Counter.json",
 			maxActions:    5,
 			expectedNodes: 2,
 		},
 		{
-			filename:      "examples/tutorials/23-while-stmt-serial/Counter_ast.json",
+			filename:      "examples/tutorials/23-while-stmt-serial/Counter.json",
 			maxActions:    1,
 			expectedNodes: 8,
 		},
 		{
-			filename:      "examples/tutorials/23-while-stmt-serial/Counter_ast.json",
+			filename:      "examples/tutorials/23-while-stmt-serial/Counter.json",
 			maxActions:    4,
 			expectedNodes: 29,
 		},
 		{
-			filename:      "examples/tutorials/24-while-stmt-atomic/FairCoin_ast.json",
+			filename:      "examples/tutorials/24-while-stmt-atomic/FairCoin.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/25-break-continue/Loop_ast.json",
+			filename:      "examples/tutorials/25-break-continue/Loop.json",
 			maxActions:    1,
 			expectedNodes: 3,
 		},
 		{
-			filename:      "examples/tutorials/26-unfair-coin-toss-while/FairCoin_ast.json",
+			filename:      "examples/tutorials/26-unfair-coin-toss-while/FairCoin.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin_ast.json",
+			filename:      "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin.json",
 			maxActions:    1,
 			expectedNodes: 12,
 		},
 		{
-			filename:      "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin_ast.json",
+			filename:      "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/29-simple-function/FlipCoin_ast.json",
+			filename:      "examples/tutorials/29-simple-function/FlipCoin.json",
 			maxActions:    1,
 			expectedNodes: 4,
 		},
 		{
-			filename:      "examples/tutorials/30-unfair-coin-toss-method/FairCoin_ast.json",
+			filename:      "examples/tutorials/30-unfair-coin-toss-method/FairCoin.json",
 			maxActions:    1,
 			expectedNodes: 6,
 		},
 		{
-			filename:      "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie_ast.json",
+			filename:      "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie.json",
 			maxActions:    1,
 			expectedNodes: 14,
 		},
 		{
-			filename:      "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
+			filename:      "examples/tutorials/32-fair-die-from-unfair-coin/FairDie.json",
 			maxActions:    1,
 			expectedNodes: 28,
 		},

@@ -1,29 +1,27 @@
 {
   "states": {
-    "code": "ELEMENTS = set([1, 2, 3])\nelements = set([])\ncount=0\n"
+    "code": "ELEMENTS = set([1, 2, 3])\nelements = set([])\ncount = 0\n\n"
   },
   "invariants": [
     {
       "always": true,
-      "eventually": true,
-      "pyExpr": "len(elements) == count"
+      "pyExpr": "count == len(elements)"
     }
   ],
   "actions": [
     {
       "name": "Add",
+      "flow": "FLOW_SERIAL",
       "block": {
         "flow": "FLOW_SERIAL",
         "stmts": [
           {
             "anyStmt": {
-              "flow": "FLOW_SERIAL",
               "loopVars": [
                 "e"
               ],
-              "py_expr": "ELEMENTS - elements",
+              "pyExpr": "(ELEMENTS - elements)",
               "block": {
-                "flow": "FLOW_PARALLEL",
                 "stmts": [
                   {
                     "pyStmt": {
@@ -44,22 +42,21 @@
     },
     {
       "name": "Remove",
+      "flow": "FLOW_SERIAL",
       "block": {
         "flow": "FLOW_SERIAL",
         "stmts": [
           {
             "anyStmt": {
-              "flow": "FLOW_SERIAL",
               "loopVars": [
                 "e"
               ],
-              "py_expr": "elements",
+              "pyExpr": "elements",
               "block": {
-                "flow": "FLOW_PARALLEL",
                 "stmts": [
                   {
                     "pyStmt": {
-                      "code": "elements.discard(e)"
+                      "code": "elements.remove(e)"
                     }
                   },
                   {

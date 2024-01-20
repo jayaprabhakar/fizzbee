@@ -143,6 +143,15 @@ class FizzParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by FizzParser#function_stmt.
+    def enterFunction_stmt(self, ctx:FizzParser.Function_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#function_stmt.
+    def exitFunction_stmt(self, ctx:FizzParser.Function_stmtContext):
+        pass
+
+
     # Enter a parse tree produced by FizzParser#labelled_stmt.
     def enterLabelled_stmt(self, ctx:FizzParser.Labelled_stmtContext):
         pass
@@ -260,6 +269,15 @@ class FizzParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by FizzParser#functiondef.
+    def enterFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#functiondef.
+    def exitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        pass
+
+
     # Enter a parse tree produced by FizzParser#typedargslist.
     def enterTypedargslist(self, ctx:FizzParser.TypedargslistContext):
         pass
@@ -320,6 +338,15 @@ class FizzParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FizzParser#simple_stmt.
     def exitSimple_stmt(self, ctx:FizzParser.Simple_stmtContext):
+        pass
+
+
+    # Enter a parse tree produced by FizzParser#func_call_stmt.
+    def enterFunc_call_stmt(self, ctx:FizzParser.Func_call_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#func_call_stmt.
+    def exitFunc_call_stmt(self, ctx:FizzParser.Func_call_stmtContext):
         pass
 
 

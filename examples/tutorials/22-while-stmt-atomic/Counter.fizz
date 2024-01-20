@@ -1,7 +1,7 @@
 
-state:
+init:
   count = 0
 
-atomic action Toss:
+atomic action Incr:
   atomic while count < 5:
     count = count + 1

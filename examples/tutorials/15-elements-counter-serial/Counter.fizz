@@ -1,5 +1,5 @@
 
-state:
+init:
   ELEMENTS = set([1, 2, 3])
   elements = set([])
   count = 0

@@ -2,6 +2,7 @@
   "actions": [
     {
       "name": "Roll",
+      "flow": "FLOW_ATOMIC",
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
@@ -15,10 +16,8 @@
           },
           {
             "whileStmt": {
-              "flow": "FLOW_ATOMIC",
               "pyExpr": "True",
               "block": {
-                "flow": "FLOW_ATOMIC",
                 "stmts": [
                   {
                     "callStmt": {
@@ -38,16 +37,14 @@
                   },
                   {
                     "ifStmt": {
-                      "flow": "FLOW_ATOMIC",
                       "branches": [
                         {
                           "condition": "toss0 != toss1 or toss1 != toss2",
                           "block": {
-                            "flow": "FLOW_ATOMIC",
                             "stmts": [
                               {
                                 "returnStmt": {
-                                  "pyExpr": "(4 * toss0 + 2 * toss1 + toss2)"
+                                  "pyExpr": "4 * toss0 + 2 * toss1 + toss2"
                                 }
                               }
                             ]
@@ -66,7 +63,8 @@
   ],
   "functions": [
     {
-      "name": "Toss",
+      "name": "UnfairToss",
+      "flow": "FLOW_ATOMIC",
       "block": {
         "flow": "FLOW_ONEOF",
         "stmts": [
@@ -77,7 +75,64 @@
           },
           {
             "returnStmt": {
+              "pyExpr": "0"
+            }
+          },
+          {
+            "returnStmt": {
               "pyExpr": "1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Toss",
+      "flow": "FLOW_ATOMIC",
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "whileStmt": {
+              "pyExpr": "True",
+              "block": {
+                "stmts": [
+                  {
+                    "callStmt": {
+                      "vars": [
+                        "toss1"
+                      ],
+                      "name": "UnfairToss"
+                    }
+                  },
+                  {
+                    "callStmt": {
+                      "vars": [
+                        "toss2"
+                      ],
+                      "name": "UnfairToss"
+                    }
+                  },
+                  {
+                    "ifStmt": {
+                      "branches": [
+                        {
+                          "condition": "toss1 != toss2",
+                          "block": {
+                            "stmts": [
+                              {
+                                "returnStmt": {
+                                  "pyExpr": "toss2"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
             }
           }
         ]

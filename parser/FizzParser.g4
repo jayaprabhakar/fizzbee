@@ -64,17 +64,20 @@ stmt
     ;
 
 compound_stmt
-    : IF cond = test COLON suite elif_clause* else_clause?                           # if_stmt
-    | WHILE test COLON suite else_clause?                                            # while_stmt
-    | ASYNC? FOR exprlist IN testlist COLON suite else_clause?                       # for_stmt
+    : IF test COLON suite elif_clause* else_clause?                                  # if_stmt
+    // | WHILE test COLON suite else_clause?                          # while_stmt
+    | (ATOMIC | SERIAL)? WHILE test COLON suite                                      # while_stmt
+    // | ASYNC? FOR exprlist IN testlist COLON suite else_clause?                    # for_stmt
+    | (ATOMIC | SERIAL | PARALLEL)? FOR exprlist IN testlist COLON suite             # for_stmt
     | TRY COLON suite (except_clause+ else_clause? finally_clause? | finally_clause) # try_stmt
     | ASYNC? WITH with_item (COMMA with_item)* COLON suite                           # with_stmt
     | decorator* (classdef | funcdef)                                                # class_or_func_def_stmt
 
-    | ASYNC? ANY exprlist IN testlist COLON suite else_clause?                       # any_stmt
+    | ANY exprlist IN testlist COLON suite                                           # any_stmt
     | INIT COLON suite                                                               # init_stmt
     | INVARIANTS COLON invariants_suite                                              # invariants_stmt
     | actiondef                                                                      # action_stmt
+    | functiondef                                                                    # function_stmt
     | (ATOMIC | SERIAL | PARALLEL | ONEOF) COLON suite    #labelled_stmt
     ;
 
@@ -134,6 +137,10 @@ actiondef
     : (ATOMIC | PARALLEL | SERIAL | ONEOF)? ACTION name COLON suite
     ;
 
+functiondef
+    : (ATOMIC | PARALLEL | SERIAL | ONEOF)? FUNC name OPEN_PAREN typedargslist? CLOSE_PAREN COLON suite
+    ;
+
 // python 3 paramters
 // parameters list may have a trailing comma
 typedargslist
@@ -169,8 +176,11 @@ simple_stmt
 
 // TODO 1: left part augmented assignment should be `test` only, no stars or lists
 // TODO 2: semantically annotated declaration is not an assignment
+// TODO 3: Hack to identify function call in Fizz. At present only support,
+//         function calls of the simplest form like ret = fn(arg1,arg2)
 small_stmt
-    : testlist_star_expr assign_part? # expr_stmt
+    : (NAME ASSIGN)? NAME OPEN_PAREN arglist? CLOSE_PAREN    # func_call_stmt  // Fizz specific shortcut
+    | testlist_star_expr assign_part?                        # expr_stmt
     | {self.CheckVersion(2)}? PRINT (
         (test (COMMA test)* COMMA?)
         | RIGHT_SHIFT test ((COMMA test)+ COMMA?)

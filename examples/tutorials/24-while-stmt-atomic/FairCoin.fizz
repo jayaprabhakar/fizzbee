@@ -1,10 +1,10 @@
 
-state:
+init:
   value = -1
 
 invariants:
   always value in [-1, 1, 2, 3]
-  always (toss2 == -1 or value in [1, 2, 3])
+  always eventually value in [1, 2, 3]
 
 atomic action Toss:
     toss1 = -1
@@ -13,8 +13,10 @@ atomic action Toss:
         atomic:
             oneof:
                 toss1 = 0
+                toss1 = 0
                 toss1 = 1
             oneof:
+                toss2 = 0
                 toss2 = 0
                 toss2 = 1
 

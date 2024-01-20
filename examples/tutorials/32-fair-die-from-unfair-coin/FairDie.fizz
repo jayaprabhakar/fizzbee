@@ -14,9 +14,9 @@ atomic func Toss():
 
 atomic action Roll:
   toss0 = Toss()
-  while (True):
+  while True:
     toss1 = Toss()
     toss2 = Toss()
 
-    if (toss0 != toss1 or toss0 != toss2):
+    if toss0 != toss1 or toss1 != toss2:
       return 4 * toss0 + 2 * toss1 + toss2
