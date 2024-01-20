@@ -2,15 +2,14 @@
   "actions": [
     {
       "name": "FairToss",
+      "flow": "FLOW_ATOMIC",
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
           {
             "whileStmt": {
-              "flow": "FLOW_ATOMIC",
               "pyExpr": "True",
               "block": {
-                "flow": "FLOW_ATOMIC",
                 "stmts": [
                   {
                     "callStmt": {
@@ -30,12 +29,10 @@
                   },
                   {
                     "ifStmt": {
-                      "flow": "FLOW_ATOMIC",
                       "branches": [
                         {
                           "condition": "toss1 != toss2",
                           "block": {
-                            "flow": "FLOW_ATOMIC",
                             "stmts": [
                               {
                                 "returnStmt": {
@@ -59,6 +56,7 @@
   "functions": [
     {
       "name": "UnfairToss",
+      "flow": "FLOW_ATOMIC",
       "block": {
         "flow": "FLOW_ONEOF",
         "stmts": [

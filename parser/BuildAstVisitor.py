@@ -11,6 +11,10 @@ class BuildAstVisitor(FizzParserVisitor):
         self.input_stream = input_stream
 
     def aggregateResult(self, aggregate, nextResult):
+        if nextResult and aggregate:
+            print("aggregate:", aggregate, "nextResult:", nextResult)
+            raise Exception("only one of aggregate or next result handled now", aggregate, nextResult)
+        print("aggregate:", aggregate, "nextResult:", nextResult)
         if nextResult is None:
             return aggregate
         return nextResult
@@ -37,7 +41,9 @@ class BuildAstVisitor(FizzParserVisitor):
                     file.states.CopyFrom(childProto)
                 elif isinstance(childProto, ast.Action):
                     file.actions.append(childProto)
-                elif BuildAstVisitor.is_list_of_type(childProto):
+                elif isinstance(childProto, ast.Function):
+                    file.functions.append(childProto)
+                elif BuildAstVisitor.is_list_of_type(childProto, ast.Invariant):
                     file.invariants.extend(childProto)
                 else:
                     print("visitFile_input childProto (unknown) type",childProto.__class__.__name__, dir(childProto), childProto)
@@ -54,12 +60,14 @@ class BuildAstVisitor(FizzParserVisitor):
         print("file", file)
         return file
 
-    def is_list_of_type(lst):
+    def is_list_of_type(lst, item_type):
+        if not isinstance(lst, list):
+            return False
         # Check if all elements in the list are instances of ast.Invariant
-        return all(isinstance(item, ast.Invariant) for item in lst)
+        return all(isinstance(item, item_type) for item in lst)
 
     def visitInit_stmt(self, ctx:FizzParser.Init_stmtContext):
-        init_str = self.input_stream.getText(ctx.start.start, ctx.stop.stop)
+        init_str = self.get_py_str(ctx)
         py_str = BuildAstVisitor.transform_code(init_str, 1)
         return ast.StateVars(code=py_str)
 
@@ -85,7 +93,7 @@ class BuildAstVisitor(FizzParserVisitor):
         print("visitActiondef",ctx.getText())
         print("visitActiondef",dir(ctx))
         print("visitActiondef children count",ctx.getChildCount())
-        print("visitActiondef full text\n",self.input_stream.getText(ctx.start.start, ctx.stop.stop))
+        print("visitActiondef full text\n", self.get_py_str(ctx))
 
         action = ast.Action()
         for i, child in enumerate(ctx.getChildren()):
@@ -138,9 +146,139 @@ class BuildAstVisitor(FizzParserVisitor):
         print("action", action)
         return action
 
+    # Visit a parse tree produced by FizzParser#functiondef.
+    def visitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        print("\n\nvisitFunctiondef",ctx.__class__.__name__)
+        print("visitFunctiondef",ctx.getText())
+        print("visitFunctiondef",dir(ctx))
+        print("visitFunctiondef children count",ctx.getChildCount())
+        print("visitFunctiondef full text\n", self.get_py_str(ctx))
+
+        function = ast.Function()
+
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitFunctiondef child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.NameContext):
+                    function.name = child.getText()
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                if isinstance(childProto, ast.Block):
+                    function.block.CopyFrom(childProto)
+
+                print("visitFunctiondef childProto",childProto)
+            elif hasattr(child, 'getSymbol'):
+
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.ACTION
+                        or child.getSymbol().type == FizzParser.COLON
+                ):
+                    continue
+                if child.getSymbol().type == FizzParser.ATOMIC:
+                    function.flow = ast.Flow.FLOW_ATOMIC
+                    continue
+                if child.getSymbol().type == FizzParser.SERIAL:
+                    function.flow = ast.Flow.FLOW_SERIAL
+                    continue
+                if child.getSymbol().type == FizzParser.ONEOF:
+                    function.flow = ast.Flow.FLOW_ONEOF
+                    continue
+                if child.getSymbol().type == FizzParser.PARALLEL:
+                    function.flow = ast.Flow.FLOW_PARALLEL
+                    continue
+
+                self.log_symbol(child)
+            else:
+                print("visitFunctiondef child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitFunctiondef child (unknown) type")
+
+        if function.flow == ast.Flow.FLOW_UNKNOWN and function.block.flow != ast.Flow.FLOW_UNKNOWN:
+            function.flow = function.block.flow
+        elif function.flow != ast.Flow.FLOW_UNKNOWN and function.block.flow == ast.Flow.FLOW_UNKNOWN:
+            function.block.flow = function.flow
+        elif function.flow == ast.Flow.FLOW_UNKNOWN and function.block.flow == ast.Flow.FLOW_UNKNOWN:
+            function.block.flow =  ast.Flow.FLOW_SERIAL
+            function.flow = ast.Flow.FLOW_SERIAL
+
+        print("function", function)
+        return function
+
+    # Visit a parse tree produced by FizzParser#func_call_stmt.
+    def visitFunc_call_stmt(self, ctx:FizzParser.Func_call_stmtContext):
+        print("\n\nvisitFunc_call_stmt",ctx.__class__.__name__)
+        print("visitFunc_call_stmt",ctx.getText())
+        print("visitFunc_call_stmt",dir(ctx))
+        print("visitFunc_call_stmt children count",ctx.getChildCount())
+        print("visitFunc_call_stmt full text\n", self.get_py_str(ctx))
+
+        func_call = ast.CallStmt()
+        has_assign = False
+        for i, child in reversed(list(enumerate(ctx.getChildren()))):
+            print()
+            print("visitFunc_call_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+
+                if isinstance(child, FizzParser.ArglistContext):
+                    func_call.args.extend(self.visitArglist(child))
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitFunc_call_stmt childProto",childProto)
+            elif hasattr(child, 'getSymbol'):
+                if child.getSymbol().type == FizzParser.NAME:
+                    if has_assign:
+                        func_call.vars.insert(0, child.getText())
+                    else:
+                        func_call.name = child.getText()
+                    continue
+                if child.getSymbol().type == FizzParser.ASSIGN:
+                    has_assign = True
+                    continue
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.CLOSE_PAREN
+                        or child.getSymbol().type == FizzParser.OPEN_PAREN
+                ):
+                    continue
+
+                self.log_symbol(child)
+            else:
+                print("visitFunc_call_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitFunc_call_stmt child (unknown) type")
+
+        print("func_call", func_call)
+        return func_call
+
+    # Visit a parse tree produced by FizzParser#arglist.
+    def visitArglist(self, ctx:FizzParser.ArglistContext):
+        arguments = []
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitArglist child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.ArgumentContext):
+                    arguments.append(self.visit(child))
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitArglist childProto",childProto)
+
+        return arguments
+
+    # Visit a parse tree produced by FizzParser#argument.
+    def visitArgument(self, ctx:FizzParser.ArgumentContext):
+        argument = ast.Argument()
+        py_str = self.get_py_str(ctx)
+        argument.py_expr = BuildAstVisitor.transform_code(py_str)
+        return argument
+
     # Visit a parse tree produced by FizzParser#expr_stmt.
     def visitExpr_stmt(self, ctx:FizzParser.Expr_stmtContext):
-        py_str = self.input_stream.getText(ctx.start.start, ctx.stop.stop)
+        py_str = self.get_py_str(ctx)
         print("visitExpr_stmt full text\n",py_str)
         py_str = BuildAstVisitor.transform_code(py_str)
         return ast.PyStmt(code=py_str)
@@ -222,8 +360,8 @@ class BuildAstVisitor(FizzParserVisitor):
                 print("visitSuite child (unknown) type",child.__class__.__name__, dir(child))
                 raise Exception("visitSuite child (unknown) type")
         print("visitSuite block", block)
-        if len(block.stmts) == 1 and block.stmts[0].block is not None:
-            print("visitSuite block.stmts[0].block", block.stmts[0].block)
+        if len(block.stmts) == 1 and block.stmts[0].block is not None and block.stmts[0].block.ByteSize() > 0:
+            print("visitSuite block.stmts[0].block", block.stmts[0].block, block.stmts[0].block.__class__.__name__)
             return block.stmts[0].block
         return block
 
@@ -239,16 +377,319 @@ class BuildAstVisitor(FizzParserVisitor):
             return ast.Statement(py_stmt=childProto)
         elif isinstance(childProto, ast.Block):
             return ast.Statement(block=childProto)
+        elif isinstance(childProto, ast.IfStmt):
+            return ast.Statement(if_stmt=childProto)
+        elif isinstance(childProto, ast.AnyStmt):
+            return ast.Statement(any_stmt=childProto)
+        elif isinstance(childProto, ast.ForStmt):
+            return ast.Statement(for_stmt=childProto)
+        elif isinstance(childProto, ast.WhileStmt):
+            return ast.Statement(while_stmt=childProto)
+        elif isinstance(childProto, ast.BreakStmt):
+            return ast.Statement(break_stmt=childProto)
+        elif isinstance(childProto, ast.ContinueStmt):
+            return ast.Statement(continue_stmt=childProto)
+        elif isinstance(childProto, ast.ReturnStmt):
+            return ast.Statement(return_stmt=childProto)
+        elif isinstance(childProto, ast.CallStmt):
+            return ast.Statement(call_stmt=childProto)
+
         elif isinstance(childProto, ast.StateVars):
             return childProto
         elif isinstance(childProto, ast.Action):
             return childProto
+        elif isinstance(childProto, ast.Function):
+            return childProto
         elif isinstance(childProto, ast.Invariant):
             return childProto
-        elif BuildAstVisitor.is_list_of_type(childProto):
+        elif BuildAstVisitor.is_list_of_type(childProto, ast.Invariant):
             return childProto
 
         raise Exception("visitStmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+
+    # Visit a parse tree produced by FizzParser#if_stmt.
+    def visitIf_stmt(self, ctx:FizzParser.If_stmtContext):
+        print("\n\nvisitIf_stmt",ctx.__class__.__name__)
+        print("visitIf_stmt\n",ctx.getText())
+        if_stmt = ast.IfStmt()
+        branch = ast.Branch()
+        if_stmt.branches.append(branch)
+
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitIf_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                self.log_childtree(child)
+                if isinstance(child, FizzParser.TestContext):
+                    if_stmt.branches[0].condition = self.get_py_str(child)
+                    continue
+                childProto = self.visit(child)
+                print("visitIf_stmt childProto",childProto, childProto.__class__.__name__, child.__class__.__name__)
+                if isinstance(childProto, ast.Block):
+                    if_stmt.branches[0].block.CopyFrom(childProto)
+                elif isinstance(childProto, ast.Branch):
+                    if_stmt.branches.append(childProto)
+                else:
+                    print("visitIf_stmt childProto",childProto)
+                    raise Exception("visitIf_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                        or child.getSymbol().type == FizzParser.IF
+                ):
+                    continue
+                self.log_symbol(child)
+                raise Exception("visitIf_stmt child (unknown) type",child.__class__.__name__, dir(child))
+            else:
+                print("visitIf_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitIf_stmt child (unknown) type")
+
+        print("visitIf_stmt if_stmt", if_stmt)
+        return if_stmt
+
+    # Visit a parse tree produced by FizzParser#elif_clause.
+    def visitElif_clause(self, ctx:FizzParser.Elif_clauseContext):
+        if ctx.getChildCount() != 4:
+            raise Exception("visitElif_clause child count != 4", ctx.getChildCount(), ctx.getText())
+        branch = ast.Branch()
+        branch.condition = self.get_py_str(ctx.getChild(1))
+        branch.block.CopyFrom(self.visit(ctx.getChild(3)))
+        print("visitElif_clause branch", branch)
+        return branch
+
+
+    # Visit a parse tree produced by FizzParser#else_clause.
+    def visitElse_clause(self, ctx:FizzParser.Else_clauseContext):
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitElse_clause child index",i,child.getText())
+            branch = ast.Branch()
+            branch.condition = "True"
+            if hasattr(child, 'toStringTree'):
+                self.log_childtree(child)
+                if isinstance(child, FizzParser.TestContext):
+                    branch.condition = self.get_py_str(child)
+                    continue
+                # if isinstance(child, FizzParser.Elif_clauseContext):
+                #     branch.condition = self.get_py_str(child)
+                #     continue
+                childProto = self.visit(child)
+                if isinstance(childProto, ast.Block):
+                    branch.block.CopyFrom(childProto)
+                    continue
+
+                print("visitElse_clause childProto",childProto)
+                raise Exception("visitElse_clause childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                ):
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitElse_clause child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitElse_clause child (unknown) type")
+
+        print("visitElse_clause branch", branch)
+        return branch
+
+    # Visit a parse tree produced by FizzParser#any_stmt.
+    def visitAny_stmt(self, ctx:FizzParser.Any_stmtContext):
+        print("\n\nvisitAny_stmt",ctx.__class__.__name__)
+        print("visitAny_stmt\n",ctx.getText())
+        any_stmt = ast.AnyStmt()
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitAny_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.ExprlistContext):
+                    any_stmt.loop_vars.extend(self.visitExprlist(child))
+                    continue
+                if isinstance(child, FizzParser.TestlistContext):
+                    any_stmt.py_expr = self.get_py_str(child)
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitAny_stmt childProto",childProto)
+                if isinstance(childProto, ast.Block):
+                    any_stmt.block.CopyFrom(childProto)
+                else:
+                    print("visitAny_stmt childProto",childProto)
+                    raise Exception("visitAny_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                ):
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitAny_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitAny_stmt child (unknown) type")
+
+        print("visitAny_stmt any_stmt", any_stmt)
+        return any_stmt
+
+    # Visit a parse tree produced by FizzParser#for_stmt.
+    def visitFor_stmt(self, ctx:FizzParser.For_stmtContext):
+        print("\n\nvisitFor_stmt",ctx.__class__.__name__)
+        print("visitFor_stmt\n",ctx.getText())
+        for_stmt = ast.ForStmt()
+        flow = ast.Flow.FLOW_UNKNOWN
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitFor_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.ExprlistContext):
+                    for_stmt.loop_vars.extend(self.visitExprlist(child))
+                    continue
+                if isinstance(child, FizzParser.TestlistContext):
+                    for_stmt.py_expr = self.get_py_str(child)
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitFor_stmt childProto",childProto)
+                if isinstance(childProto, ast.Block):
+                    for_stmt.block.CopyFrom(childProto)
+                else:
+                    print("visitFor_stmt childProto",childProto)
+                    raise Exception("visitFor_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                ):
+                    continue
+                if child.getSymbol().type == FizzParser.ATOMIC:
+                    flow = ast.Flow.FLOW_ATOMIC
+                    continue
+                if child.getSymbol().type == FizzParser.SERIAL:
+                    flow = ast.Flow.FLOW_SERIAL
+                    continue
+                if child.getSymbol().type == FizzParser.ONEOF:
+                    flow = ast.Flow.FLOW_ONEOF
+                    continue
+                if child.getSymbol().type == FizzParser.PARALLEL:
+                    flow = ast.Flow.FLOW_PARALLEL
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitFor_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitFor_stmt child (unknown) type")
+
+        print("visitFor_stmt for_stmt", for_stmt)
+        for_stmt.flow = flow
+        return for_stmt
+
+    # Visit a parse tree produced by FizzParser#while_stmt.
+    def visitWhile_stmt(self, ctx:FizzParser.While_stmtContext):
+        print("\n\nvisitWhile_stmt",ctx.__class__.__name__)
+        print("visitWhile_stmt\n",ctx.getText())
+        while_stmt = ast.WhileStmt()
+        flow = ast.Flow.FLOW_UNKNOWN
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitWhile_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.TestContext):
+                    while_stmt.py_expr = self.get_py_str(child)
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitWhile_stmt childProto",childProto)
+                if isinstance(childProto, ast.Block):
+                    while_stmt.block.CopyFrom(childProto)
+                else:
+                    print("visitWhile_stmt childProto",childProto)
+                    raise Exception("visitWhile_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                ):
+                    continue
+                if child.getSymbol().type == FizzParser.ATOMIC:
+                    flow = ast.Flow.FLOW_ATOMIC
+                    continue
+                if child.getSymbol().type == FizzParser.SERIAL:
+                    flow = ast.Flow.FLOW_SERIAL
+                    continue
+                if child.getSymbol().type == FizzParser.ONEOF:
+                    flow = ast.Flow.FLOW_ONEOF
+                    continue
+                if child.getSymbol().type == FizzParser.PARALLEL:
+                    flow = ast.Flow.FLOW_PARALLEL
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitWhile_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitWhile_stmt child (unknown) type")
+
+        print("visitWhile_stmt while_stmt", while_stmt)
+        while_stmt.flow = flow
+        return while_stmt
+
+    # Visit a parse tree produced by FizzParser#break_stmt.
+    def visitBreak_stmt(self, ctx:FizzParser.Break_stmtContext):
+        return ast.BreakStmt()
+
+
+    # Visit a parse tree produced by FizzParser#continue_stmt.
+    def visitContinue_stmt(self, ctx:FizzParser.Continue_stmtContext):
+        return ast.ContinueStmt()
+
+
+    # Visit a parse tree produced by FizzParser#return_stmt.
+    def visitReturn_stmt(self, ctx:FizzParser.Return_stmtContext):
+        return_stmt = ast.ReturnStmt()
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitReturn_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.TestlistContext):
+                    return_stmt.py_expr = self.get_py_str(child)
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitReturn_stmt childProto",childProto)
+                raise Exception("visitReturn_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.COLON
+                ):
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitReturn_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitReturn_stmt child (unknown) type")
+        return return_stmt
+
+
+    # Visit a parse tree produced by FizzParser#exprlist.
+    def visitExprlist(self, ctx:FizzParser.ExprlistContext):
+        py_exprs = []
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitExprlist child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.ExprContext):
+                    py_str = self.get_py_str(child)
+                    print("visitExprlist full text of child\n",py_str)
+                    py_expr = BuildAstVisitor.transform_code(py_str)
+                    py_exprs.append(py_expr)
+                    continue
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitExprlist childProto",childProto)
+                raise Exception("visitExprlist childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+
+        return py_exprs
 
     # Visit a parse tree produced by FizzParser#invariant_stmt.
     def visitInvariant_stmt(self, ctx:FizzParser.Invariant_stmtContext):
@@ -260,7 +701,7 @@ class BuildAstVisitor(FizzParserVisitor):
             print("visitInvariant_stmt child index",i,child.getText())
             if hasattr(child, 'toStringTree'):
                 if isinstance(child, FizzParser.TestContext):
-                    py_str = self.input_stream.getText(child.start.start, child.stop.stop)
+                    py_str = self.get_py_str(child)
                     print("visitExpr_stmt full text\n",py_str)
                     invariant.pyExpr = BuildAstVisitor.transform_code(py_str)
                     continue
@@ -285,6 +726,9 @@ class BuildAstVisitor(FizzParserVisitor):
 
         print("visitInvariant_stmt invariant", invariant)
         return invariant
+
+    def get_py_str(self, child):
+        return self.input_stream.getText(child.start.start, child.stop.stop)
 
     # Visit a parse tree produced by FizzParser#invariants_suite.
     def visitInvariants_suite(self, ctx:FizzParser.Invariants_suiteContext):
@@ -313,6 +757,6 @@ class BuildAstVisitor(FizzParserVisitor):
         print("log_childtree child",child.getRuleIndex())
         print("log_childtree child",child.getRuleContext())
         print("log_childtree child payloand",child.getPayload())
-        print("log_childtree child full text\n",self.input_stream.getText(child.start.start, child.stop.stop))
+        print("log_childtree child full text\n", self.get_py_str(child))
         print("---")
 

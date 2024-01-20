@@ -7,8 +7,10 @@ atomic action FairToss:
         atomic:
             oneof:
                 toss1 = 0
+                toss1 = 0
                 toss1 = 1
             oneof:
+                toss2 = 0
                 toss2 = 0
                 toss2 = 1
 

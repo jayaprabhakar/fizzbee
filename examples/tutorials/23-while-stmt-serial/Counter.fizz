@@ -1,5 +1,5 @@
 
-state:
+init:
   count = 0
 
 action Incr:

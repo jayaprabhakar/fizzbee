@@ -1,9 +1,9 @@
 
-state:
+init:
   elements = set([1, 2, 3, 4, 5])
   count = 5
 
-invariant:
+invariants:
   always count == len(elements)
 
 atomic action Remove:

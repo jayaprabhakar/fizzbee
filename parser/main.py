@@ -18,10 +18,12 @@ class MyErrorListener( ErrorListener ):
         raise Exception("Oh no!!")
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
-        raise Exception("Oh no!!")
+        print('reportAmbiguity', startIndex, stopIndex, exact, ambigAlts, configs)
+        # raise Exception("Oh no!!")
 
     def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs):
-        raise Exception("Oh no!!")
+        print('reportAttemptingFullContext', startIndex, stopIndex, conflictingAlts, configs)
+        # raise Exception("Oh no!!", startIndex, stopIndex, conflictingAlts, configs)
 
     def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
         raise Exception("Oh no!!")

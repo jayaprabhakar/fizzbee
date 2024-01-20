@@ -84,6 +84,11 @@ class FizzParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FizzParser#function_stmt.
+    def visitFunction_stmt(self, ctx:FizzParser.Function_stmtContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FizzParser#labelled_stmt.
     def visitLabelled_stmt(self, ctx:FizzParser.Labelled_stmtContext):
         return self.visitChildren(ctx)
@@ -149,6 +154,11 @@ class FizzParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FizzParser#functiondef.
+    def visitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FizzParser#typedargslist.
     def visitTypedargslist(self, ctx:FizzParser.TypedargslistContext):
         return self.visitChildren(ctx)
@@ -181,6 +191,11 @@ class FizzParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by FizzParser#simple_stmt.
     def visitSimple_stmt(self, ctx:FizzParser.Simple_stmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by FizzParser#func_call_stmt.
+    def visitFunc_call_stmt(self, ctx:FizzParser.Func_call_stmtContext):
         return self.visitChildren(ctx)
 
 

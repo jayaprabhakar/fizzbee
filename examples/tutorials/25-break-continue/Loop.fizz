@@ -1,17 +1,17 @@
 
-state:
+init:
   a = set([])
   b = 0
 
 atomic action ForContinueExample:
-     for i in range(0,5):
+     for i in range(0,15):
         if i%2 == 1:
           continue
         a.add(i)
 
 atomic action WhileContinueExample:
      i = -1
-     while i < 5:
+     while i < 15:
         i = i + 1
         if i%2 == 1:
           continue
@@ -20,12 +20,12 @@ atomic action WhileContinueExample:
 atomic action WhileBreakExample:
      while True:
         b = b + 1
-        if b >= 3:
+        if b >= 10:
           break
 
 atomic action ForBreakExample:
-     for i in range(0,5):
+     for i in range(0,200):
         b = b + 1
-        if b >= 3:
+        if b >= 10:
           break
 
