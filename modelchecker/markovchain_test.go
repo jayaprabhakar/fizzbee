@@ -20,19 +20,19 @@ func TestSteadyStateDistribution(t *testing.T) {
 	}{
 
 		{
-			filename:   "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie_ast.json",
+			filename:   "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
 			maxActions: 10,
 		},
 		{
-			filename:   "examples/tutorials/10.1-coins-to-dice-atomic-6sided/Die_ast.json",
+			filename:   "examples/tutorials/10.1-coins-to-dice-atomic-6sided/Die.json",
 			maxActions: 10,
 		},
 		{
-			filename:   "examples/tutorials/21-unfair-coin/FairCoin_ast.json",
+			filename:   "examples/tutorials/21-unfair-coin/FairCoin.json",
 			maxActions: 10,
 		},
 		{
-			filename:   "examples/tutorials/24-while-stmt-atomic/FairCoin_ast.json",
+			filename:   "examples/tutorials/24-while-stmt-atomic/FairCoin.json",
 			maxActions: 1,
 		},
 		{
@@ -61,6 +61,10 @@ func TestSteadyStateDistribution(t *testing.T) {
 		},
 		{
 			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
+			maxActions: 1,
+		},
+		{
+			filename:   "examples/tutorials/33-fair-die-from-coin-toss-method-any-stmt/FairDie.json",
 			maxActions: 1,
 		},
 		{

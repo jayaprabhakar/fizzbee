@@ -1,0 +1,5 @@
+init:
+  hour = 1
+
+atomic action Tick:
+    hour = hour%12 + 1

@@ -68,7 +68,7 @@ func steadyStateDistribution(root *Node) []float64 {
 	fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-		//fmt.Println(i, nextDistribution)
+		fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break

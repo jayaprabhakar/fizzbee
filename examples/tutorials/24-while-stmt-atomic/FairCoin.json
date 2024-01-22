@@ -5,12 +5,12 @@
   "invariants": [
     {
       "always": true,
-      "pyExpr": "value in [-1, 1, 2, 3]"
+      "pyExpr": "value in [-1, 0, 1]"
     },
     {
       "always": true,
       "eventually": true,
-      "pyExpr": "value in [1, 2, 3]"
+      "pyExpr": "value in [0, 1]"
     }
   ],
   "actions": [
