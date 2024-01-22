@@ -3,8 +3,8 @@ init:
   value = -1
 
 invariants:
-  always value in [-1, 1, 2, 3]
-  always eventually value in [1, 2, 3]
+  always value in [-1, 0, 1]
+  always eventually value in [0, 1]
 
 atomic action Toss:
     toss1 = -1

@@ -1,0 +1,21 @@
+{
+  "states": {
+    "code": "hour = 1\n\n"
+  },
+  "actions": [
+    {
+      "name": "Tick",
+      "flow": "FLOW_ATOMIC",
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "pyStmt": {
+              "code": "hour = hour%12 + 1"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

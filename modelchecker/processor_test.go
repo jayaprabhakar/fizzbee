@@ -433,6 +433,16 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    1,
 			expectedNodes: 28,
 		},
+		{
+			filename:      "examples/tutorials/33-fair-die-from-coin-toss-method-any-stmt/FairDie.json",
+			maxActions:    1,
+			expectedNodes: 14,
+		},
+		{
+			filename:      "examples/tutorials/34-simple-hour-clock/HourClock.json",
+			maxActions:    100,
+			expectedNodes: 12,
+		},
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir
