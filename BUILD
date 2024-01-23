@@ -13,7 +13,6 @@ go_library(
     deps = [
         "//modelchecker",
         "//proto:ast",
-        "@com_github_golang_glog//:glog",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",
     ],
 )
@@ -23,3 +22,4 @@ go_binary(
     embed = [":fizzbee_lib"],
     visibility = ["//visibility:public"],
 )
+

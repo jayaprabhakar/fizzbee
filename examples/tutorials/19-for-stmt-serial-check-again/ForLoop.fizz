@@ -3,6 +3,10 @@ init:
   elements = set([1, 2, 3])
   count = 3
 
+invariants:
+  always count <= len(elements)
+  always count >= 0
+
 action Remove:
    for e in elements:
      atomic:

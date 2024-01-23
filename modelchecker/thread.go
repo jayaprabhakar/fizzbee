@@ -378,7 +378,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 	if stmt.PyStmt != nil {
 		vars := t.Process.GetAllVariables()
 		_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", stmt.PyStmt, vars)
-		PanicOnError(err)
+		t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", stmt.PyStmt.GetCode()), err)
 		t.Process.updateAllVariablesInScope(vars)
 	} else if stmt.Block != nil {
 		t.currentFrame().pc = t.currentFrame().pc + ".Block"
@@ -391,7 +391,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		for i, branch := range stmt.IfStmt.Branches {
 			vars := t.Process.GetAllVariables()
 			cond, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", branch.Condition, vars)
-			PanicOnError(err)
+			//PanicOnError(err)
+			t.Process.PanicOnError(fmt.Sprintf("Error checking condition: %s", branch.Condition), err)
 			t.Process.updateAllVariablesInScope(vars)
 			if cond.Truth() {
 				t.currentFrame().pc = fmt.Sprintf("%s.IfStmt.Branches[%d].Block", t.currentPc(), i)
@@ -412,7 +413,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		vars := t.Process.GetAllVariables()
 		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.AnyStmt.PyExpr, vars)
-		PanicOnError(err)
+		t.Process.PanicOnError(fmt.Sprintf("Error evaluating expr: %s", stmt.AnyStmt.PyExpr), err)
+		//PanicOnError(err)
 		rangeVal, _ := val.(starlark.Iterable)
 		iter := rangeVal.Iterate()
 		defer iter.Done()
@@ -445,7 +447,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		vars := t.Process.GetAllVariables()
 		val, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ForStmt.PyExpr, vars)
-		PanicOnError(err)
+		t.Process.PanicOnError(fmt.Sprintf("Error evaluating expr: %s", stmt.ForStmt.PyExpr), err)
+		//PanicOnError(err)
 		rangeVal, ok := val.(starlark.Iterable)
 		PanicIfFalse(ok, fmt.Sprintf("Loop variable must be iterable, got %s", val.Type()))
 		iter := rangeVal.Iterate()
@@ -457,7 +460,6 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		var x starlark.Value
 		for iter.Next(&x) {
 			scope.loopRange = append(scope.loopRange, x)
-			fmt.Printf("forVariable: x: %s\n", x.String())
 		}
 		t.currentFrame().pc = t.currentFrame().pc + ".ForStmt"
 		return nil, false
@@ -490,7 +492,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		var val starlark.Value = starlark.None
 		if stmt.ReturnStmt.PyExpr != ""	{
 			v, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.ReturnStmt.PyExpr, vars)
-			PanicOnError(err)
+			t.Process.PanicOnError(fmt.Sprintf("Error evaluating expr: %s", stmt.ReturnStmt.PyExpr), err)
+			//PanicOnError(err)
 			val = v
 		}
 		actionPath := strings.Split(t.currentFrame().pc, ".")[0]
@@ -581,7 +584,8 @@ func (t *Thread) executeWhileStatement() ([]*Process, bool) {
 	}
 	vars := t.Process.GetAllVariables()
 	cond, err := t.Process.Evaluator.EvalPyExpr("filename.fizz", stmt.PyExpr, vars)
-	PanicOnError(err)
+	t.Process.PanicOnError(fmt.Sprintf("Error evaluating expr: %s", stmt.PyExpr), err)
+	//PanicOnError(err)
 	t.Process.updateAllVariablesInScope(vars)
 	if cond.Truth() {
 		t.currentFrame().pc = fmt.Sprintf("%s.Block", t.currentPc())

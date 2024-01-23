@@ -4,6 +4,7 @@ go_library(
     name = "modelchecker",
     srcs = [
         "checker.go",
+        "error.go",
         "graph.go",
         "invariants.go",
         "markovchain.go",

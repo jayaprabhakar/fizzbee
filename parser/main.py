@@ -3,6 +3,7 @@ from antlr4 import *
 from parser.FizzLexer import FizzLexer
 from parser.FizzParser import FizzParser
 from parser.FizzParserVisitor import FizzParserVisitor
+from antlr4.error.Errors import RecognitionException
 from antlr4.error.ErrorListener import ErrorListener
 from proto.fizz_ast_pb2 import File
 from parser.BuildAstVisitor import BuildAstVisitor
@@ -15,7 +16,8 @@ class MyErrorListener( ErrorListener ):
         super(MyErrorListener, self).__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise Exception("Oh no!!")
+        raise e
+        # raise Exception("Oh no!!")
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         print('reportAmbiguity', startIndex, stopIndex, exact, ambigAlts, configs)
@@ -26,7 +28,7 @@ class MyErrorListener( ErrorListener ):
         # raise Exception("Oh no!!", startIndex, stopIndex, conflictingAlts, configs)
 
     def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-        raise Exception("Oh no!!")
+        raise Exception("reportContextSensitivity!!")
 
 
 def main(argv):
@@ -40,7 +42,11 @@ def main(argv):
     parser = FizzParser(tokens)
     parser.addErrorListener( MyErrorListener() )
     print('calling parser.root()')
-    tree = parser.root()
+    try:
+        tree = parser.root()
+    except RecognitionException as e:
+        exit(1)
+
 
     print('calling BuildAstVisitor() dir', dir(BuildAstVisitor(stream)))
     answer = BuildAstVisitor(stream).visit(tree)

@@ -1,72 +1,79 @@
 package main
 
 import (
-	"fizz/ast"
-	"flag"
-	"fmt"
-	"github.com/golang/glog"
-	"github.com/jayaprabhakar/fizzbee/modelchecker"
-	"google.golang.org/protobuf/encoding/protojson"
-	"io/ioutil"
-	"math/rand"
-	"os"
+    "errors"
+    "fizz/ast"
+    "fmt"
+    "github.com/jayaprabhakar/fizzbee/modelchecker"
+    "google.golang.org/protobuf/encoding/protojson"
+    "os"
+    "time"
 )
 
 func main() {
-	flag.Parse()
-	defer glog.Flush()
-	path, err := os.Getwd()
-	// handle err
-	fmt.Println(path)
+    // Check if the correct number of arguments is provided
+    if len(os.Args) != 2 {
+        fmt.Println("Usage:", os.Args[0], "<json_file>")
+        os.Exit(1)
+    }
 
-	// Open our jsonFile
-	jsonFile, err := os.Open("examples/ast/streaming_counter_ast.json")
-	// if we os.Open returns an error then handle it
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	glog.Infof("Successfully Opened users.json")
-	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
+    // Get the input JSON file name from command line argument
+    jsonFilename := os.Args[1]
 
-	bytes, _ := ioutil.ReadAll(jsonFile)
+    // Read the content of the JSON file
+    jsonContent, err := os.ReadFile(jsonFilename)
+    if err != nil {
+        fmt.Println("Error reading JSON file:", err)
+        os.Exit(1)
+    }
+    f := &ast.File{}
+    err = protojson.Unmarshal(jsonContent, f)
+    if err != nil {
+        fmt.Println("Error unmarshalling JSON:", err)
+        os.Exit(1)
+    }
 
-	//  bytes,err := protojson.Marshal(f)
-	//  fmt.Println(string(bytes))
-	//  fmt.Println(err)
+    p1 := modelchecker.NewProcessor([]*ast.File{f}, &modelchecker.Options{
+        MaxActions:           5,
+        MaxConcurrentActions: 3,
+    })
+    startTime := time.Now()
+    _, failedNode, err := p1.Start()
+    if err != nil {
+        var modelErr *modelchecker.ModelError
+        if errors.As(err, &modelErr) {
+            fmt.Println("Stack Trace:")
+            fmt.Println(modelErr.SprintStackTrace())
+        } else {
+            fmt.Println("Error:", err)
+        }
+        os.Exit(1)
+    }
+    endTime := time.Now()
+    fmt.Printf("Time taken: %v\n", endTime.Sub(startTime))
+    //fmt.Println("root", root)
+    if failedNode == nil {
+        fmt.Println("PASSED: Model checker completed successfully")
+        return
+    }
+    fmt.Println("FAILED: Model checker failed")
 
-	f := &ast.File{}
-	err = protojson.Unmarshal(bytes, f)
-	fmt.Println(f)
-	fmt.Println(err)
+    // newStack of *Node
+    nodes := make([]*modelchecker.Node, 0)
 
-	mc := modelchecker.NewModelChecker("example")
-
-	globals, err := mc.ExecInit(f.Variables)
-	if err != nil {
-		panic(err)
-	}
-
-	// Print the global environment.
-	fmt.Println("\nGlobals:")
-	for _, name := range globals.Keys() {
-		v := globals[name]
-		fmt.Printf("%s (%s) = %s\n", name, v.Type(), v.String())
-	}
-
-	fmt.Println("Running actions")
-	for _, action := range f.Actions {
-		fmt.Printf("Action: %s\n", action.Name)
-
-		mc.ExecAction("myfilename.fizz", action, globals)
-	}
-
-	// Randomly select multiple actions to run
-	for i := 0; i < 3; i++ {
-		action := f.Actions[rand.Intn(len(f.Actions))]
-		fmt.Printf("------\nAction: %s\n", action.Name)
-		mc.ExecAction("myfilename.fizz", action, globals)
-	}
-
+    node := failedNode
+    //fmt.Println(node.String())
+    for node != nil {
+        nodes = append(nodes, node)
+        if len(node.Inbound) == 0 {
+            break
+        }
+        node.Name = node.Name + "/" + node.Inbound[0].Name
+        node = node.Inbound[0].Node
+    }
+    for i := len(nodes) - 1; i >= 0; i-- {
+        node = nodes[i]
+        fmt.Printf("--\n%s\n", node.GetName())
+        fmt.Printf("--\n%s\n", node.GetStateString())
+    }
 }

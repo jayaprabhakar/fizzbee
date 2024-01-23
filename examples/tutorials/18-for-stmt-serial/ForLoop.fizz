@@ -1,10 +1,11 @@
 
 init:
-  elements = set([1, 2, 3, 4, 5])
-  count = 5
+  elements = set([1, 2, 3])
+  count = len(elements)
 
 invariants:
   always count <= len(elements)
+  always count >= 0
 
 action Remove:
    for e in elements:

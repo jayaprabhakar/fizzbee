@@ -96,7 +96,7 @@ func TestProcessor_Start(t *testing.T) {
 	p1 := NewProcessor(files, &Options{
 		MaxActions: 1,
 	})
-	root := p1.Start()
+	root, _, _ := p1.Start()
 	assert.NotNil(t, root)
 	assert.Equal(t, 93, len(p1.visited))
 }
@@ -341,7 +341,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 			// The main reason for the significant increase in the nodes is because, the two threads can execute
 			// concurrently. So, in one thread might have deleted first element, then the second thread would start
 			// the loop, then both the threads would start interleaving between the two threads for each iteration.
-			expectedNodes: 100,
+			expectedNodes: 35,
 		},
 		{
 			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop.json",
@@ -463,8 +463,9 @@ func TestProcessor_Tutorials(t *testing.T) {
 				ContinueOnInvariantFailure: true,
 			})
 			startTime := time.Now()
-			root := p1.Start()
-			assert.NotNil(t, root)
+			root, _, err := p1.Start()
+			require.Nil(t, err)
+			require.NotNil(t, root)
 			assert.Equal(t, test.expectedNodes, len(p1.visited))
 			fmt.Printf("Completed Nodes: %d, elapsed: %s\n", len(p1.visited), time.Since(startTime))
 			//dotString := generateDotFile(root, make(map[*Node]bool))

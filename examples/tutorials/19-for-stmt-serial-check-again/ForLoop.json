@@ -2,6 +2,16 @@
   "states": {
     "code": "elements = set([1, 2, 3])\ncount = 3\n\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "count <= len(elements)"
+    },
+    {
+      "always": true,
+      "pyExpr": "count >= 0"
+    }
+  ],
   "actions": [
     {
       "name": "Remove",
