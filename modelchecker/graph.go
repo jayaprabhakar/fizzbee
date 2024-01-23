@@ -22,27 +22,27 @@ func removeMergeNodes(currentNode *Node, parentNode *Node, visited map[*Node]boo
 	}
 	removed := false
 	visited[currentNode] = true
-	for _, child := range currentNode.outbound {
-		if child.Node.Process == nil && len(child.Node.outbound) == 1 {
-			for j, p := range parentNode.outbound {
+	for _, child := range currentNode.Outbound {
+		if child.Node.Process == nil && len(child.Node.Outbound) == 1 {
+			for j, p := range parentNode.Outbound {
 				if p.Node == currentNode {
-					parentNode.outbound[j].Node = child.Node.outbound[0].Node
+					parentNode.Outbound[j].Node = child.Node.Outbound[0].Node
 				}
 			}
-			child.Node.outbound[0].Node.inbound = append(child.Node.outbound[0].Node.inbound, &Link{Node: parentNode})
-			//if parentNode == nil || len(parentNode.outbound) != 1 {
+			child.Node.Outbound[0].Node.Inbound = append(child.Node.Outbound[0].Node.Inbound, &Link{Node: parentNode})
+			//if parentNode == nil || len(parentNode.Outbound) != 1 {
 			//	fmt.Printf("parentNode: %p, %s\n", parentNode, parentNode.String())
 			//	fmt.Printf("currentNode: %p, %s\n", currentNode, currentNode.String())
 			//	fmt.Printf("childNode: %p, %s\n", child, child.String())
-			//	panic(fmt.Sprintf("Expecting only one outbound node for the parent node %p, %s", parentNode, parentNode.String()))
+			//	panic(fmt.Sprintf("Expecting only one Outbound node for the parent node %p, %s", parentNode, parentNode.String()))
 			//}
 
-			//child = child.outbound[0]
+			//child = child.Outbound[0]
 			removed = true
-			removeMergeNodes(child.Node.outbound[0].Node, parentNode, visited)
+			removeMergeNodes(child.Node.Outbound[0].Node, parentNode, visited)
 			continue
 		} else if child.Node.Process == nil {
-			panic(fmt.Sprintf("Expecting only one outbound node for the parent node %p, %s", parentNode, parentNode.String()))
+			panic(fmt.Sprintf("Expecting only one Outbound node for the parent node %p, %s", parentNode, parentNode.String()))
 		} else {
 			removed = removed || removeMergeNodes(child.Node, currentNode, visited)
 		}
@@ -81,10 +81,10 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 
 		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\"];\n", nodeID, n.String(), color)
 
-		// Recursively visit outbound nodes
-		for _, child := range n.outbound {
-			//for child.Process == nil && len(child.outbound) == 1 {
-			//	child = child.outbound[0]
+		// Recursively visit Outbound nodes
+		for _, child := range n.Outbound {
+			//for child.Process == nil && len(child.Outbound) == 1 {
+			//	child = child.Outbound[0]
 			//}
 			childID := fmt.Sprintf("\"%p\"", child.Node)
 			//if color != "green" {
@@ -112,7 +112,7 @@ func printGraph(node *Node) {
 		name = node.Process.Name
 	}
 	fmt.Printf("Node: %p, Process: %p (%s)\n", node, node.Process, name)
-	for _, outbound := range node.outbound {
+	for _, outbound := range node.Outbound {
 		fmt.Printf("  -> ")
 		printGraph(outbound.Node)
 	}

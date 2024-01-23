@@ -153,11 +153,11 @@ func createTransitionMatrix(nodes []*Node) [][]float64 {
 	}
 
 	for _, node := range nodes {
-		if len(node.outbound) == 0 {
+		if len(node.Outbound) == 0 {
 			matrix[indexMap[node]][indexMap[node]] = 1.0
 		}
-		for _, outboundNode := range node.outbound {
-			matrix[indexMap[node]][indexMap[outboundNode.Node]] += 1.0 / float64(len(node.outbound))
+		for _, outboundNode := range node.Outbound {
+			matrix[indexMap[node]][indexMap[outboundNode.Node]] += 1.0 / float64(len(node.Outbound))
 		}
 
 	}
@@ -201,7 +201,7 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node) {
 	visited[node] = true
 	*result = append(*result, node)
 
-	for _, outboundNode := range node.outbound {
+	for _, outboundNode := range node.Outbound {
 		traverseDFS(outboundNode.Node, visited, result)
 	}
 }

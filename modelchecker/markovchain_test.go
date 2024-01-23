@@ -88,7 +88,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 				MaxActions:                 test.maxActions,
 				MaxConcurrentActions:       maxThreads,
 			})
-			root := p1.Start()
+			root, _, _ := p1.Start()
 			RemoveMergeNodes(root)
 
 			dotString := generateDotFile(root, make(map[*Node]bool))

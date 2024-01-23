@@ -22,7 +22,6 @@ import (
 	"github.com/zeroflucs-given/generics/collections/linkedlist"
 	_ "github.com/zeroflucs-given/generics/collections/linkedlist"
 	"go.starlark.net/starlark"
-	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -157,10 +156,21 @@ func (n *Node) String() string {
 	if p == nil {
 		return "DUPLICATE"
 	}
-	buf := strings.Builder{}
+	buf := &strings.Builder{}
 	buf.WriteString(fmt.Sprintf("%s\n", p.Name))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 
+	n.appendState(p, buf)
+
+	return buf.String()
+}
+
+func (n *Node) GetStateString() string {
+	buf := &strings.Builder{}
+	n.appendState(n.Process, buf)
+	return buf.String()
+}
+func (n *Node) appendState(p *Process, buf *strings.Builder) {
 	if len(p.Heap.globals) > 0 {
 		jsonString := p.Heap.String()
 		// Escape double quotes
@@ -175,8 +185,6 @@ func (n *Node) String() string {
 		buf.WriteString("Returns: ")
 		buf.WriteString(escapedString)
 	}
-
-	return buf.String()
 }
 
 // GetName returns the name
@@ -266,11 +274,21 @@ func (p *Process) updateScopedVariable(scope *Scope, key string, val starlark.Va
 	return p.updateScopedVariable(scope.parent, key, val)
 }
 
+func (p *Process) NewModelError(msg string, nestedError error) *ModelError {
+	return NewModelError(msg, p, nestedError)
+}
+
+func (p *Process) PanicOnError(msg string, nestedError error)  {
+	if nestedError != nil {
+		panic(p.NewModelError(msg, nestedError))
+	}
+}
+
 type Node struct {
 	*Process
 
-	inbound  []*Link
-	outbound []*Link
+	Inbound  []*Link
+	Outbound []*Link
 
 	// The number of actions started until this node
 	// Note: This is the shorted path to this node from the root as we do BFS.
@@ -292,8 +310,8 @@ type Link struct {
 func NewNode(process *Process) *Node {
 	return &Node{
 		Process:     process,
-		inbound:     make([]*Link, 0),
-		outbound:    make([]*Link, 0),
+		Inbound:     make([]*Link, 0),
+		Outbound:    make([]*Link, 0),
 		actionDepth: 0,
 		forkDepth:   0,
 		stacktrace:  captureStackTrace(),
@@ -302,13 +320,13 @@ func NewNode(process *Process) *Node {
 
 func (n *Node) Merge(other *Node) *Node {
 	mergeNode := &Node{
-		inbound:     []*Link{&Link{Node: n}},
-		outbound:    []*Link{&Link{Node: other}},
+		Inbound:     []*Link{&Link{Node: n}},
+		Outbound:    []*Link{&Link{Node: other}},
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth,
 	}
-	n.outbound = append(n.outbound, &Link{Node: mergeNode})
-	other.inbound = append(other.inbound, &Link{Node: mergeNode})
+	n.Outbound = append(n.Outbound, &Link{Node: mergeNode})
+	other.Inbound = append(other.Inbound, &Link{Node: mergeNode})
 	return mergeNode
 }
 
@@ -318,15 +336,15 @@ func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 	}
 	forkNode := &Node{
 		Process:     process.Fork(),
-		inbound:     []*Link{&Link{Node: n, Name: action.Name}},
-		outbound:    []*Link{},
+		Inbound:     []*Link{&Link{Node: n, Name: action.Name}},
+		Outbound:    []*Link{},
 		actionDepth: n.actionDepth + 1,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
 	forkNode.Process.Name = action.Name
 
-	n.outbound = append(n.outbound, &Link{Node: forkNode, Name: action.Name})
+	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: action.Name})
 	return forkNode
 }
 
@@ -334,21 +352,22 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 
 	forkNode := &Node{
 		Process:     process,
-		inbound:     []*Link{&Link{Node: n, Name: name}},
-		outbound:    []*Link{},
+		Inbound:     []*Link{&Link{Node: n, Name: name}},
+		Outbound:    []*Link{},
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
 
-	n.outbound = append(n.outbound, &Link{Node: forkNode, Name: name})
+	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: name})
 	return forkNode
 }
 
 type Options struct {
 	// If true, continue processing even if an invariant fails
 	IgnoreInvariantFailures bool
-	// If true, continue processing other paths even if an invariant fails
+	// If true, continue processing other paths, but stop processing the current path
+	// If false (default), usually returns the shortest path to the invariant failure
 	ContinueOnInvariantFailure bool
 	// The maximum number of nodes to process
 	MaxNodes int
@@ -375,13 +394,24 @@ func NewProcessor(files []*ast.File, config *Options) *Processor {
 	}
 }
 
-func (p *Processor) Start() *Node {
+func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
+	// recover from panic
+	defer func() {
+		if r := recover(); r != nil {
+			if modelErr, ok := r.(*ModelError); ok {
+				err = modelErr
+				return
+			}
+			err = fmt.Errorf("panic: %v", r)
+			return
+		}
+	}()
 	if p.Init != nil {
 		panic("processor already started")
 	}
 	startTime := time.Now()
 	process := NewProcess("init", p.Files, nil)
-	init := NewNode(process)
+	init = NewNode(process)
 	globals, err := process.Evaluator.ExecInit(p.Files[0].States)
 	if err != nil {
 		panic(err)
@@ -394,13 +424,12 @@ func (p *Processor) Start() *Node {
 	if len(failed[0]) > 0 {
 		init.Process.FailedInvariants = failed
 		if !p.config.IgnoreInvariantFailures {
-			return p.Init
+			return p.Init, nil, nil
 		}
 	}
 
 	_ = p.queue.Push(p.Init)
 	//p.visited[p.Init.HashCode()] = p.Init
-
 	for p.queue.Count() != 0 {
 		found, node := p.queue.Pop()
 		if !found {
@@ -419,17 +448,18 @@ func (p *Processor) Start() *Node {
 		if len(p.visited)%1000 == 0 {
 			fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
 		}
-		if node.actionDepth == 2 && node.forkDepth == 4 {
-			fmt.Println(node)
-		}
+
 		invariantFailure := p.processNode(node)
 		p.visited[node.HashCode()] = node
+		if invariantFailure && failedNode == nil {
+			failedNode = node
+		}
 		if invariantFailure && !p.config.ContinueOnInvariantFailure {
 			break
 		}
 	}
 	fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
-	return p.Init
+	return p.Init, failedNode, err
 }
 
 func (p *Processor) processNode(node *Node) bool {
@@ -511,14 +541,6 @@ func (p *Processor) YieldNode(node *Node) {
 		newNode.Process.NewThread()
 		newNode.Process.current = len(newNode.Process.Threads) - 1
 		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
-
-		if strings.Contains(newNode.currentThread().currentPc(), ".$") {
-			fmt.Println("PC contains $")
-			fmt.Printf("node: %+v\n", newNode)
-			fmt.Printf("node.heap: %+v\n", newNode.Heap.String())
-			fmt.Printf("node.currentThread().currentPc(): %+v\n", newNode.currentThread().currentPc())
-			_, _ = fmt.Fprintf(os.Stderr, "node.currentThread().currentPc(): %v\n", newNode.currentThread().currentPc())
-		}
 
 		_ = p.queue.Push(newNode)
 	}
