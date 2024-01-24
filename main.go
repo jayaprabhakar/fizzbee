@@ -65,7 +65,7 @@ func main() {
     //fmt.Println(node.String())
     for node != nil {
         nodes = append(nodes, node)
-        if len(node.Inbound) == 0 {
+        if len(node.Inbound) == 0 || node.Name == "init" {
             break
         }
         node.Name = node.Name + "/" + node.Inbound[0].Name

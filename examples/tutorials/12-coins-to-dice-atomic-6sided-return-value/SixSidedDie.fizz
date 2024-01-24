@@ -1,9 +1,9 @@
 
-def Toss():
+func Toss():
   oneof:
-    `label=tail`
+    #`label=tail`
     return 0
-    `label=head`
+    #`label=head`
     return 1
 
   # any c in {0, 1}:
