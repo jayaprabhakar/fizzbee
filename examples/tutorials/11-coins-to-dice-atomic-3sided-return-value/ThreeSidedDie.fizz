@@ -1,10 +1,10 @@
 
-def Toss():
-  any c in {0, 1}:
+func Toss():
+  any c in [0, 1]:
     return c
 
 
-action Roll:
+atomic action Roll:
   while (True):
     toss1 = Toss()
     toss2 = Toss()
