@@ -1,5 +1,9 @@
 init:
   hour = 1
 
+invariants:
+  always hour <= 12 and hour >= 1
+  always eventually hour == 1
+
 atomic action Tick:
     hour = hour%12 + 1

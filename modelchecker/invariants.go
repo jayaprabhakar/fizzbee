@@ -14,6 +14,7 @@ func CheckInvariants(process *Process) map[int][]int {
 		results[i] = make([]int, 0)
 		for j, invariant := range file.Invariants {
 			passed := CheckInvariant(process, invariant)
+
 			if invariant.Eventually && passed && len(process.Threads) == 0 {
 				process.Witness[i][j] = true
 			} else if !invariant.Eventually && !passed {

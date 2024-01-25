@@ -71,6 +71,10 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:   "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions: 2,
 		},
+		{
+			filename:      "examples/tutorials/34-simple-hour-clock/HourClock.json",
+			maxActions:    100,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
@@ -111,7 +115,11 @@ func TestSteadyStateDistribution(t *testing.T) {
 				fmt.Println("Liveness")
 				for j, prob := range liveness {
 					if prob > 1e-6 {
-						fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
+						status := "DEAD"
+						if allNodes[j].Process.Witness[0][k] {
+							status = "LIVE"
+						}
+						fmt.Printf("%s %3d: prob: %1.6f, state: %s / returns: %s\n", status, j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
 					}
 				}
 			}

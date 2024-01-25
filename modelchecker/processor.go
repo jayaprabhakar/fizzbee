@@ -99,8 +99,6 @@ func NewProcess(name string, files []*ast.File, parent *Process) *Process {
 		p.Witness[i] = make([]bool, len(file.Invariants))
 	}
 	p.Children = append(p.Children, p)
-	thread := NewThread(p, files, 0, "")
-	p.Threads = append(p.Threads, thread)
 
 	return p
 }
@@ -429,16 +427,15 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	p.Init = init
 
 	failed := CheckInvariants(process)
-
 	if len(failed[0]) > 0 {
 		init.Process.FailedInvariants = failed
 		if !p.config.IgnoreInvariantFailures {
 			return p.Init, nil, nil
 		}
 	}
+	process.NewThread()
 
 	_ = p.queue.Push(p.Init)
-	//p.visited[p.Init.HashCode()] = p.Init
 	prevCount := 0
 	for p.queue.Count() != 0 {
 		found, node := p.queue.Pop()
