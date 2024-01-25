@@ -562,14 +562,41 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		return nil, false
 	} else if stmt.CallStmt != nil {
-		if len(stmt.CallStmt.Args) != 0 {
-			panic("CallStmt with args not supported")
-		}
+
 		frame := t.currentFrame()
 		if frame.scope.flow != ast.Flow_FLOW_ATOMIC {
 			panic("Only atomic flow is supported for call statements for now")
 		}
 		def := t.Process.SymbolTable[stmt.CallStmt.Name]
+		if def != nil && len(stmt.CallStmt.Args) != 0 {
+			panic("CallStmt with args not supported")
+		}
+		if def == nil {
+			// Handle builtin functions. A slightly better way is to use the exact code from the input file
+			// and execute. For now, we will generate the code. This will mess up with error messages later
+			code := strings.Builder{}
+			if len(stmt.CallStmt.Vars) > 0 {
+				code.WriteString(strings.Join(stmt.CallStmt.Vars, ", "))
+				code.WriteString(" = ")
+			}
+			code.WriteString(stmt.CallStmt.Name)
+			code.WriteString("(")
+
+			for _, arg := range stmt.CallStmt.Args {
+				if arg.Name != "" {
+					code.WriteString(arg.Name)
+					code.WriteString("=")
+				}
+				code.WriteString(arg.PyExpr)
+				code.WriteString(", ")
+			}
+			code.WriteString(")")
+			pyEquivStmt := &ast.PyStmt{Code: code.String()}
+			vars := t.Process.GetAllVariables()
+			_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", pyEquivStmt, vars)
+			t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", pyEquivStmt.GetCode()), err)
+			t.Process.updateAllVariablesInScope(vars)
+		}
 		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block"}
 		newFrame.callerAssignVarNames = stmt.CallStmt.Vars
 		// TODO: Handle args

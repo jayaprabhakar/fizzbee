@@ -409,8 +409,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 				err = modelErr
 				return
 			}
-			err = fmt.Errorf("panic: %v", r)
-			return
+			panic(err)
 		}
 	}()
 	if p.Init != nil {
