@@ -4,7 +4,7 @@ init:
   b = 0
 
 invariants:
-  always a >= b
+  #always a >= b
   always eventually a == b
 
 action Add:

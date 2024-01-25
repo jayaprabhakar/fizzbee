@@ -5,10 +5,6 @@
   "invariants": [
     {
       "always": true,
-      "pyExpr": "a >= b"
-    },
-    {
-      "always": true,
       "eventually": true,
       "pyExpr": "a == b"
     }

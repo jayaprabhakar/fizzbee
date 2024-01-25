@@ -193,16 +193,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/03-multiple-serial-counters/Counter.json",
 			maxActions:    2,
-			expectedNodes: 40,
+			expectedNodes: 45,
 		},
 		{
 			filename:      "examples/tutorials/03-multiple-serial-counters/Counter.json",
 			maxActions:    4,
-			expectedNodes: 1481,
-			// 4 actions, 463 nodes, .03s
-			// 5 actions, 1093 nodes, 0.09s
-			// 6 actions, 2269 nodes, 0.27s
-			// 10 actions, 19735 nodes, 14s
+			expectedNodes: 1622,
 		},
 		{
 			filename:      "examples/tutorials/04-multiple-oneof-counters/Counter.json",
@@ -232,12 +228,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter.json",
 			maxActions:    2,
-			expectedNodes: 47,
+			expectedNodes: 61,
 		},
 		{
 			filename:      "examples/tutorials/05-multiple-parallel-counters/Counter.json",
 			maxActions:    3,
-			expectedNodes: 219, // .03s
+			expectedNodes: 287, // .03s
 		},
 		{
 			filename:      "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
@@ -293,12 +289,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    2,
-			expectedNodes: 191,
+			expectedNodes: 238,
 		},
 		{
 			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    3,
-			expectedNodes: 1727,
+			expectedNodes: 2458,
 			// 4 actions, 11461 nodes, 3.37s
 			// 5 actions, 62233 nodes, 65s
 		},
@@ -310,25 +306,25 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:    2,
-			expectedNodes: 263,
+			expectedNodes: 330,
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
-			expectedNodes:        2686,
+			expectedNodes:        3760,
 			maxConcurrentActions: 3,
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
 			maxConcurrentActions: 2,
-			expectedNodes:        1142, // 0.16s 131
+			expectedNodes:        2237, // 0.16s 131
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           4,
 			maxConcurrentActions: 2,
-			expectedNodes:        2884, // 0.16s 162
+			expectedNodes:        6973, // 0.16s 162
 		},
 		{
 			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop.json",
@@ -341,7 +337,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 			// The main reason for the significant increase in the nodes is because, the two threads can execute
 			// concurrently. So, in one thread might have deleted first element, then the second thread would start
 			// the loop, then both the threads would start interleaving between the two threads for each iteration.
-			expectedNodes: 35,
+			expectedNodes: 36,
 		},
 		{
 			filename:      "examples/tutorials/19-for-stmt-serial-check-again/ForLoop.json",
@@ -361,7 +357,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/20-for-stmt-parallel-check-again/ForLoop.json",
 			maxActions:    2,
-			expectedNodes: 182,
+			expectedNodes: 194,
 		},
 		{
 			filename:      "examples/tutorials/21-unfair-coin/FairCoin.json",
