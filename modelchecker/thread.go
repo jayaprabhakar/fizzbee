@@ -33,7 +33,30 @@ func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 			m[k] = fmt.Sprintf("%v", list)
 			iter.Done()
 			continue
+		} else if v.Type() == "dict" {
+			// Convert map keys to a sorted list and add re-add them.
+			dict := v.(*starlark.Dict)
+			keys := dict.Keys()
+
+			var list []string
+			var keyMap = make(map[string]starlark.Value)
+			for _, x := range keys {
+				list = append(list, x.String())
+				keyMap[x.String()] = x
+			}
+			sort.Strings(list)
+
+			newDict := starlark.NewDict(len(list))
+			for _, x := range list {
+				key := keyMap[x]
+				val, _, _ := dict.Get(key)
+				err := newDict.SetKey(key, val)
+				PanicOnError(err)
+			}
+			m[k] = fmt.Sprintf("%v", newDict)
+			continue
 		}
+		// list is okay. no changes needed
 		m[k] = v.String()
 	}
 	return m
@@ -175,6 +198,29 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 			}
 			to[k] = newSet
 			iter.Done()
+			continue
+		} else if v.Type() == "list" {
+			// This might need to happen recursively.
+			iter := v.(starlark.Iterable).Iterate()
+			var x starlark.Value
+			newSet := starlark.NewList(nil)
+			for iter.Next(&x) {
+				err := newSet.Append(x)
+				PanicOnError(err)
+			}
+			to[k] = newSet
+			iter.Done()
+			continue
+		} else if v.Type() == "dict" {
+			// This might need to happen recursively.
+			items := v.(*starlark.Dict).Items()
+			newDict := starlark.NewDict(10)
+
+			for _, tuple := range items {
+				err := newDict.SetKey(tuple.Index(0), tuple.Index(1))
+				PanicOnError(err)
+			}
+			to[k] = newDict
 			continue
 		}
 		to[k] = v

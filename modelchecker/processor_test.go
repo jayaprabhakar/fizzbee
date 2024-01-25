@@ -439,6 +439,26 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    100,
 			expectedNodes: 12,
 		},
+		{
+			filename:      "examples/tutorials/35-list-example/Counter.json",
+			maxActions:    1,
+			expectedNodes: 5,
+		},
+		{
+			filename:      "examples/tutorials/35-list-example/Counter.json",
+			maxActions:    10,
+			expectedNodes: 15,
+		},
+		{
+			filename:      "examples/tutorials/36-dict-example/Counter.json",
+			maxActions:    1,
+			expectedNodes: 5,
+		},
+		{
+			filename:      "examples/tutorials/36-dict-example/Counter.json",
+			maxActions:    10,
+			expectedNodes: 16,
+		},
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir
@@ -464,8 +484,6 @@ func TestProcessor_Tutorials(t *testing.T) {
 			require.NotNil(t, root)
 			assert.Equal(t, test.expectedNodes, len(p1.visited))
 			fmt.Printf("Completed Nodes: %d, elapsed: %s\n", len(p1.visited), time.Since(startTime))
-			//dotString := generateDotFile(root, make(map[*Node]bool))
-			//fmt.Printf("\n%s\n", dotString)
 
 			//RemoveMergeNodes(root)
 			//// Print the modified graph

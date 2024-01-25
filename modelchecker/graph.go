@@ -1,6 +1,9 @@
 package modelchecker
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 func RemoveMergeNodes(root *Node) {
 	removed := true
@@ -52,6 +55,7 @@ func removeMergeNodes(currentNode *Node, parentNode *Node, visited map[*Node]boo
 }
 
 func generateDotFile(node *Node, visited map[*Node]bool) string {
+	re := regexp.MustCompile(`\\+`)
 	dotGraph := "digraph G {\n"
 
 	var dfs func(n *Node)
@@ -82,7 +86,8 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 		if len(n.Threads) == 0 {
 			penwidth = 2
 		}
-		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, n.String(), color, penwidth)
+		stateString := re.ReplaceAllString(n.String(), "\\")
+		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, stateString, color, penwidth)
 
 		// Recursively visit Outbound nodes
 		for _, child := range n.Outbound {
