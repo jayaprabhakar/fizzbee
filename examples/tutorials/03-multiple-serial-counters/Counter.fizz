@@ -5,6 +5,7 @@ init:
 
 invariants:
   always a >= b
+  always eventually a == b
 
 action Add:
   serial:

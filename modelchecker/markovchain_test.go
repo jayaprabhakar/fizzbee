@@ -36,31 +36,31 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/26-unfair-coin-toss-while/FairCoin_ast.json",
+			filename:   "examples/tutorials/26-unfair-coin-toss-while/FairCoin.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin_ast.json",
+			filename:   "examples/tutorials/27-unfair-coin-toss-while-noreset/FairCoin.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin_ast.json",
+			filename:   "examples/tutorials/28-unfair-coin-toss-while-return/FairCoin.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/29-simple-function/FlipCoin_ast.json",
+			filename:   "examples/tutorials/29-simple-function/FlipCoin.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/30-unfair-coin-toss-method/FairCoin_ast.json",
+			filename:   "examples/tutorials/30-unfair-coin-toss-method/FairCoin.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie_ast.json",
+			filename:   "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie.json",
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie_ast.json",
+			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie.json",
 			maxActions: 1,
 		},
 		{
@@ -68,7 +68,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions: 1,
 		},
 		{
-			filename:   "examples/tutorials/16-elements-counter-parallel/Counter_ast.json",
+			filename:   "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions: 2,
 		},
 	}

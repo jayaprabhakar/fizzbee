@@ -6,6 +6,7 @@ init:
 invariants:
   always count <= len(elements)
   always count >= 0
+  always eventually count == len(elements)
 
 action Remove:
    for e in elements:
