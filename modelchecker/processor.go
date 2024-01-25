@@ -161,6 +161,12 @@ func (n *Node) String() string {
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 
 	n.appendState(p, buf)
+	buf.WriteString("\n")
+	if len(p.Threads) > 0 {
+		buf.WriteString(fmt.Sprintf("Threads: %d/%d\n", p.current, len(p.Threads)))
+	} else {
+		buf.WriteString("Threads: 0\n")
+	}
 
 	return buf.String()
 }
@@ -230,6 +236,9 @@ func (p *Process) currentThread() *Thread {
 }
 
 func (p *Process) removeCurrentThread() {
+	if len(p.Threads) == 0 {
+		return
+	}
 	p.Threads = append(p.Threads[:p.current],
 		p.Threads[p.current+1:]...)
 	p.current = 0
@@ -430,6 +439,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 
 	_ = p.queue.Push(p.Init)
 	//p.visited[p.Init.HashCode()] = p.Init
+	prevCount := 0
 	for p.queue.Count() != 0 {
 		found, node := p.queue.Pop()
 		if !found {
@@ -445,8 +455,9 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 			// Add a node to indicate why this node was not processed
 			continue
 		}
-		if len(p.visited)%1000 == 0 {
+		if len(p.visited)%10000 == 0 && len(p.visited) != prevCount {
 			fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
+			prevCount = len(p.visited)
 		}
 
 		invariantFailure := p.processNode(node)
@@ -477,7 +488,10 @@ func (p *Processor) processNode(node *Node) bool {
 		return false
 	}
 	forks, yield := node.currentThread().Execute()
-	failedInvariants := CheckInvariants(node.Process)
+	var failedInvariants map[int][]int
+	if yield {
+		failedInvariants = CheckInvariants(node.Process)
+	}
 	if len(failedInvariants[0]) > 0 {
 		//panic(fmt.Sprintf("Invariant failed: %v", failedInvariants))
 		node.Process.FailedInvariants = failedInvariants
@@ -507,15 +521,27 @@ func (p *Processor) processNode(node *Node) bool {
 			}
 		} else {
 			p.YieldNode(node)
+			node.Name = "yield"
 		}
+		if len(node.Process.Threads) == 0 {
+			return false
+		}
+		crashFork := node.Process.Fork()
+		crashFork.Name = "crash"
+		crashFork.removeCurrentThread()
+		crashNode := node.ForkForAlternatePaths(crashFork, "crash")
+		// TODO: We could just copy the failed invariants from the parent
+		// instead of checking again
+		CheckInvariants(crashFork)
 
+		p.YieldNode(crashNode)
 		return false
 	}
 	return false
 }
 
 func (p *Processor) YieldNode(node *Node) {
-	node.Name = "yield"
+	//node.Name = "yield"
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
 		node.Merge(other)

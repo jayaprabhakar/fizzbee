@@ -78,8 +78,11 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 				}
 			}
 		}
-
-		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\"];\n", nodeID, n.String(), color)
+		penwidth := 1
+		if len(n.Threads) == 0 {
+			penwidth = 2
+		}
+		dotGraph += fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, n.String(), color, penwidth)
 
 		// Recursively visit Outbound nodes
 		for _, child := range n.Outbound {

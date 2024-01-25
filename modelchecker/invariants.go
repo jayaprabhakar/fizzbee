@@ -2,6 +2,7 @@ package modelchecker
 
 import (
 	"fizz/ast"
+	"go.starlark.net/starlark"
 )
 
 func CheckInvariants(process *Process) map[int][]int {
@@ -13,7 +14,7 @@ func CheckInvariants(process *Process) map[int][]int {
 		results[i] = make([]int, 0)
 		for j, invariant := range file.Invariants {
 			passed := CheckInvariant(process, invariant)
-			if invariant.Eventually && passed /*&& len(process.Returns) > 0*/ {
+			if invariant.Eventually && passed && len(process.Threads) == 0 {
 				process.Witness[i][j] = true
 			} else if !invariant.Eventually && !passed {
 				results[i] = append(results[i], j)
@@ -30,9 +31,19 @@ func CheckInvariant(process *Process, invariant *ast.Invariant) bool {
 	if invariant.Nested != nil {
 		panic("Invariant checking not supported for nested invariants")
 	}
-	vars := process.Heap.globals
+	vars := CloneDict(process.Heap.globals)
+	vars["__returns__"] = NewDictFromStringDict(process.Returns)
 	cond, err := process.Evaluator.EvalPyExpr("filename.fizz", invariant.PyExpr, vars)
 	PanicOnError(err)
 	return bool(cond.Truth())
+}
 
+func NewDictFromStringDict(vals starlark.StringDict) *starlark.Dict {
+	result := starlark.NewDict(len(vals))
+	for k, v := range vals {
+		err := result.SetKey(starlark.String(k), v)
+		// Should not fail
+		PanicOnError(err)
+	}
+	return result
 }

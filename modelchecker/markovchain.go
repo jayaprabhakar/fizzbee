@@ -68,7 +68,7 @@ func steadyStateDistribution(root *Node) []float64 {
 	fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-		fmt.Println(i, nextDistribution)
+		//fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -86,18 +86,23 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 
 	transitionMatrix := createTransitionMatrix(nodes)
 	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
-	transitionMatrix = transpose(transitionMatrix)
+
+
+	//printMatrix(transitionMatrix)
 	for i, matrix := range transitionMatrix {
 		if nodes[i].Witness[fileId][invariantId] {
 			for j := range matrix {
-				//if i == j {
-				//	matrix[j] = 1.0
-				//} else {
-				matrix[j] = 0.0
-				//}
+				if i == j {
+					matrix[j] = 1.0
+				} else {
+					matrix[j] = 0.0
+				}
 			}
 		}
 	}
+	transitionMatrix = transpose(transitionMatrix)
+	//printMatrix(transitionMatrix)
+	transitionMatrix = normalizeColumns(transitionMatrix)
 	//printMatrix(transitionMatrix)
 
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
@@ -105,7 +110,7 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 
 	initialDistribution := make([]float64, len(nodes))
 	for i, _ := range initialDistribution {
-		initialDistribution[i] = 1.0 / float64(len(nodes)) // Set every node to 1.0
+		initialDistribution[i] = 1.0 / float64(len(nodes)) // Set every node to 1.0/n
 	}
 
 	// Iterate to find the steady-state distribution
@@ -113,7 +118,7 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 	fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-
+		//fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -123,6 +128,29 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 	}
 
 	return currentDistribution
+}
+
+func normalizeColumns(matrix [][]float64) [][]float64 {
+	// Get the number of columns
+	numColumns := len(matrix[0])
+
+	// Iterate over each column
+	for col := 0; col < numColumns; col++ {
+		// Calculate the sum of values in the column
+		columnSum := 0.0
+		for _, row := range matrix {
+			columnSum += row[col]
+		}
+
+		// Normalize the values in the column
+		if columnSum != 0 {
+			for row := range matrix {
+				matrix[row][col] /= columnSum
+			}
+		}
+	}
+
+	return matrix
 }
 
 func sum(distribution []float64) float64 {
