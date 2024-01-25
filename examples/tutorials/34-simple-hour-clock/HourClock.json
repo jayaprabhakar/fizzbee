@@ -2,6 +2,17 @@
   "states": {
     "code": "hour = 1\n\n"
   },
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "hour <= 12 and hour >= 1"
+    },
+    {
+      "always": true,
+      "eventually": true,
+      "pyExpr": "hour == 1"
+    }
+  ],
   "actions": [
     {
       "name": "Tick",
