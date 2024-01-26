@@ -47,7 +47,8 @@ func TestHash(t *testing.T) {
 	files := []*ast.File{file}
 	process := NewProcess("", files, nil)
 	process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
-
+	assert.Len(t, process.Threads, 0)
+	process.NewThread()
 	thread := process.currentThread()
 	assert.Equal(t, thread.Stack.Len(), 1)
 

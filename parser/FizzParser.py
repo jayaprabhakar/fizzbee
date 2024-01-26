@@ -1136,6 +1136,41 @@ class FizzParser ( PythonParserBase ):
                 return visitor.visitChildren(self)
 
 
+    class Flow_stmtContext(Compound_stmtContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a FizzParser.Compound_stmtContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def COLON(self):
+            return self.getToken(FizzParser.COLON, 0)
+        def suite(self):
+            return self.getTypedRuleContext(FizzParser.SuiteContext,0)
+
+        def ATOMIC(self):
+            return self.getToken(FizzParser.ATOMIC, 0)
+        def SERIAL(self):
+            return self.getToken(FizzParser.SERIAL, 0)
+        def PARALLEL(self):
+            return self.getToken(FizzParser.PARALLEL, 0)
+        def ONEOF(self):
+            return self.getToken(FizzParser.ONEOF, 0)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterFlow_stmt" ):
+                listener.enterFlow_stmt(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitFlow_stmt" ):
+                listener.exitFlow_stmt(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitFlow_stmt" ):
+                return visitor.visitFlow_stmt(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class Init_stmtContext(Compound_stmtContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a FizzParser.Compound_stmtContext
@@ -1215,41 +1250,6 @@ class FizzParser ( PythonParserBase ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAction_stmt" ):
                 return visitor.visitAction_stmt(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-    class Labelled_stmtContext(Compound_stmtContext):
-
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a FizzParser.Compound_stmtContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def COLON(self):
-            return self.getToken(FizzParser.COLON, 0)
-        def suite(self):
-            return self.getTypedRuleContext(FizzParser.SuiteContext,0)
-
-        def ATOMIC(self):
-            return self.getToken(FizzParser.ATOMIC, 0)
-        def SERIAL(self):
-            return self.getToken(FizzParser.SERIAL, 0)
-        def PARALLEL(self):
-            return self.getToken(FizzParser.PARALLEL, 0)
-        def ONEOF(self):
-            return self.getToken(FizzParser.ONEOF, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLabelled_stmt" ):
-                listener.enterLabelled_stmt(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLabelled_stmt" ):
-                listener.exitLabelled_stmt(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLabelled_stmt" ):
-                return visitor.visitLabelled_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1747,7 +1747,7 @@ class FizzParser ( PythonParserBase ):
                 pass
 
             elif la_ == 12:
-                localctx = FizzParser.Labelled_stmtContext(self, localctx)
+                localctx = FizzParser.Flow_stmtContext(self, localctx)
                 self.enterOuterAlt(localctx, 12)
                 self.state = 245
                 _la = self._input.LA(1)

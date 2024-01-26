@@ -78,7 +78,7 @@ compound_stmt
     | INVARIANTS COLON invariants_suite                                              # invariants_stmt
     | actiondef                                                                      # action_stmt
     | functiondef                                                                    # function_stmt
-    | (ATOMIC | SERIAL | PARALLEL | ONEOF) COLON suite    #labelled_stmt
+    | (ATOMIC | SERIAL | PARALLEL | ONEOF) COLON suite                               #flow_stmt
     ;
 
 suite

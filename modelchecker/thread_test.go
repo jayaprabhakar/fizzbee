@@ -114,6 +114,7 @@ func TestThread_ExecuteBlock(t *testing.T) {
 	require.Nil(t, err)
 	files := []*ast.File{file}
 	process := NewProcess("", files, nil)
+	process.NewThread()
 	baseThread := NewThread(process, files, 0, "Actions[0]")
 	assert.Equal(t, baseThread.Stack.Len(), 1)
 	t.Run("atomic", func(t *testing.T) {
@@ -172,6 +173,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 
 	t.Run("atomic", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -202,6 +204,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 
 	t.Run("serial", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -231,6 +234,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 
 	t.Run("oneof", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -257,6 +261,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 
 	t.Run("parallel", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -294,6 +299,7 @@ func TestThread_ExecuteStatement(t *testing.T) {
 
 	t.Run("parallel_final_stmt", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -329,6 +335,7 @@ func TestThread_ExecuteEndOfBlock(t *testing.T) {
 
 	t.Run("topblock", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -347,6 +354,7 @@ func TestThread_ExecuteEndOfBlock(t *testing.T) {
 
 	t.Run("nested-atomic", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -371,6 +379,7 @@ func TestThread_ExecuteEndOfBlock(t *testing.T) {
 
 	t.Run("nested-serial", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 		thread := process.currentThread()
 		assert.Equal(t, thread.Stack.Len(), 1)
@@ -400,6 +409,7 @@ func TestThread_Execute(t *testing.T) {
 
 	t.Run("atomic", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 
 		thread := process.currentThread()
@@ -417,6 +427,7 @@ func TestThread_Execute(t *testing.T) {
 	})
 	t.Run("oneof", func(t *testing.T) {
 		process := NewProcess("", files, nil)
+		process.NewThread()
 		process.Heap.globals = starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)}
 
 		thread := process.currentThread()
