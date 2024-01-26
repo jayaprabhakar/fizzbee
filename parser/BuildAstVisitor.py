@@ -283,22 +283,22 @@ class BuildAstVisitor(FizzParserVisitor):
         py_str = BuildAstVisitor.transform_code(py_str)
         return ast.PyStmt(code=py_str)
 
-    # Visit a parse tree produced by FizzParser#labelled_stmt.
-    def visitLabelled_stmt(self, ctx:FizzParser.Labelled_stmtContext):
-        print("\n\nvisitLabelled_stmt",ctx.__class__.__name__)
-        print("visitLabelled_stmt\n",ctx.getText())
+    # Visit a parse tree produced by FizzParser#flow_stmt.
+    def visitFlow_stmt(self, ctx:FizzParser.Flow_stmtContext):
+        print("\n\nvisitFlow_stmt",ctx.__class__.__name__)
+        print("visitFlow_stmt\n",ctx.getText())
         block = None
         flow = ast.Flow.FLOW_UNKNOWN
         for i, child in enumerate(ctx.getChildren()):
             print()
-            print("visitLabelled_stmt child index",i,child.getText())
+            print("visitFlow_stmt child index",i,child.getText())
             if hasattr(child, 'toStringTree'):
                 self.log_childtree(child)
                 childProto = self.visit(child)
 
                 if isinstance(childProto, ast.Block):
                     block = childProto
-                print("visitLabelled_stmt childProto",childProto)
+                print("visitFlow_stmt childProto",childProto)
             elif hasattr(child, 'getSymbol'):
                 if (child.getSymbol().type == FizzParser.LINE_BREAK
                         or child.getSymbol().type == FizzParser.ACTION
@@ -320,13 +320,13 @@ class BuildAstVisitor(FizzParserVisitor):
                     continue
                 self.log_symbol(child)
             else:
-                print("visitLabelled_stmt child (unknown) type",child.__class__.__name__, dir(child))
-                raise Exception("visitLabelled_stmt child (unknown) type")
+                print("visitFlow_stmt child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitFlow_stmt child (unknown) type")
 
         if block is None:
             block = ast.Block()
         block.flow = flow
-        print("visitLabelled_stmt block", block)
+        print("visitFlow_stmt block", block)
         return block
 
     # Visit a parse tree produced by FizzParser#suite.
