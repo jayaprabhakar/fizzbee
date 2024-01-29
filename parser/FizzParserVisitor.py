@@ -34,6 +34,11 @@ class FizzParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FizzParser#labeled_stmt.
+    def visitLabeled_stmt(self, ctx:FizzParser.Labeled_stmtContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FizzParser#if_stmt.
     def visitIf_stmt(self, ctx:FizzParser.If_stmtContext):
         return self.visitChildren(ctx)

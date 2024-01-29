@@ -1,0 +1,17 @@
+invariants:
+    always 'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]
+    always eventually 'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]
+
+atomic func UnfairToss():
+    oneof:
+        `head` return 0
+        `tail`
+        return 0
+
+atomic action FairToss:
+    while True:
+        toss1 = UnfairToss()
+        toss2 = UnfairToss()
+
+        if toss1 != toss2:
+            return toss2

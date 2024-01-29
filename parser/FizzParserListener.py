@@ -53,6 +53,15 @@ class FizzParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by FizzParser#labeled_stmt.
+    def enterLabeled_stmt(self, ctx:FizzParser.Labeled_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#labeled_stmt.
+    def exitLabeled_stmt(self, ctx:FizzParser.Labeled_stmtContext):
+        pass
+
+
     # Enter a parse tree produced by FizzParser#if_stmt.
     def enterIf_stmt(self, ctx:FizzParser.If_stmtContext):
         pass

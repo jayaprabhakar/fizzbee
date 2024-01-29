@@ -329,6 +329,34 @@ class BuildAstVisitor(FizzParserVisitor):
         print("visitFlow_stmt block", block)
         return block
 
+    # Visit a parse tree produced by FizzParser#labeled_stmt.
+    def visitLabeled_stmt(self, ctx:FizzParser.Labeled_stmtContext):
+        print("\n\nvisitLabeled_stmt",ctx.__class__.__name__)
+        print("visitLabeled_stmt\n",ctx.getText())
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitLabeled_stmt child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitLabeled_stmt childProto",childProto)
+                if isinstance(childProto, ast.Statement):
+                    childProto.label = ctx.getChild(0).getText()
+                    return childProto
+                print("visitLabeled_stmt childProto",childProto)
+                raise Exception("visitLabeled_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.ACTION
+                        or child.getSymbol().type == FizzParser.COLON
+                        or child.getSymbol().type == FizzParser.INDENT
+                ):
+                    self.log_symbol(child)
+                    continue
+                self.log_symbol(child)
+
+        raise Exception("visitLabeled_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)
+
     # Visit a parse tree produced by FizzParser#suite.
     def visitSuite(self, ctx:FizzParser.SuiteContext):
         print("\n\nvisitSuite",ctx.__class__.__name__)
@@ -368,9 +396,23 @@ class BuildAstVisitor(FizzParserVisitor):
     # Visit a parse tree produced by FizzParser#stmt.
     def visitStmt(self, ctx:FizzParser.StmtContext):
         print("\n\nvisitStmt",ctx.__class__.__name__)
+        childStmt = ctx.getChild(0)
+        count = 0
         if ctx.getChildCount() != 1:
-            raise Exception("visitStmt child count != 1", ctx.getChildCount(), ctx.getText())
-        childProto = self.visit(ctx.getChild(0))
+            for i, child in enumerate(ctx.getChildren()):
+                print()
+                print("visitStmt child index",i,child.getText())
+                if hasattr(child, 'toStringTree'):
+                    self.log_childtree(child)
+                    childStmt = child
+                    count += 1
+                elif hasattr(child, 'getSymbol'):
+                    if child.getSymbol().type == FizzParser.LINE_BREAK:
+                        continue
+                    self.log_symbol(child)
+            if count != 1:
+                raise Exception("visitStmt child count != 1", count, ctx.getText())
+        childProto = self.visit(childStmt)
         if childProto is None:
             return None
         if isinstance(childProto, ast.PyStmt):
@@ -401,6 +443,8 @@ class BuildAstVisitor(FizzParserVisitor):
         elif isinstance(childProto, ast.Function):
             return childProto
         elif isinstance(childProto, ast.Invariant):
+            return childProto
+        elif isinstance(childProto, ast.Statement):
             return childProto
         elif BuildAstVisitor.is_list_of_type(childProto, ast.Invariant):
             return childProto

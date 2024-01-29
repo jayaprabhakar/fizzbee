@@ -61,6 +61,11 @@ eval_input
 stmt
     : simple_stmt
     | compound_stmt
+    | labeled_stmt
+    ;
+
+labeled_stmt
+    : LABEL LINE_BREAK? stmt
     ;
 
 compound_stmt
@@ -78,7 +83,7 @@ compound_stmt
     | INVARIANTS COLON invariants_suite                                              # invariants_stmt
     | actiondef                                                                      # action_stmt
     | functiondef                                                                    # function_stmt
-    | (ATOMIC | SERIAL | PARALLEL | ONEOF) COLON suite                               #flow_stmt
+    | (ATOMIC | SERIAL | PARALLEL | ONEOF) COLON suite                               # flow_stmt
     ;
 
 suite
@@ -333,7 +338,7 @@ atom
     : OPEN_PAREN (yield_expr | testlist_comp)? CLOSE_PAREN
     | OPEN_BRACKET testlist_comp? CLOSE_BRACKET
     | OPEN_BRACE dictorsetmaker? CLOSE_BRACE
-    | REVERSE_QUOTE testlist COMMA? REVERSE_QUOTE
+    // | REVERSE_QUOTE testlist COMMA? REVERSE_QUOTE
     | ELLIPSIS
     | name
     | PRINT

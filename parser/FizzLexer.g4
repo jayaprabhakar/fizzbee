@@ -104,7 +104,7 @@ EVENTUALLY     : 'eventually';
 
 DOT                : '.';
 ELLIPSIS           : '...';
-REVERSE_QUOTE      : '`';
+//REVERSE_QUOTE      : '`';
 STAR               : '*';
 COMMA              : ',';
 COLON              : ':';
@@ -149,6 +149,8 @@ STRING:
     ([uU] | [fF] [rR]? | [rR] [fF]?)? (SHORT_STRING | LONG_STRING)
     | ([bB] [rR]? | [rR] [bB]) (SHORT_BYTES | LONG_BYTES)
 ;
+
+LABEL: '`' ('\\' (RN | .) | ~[\\\r\n`])* '`';
 
 DECIMAL_INTEGER : [1-9] [0-9]* | '0'+;
 OCT_INTEGER     : '0' [oO] [0-7]+;
