@@ -42,21 +42,22 @@ message Block {
 
 message Statement {
   SourceInfo source_info = 1;
+  string label = 2;
 
-  PyStmt py_stmt = 2;
-  Block block = 3;
+  PyStmt py_stmt = 3;
+  Block block = 4;
 
-  IfStmt if_stmt = 4;
+  IfStmt if_stmt = 5;
 
-  ForStmt for_stmt = 5;
-  AnyStmt any_stmt = 6;
-  WhileStmt while_stmt = 7;
+  ForStmt for_stmt = 6;
+  AnyStmt any_stmt = 7;
+  WhileStmt while_stmt = 8;
 
-  BreakStmt break_stmt = 8;
-  ContinueStmt continue_stmt = 9;
-  ReturnStmt return_stmt = 10;
+  BreakStmt break_stmt = 9;
+  ContinueStmt continue_stmt = 10;
+  ReturnStmt return_stmt = 11;
 
-  CallStmt call_stmt = 11;
+  CallStmt call_stmt = 12;
 }
 
 message IfStmt {

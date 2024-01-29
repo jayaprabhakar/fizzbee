@@ -22,13 +22,14 @@ fi
 temp_output=$(mktemp)
 if ! bazel-bin/parser/parser_bin "$input_filename" > "$temp_output"; then
     echo "Error: Compilation failed"
+    echo "Logs at $temp_output" 
     exit 1
 fi
 
 # Create the JSON filename by replacing the extension
 json_filename="${input_filename%.*}.json"
 
-echo "Compiling" $json_filename
+echo "Model checking" $json_filename
 # Run the second command with the JSON filename
 bazel-bin/fizzbee_/fizzbee "$json_filename"
 
