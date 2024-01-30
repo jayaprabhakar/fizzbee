@@ -58,6 +58,7 @@ type Process struct {
 	Witness     [][]bool
 	Returns     starlark.StringDict
 	SymbolTable map[string]*Definition
+	Labels 		[]string
 }
 
 func NewProcess(name string, files []*ast.File, parent *Process) *Process {
@@ -93,6 +94,7 @@ func NewProcess(name string, files []*ast.File, parent *Process) *Process {
 		Children:    []*Process{},
 		Returns:     make(starlark.StringDict),
 		SymbolTable: symbolTable,
+		Labels: 	 make([]string, 0),
 	}
 	p.Witness = make([][]bool, len(files))
 	for i, file := range files {
@@ -126,6 +128,7 @@ func (p *Process) Fork() *Process {
 		Files:       p.Files,
 		Returns:     make(starlark.StringDict),
 		SymbolTable: p.SymbolTable,
+		Labels: 	 make([]string, 0),
 	}
 	p2.Witness = make([][]bool, len(p.Files))
 	for i, file := range p.Files {
@@ -312,6 +315,7 @@ type Node struct {
 type Link struct {
 	Node *Node
 	Name string
+	Labels []string
 }
 
 func NewNode(process *Process) *Node {
@@ -484,6 +488,13 @@ func (p *Processor) processNode(node *Node) bool {
 		return false
 	}
 	forks, yield := node.currentThread().Execute()
+	node.Inbound[0].Labels = node.Process.Labels
+	for _, link := range node.Inbound[0].Node.Outbound {
+		if link.Node == node {
+			link.Labels = node.Process.Labels
+		}
+	}
+
 	var failedInvariants map[int][]int
 	if yield {
 		failedInvariants = CheckInvariants(node.Process)

@@ -421,6 +421,9 @@ func (t *Thread) executeBlock() []*Process {
 func (t *Thread) executeStatement() ([]*Process, bool) {
 	protobuf := GetProtoFieldByPath(t.currentFileAst(), t.currentPc())
 	stmt := convertToStatement(protobuf)
+	if stmt.Label != "" {
+		t.Process.Labels = append(t.Process.Labels, stmt.Label)
+	}
 	if stmt.PyStmt != nil {
 		vars := t.Process.GetAllVariables()
 		_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", stmt.PyStmt, vars)

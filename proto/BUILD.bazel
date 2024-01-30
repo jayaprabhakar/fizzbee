@@ -28,3 +28,26 @@ go_library(
     importpath = "fizz/ast",
     visibility = ["//visibility:public"],
 )
+
+proto_library(
+    name = "perf_proto",
+    srcs = [
+        "fizz_ast.proto",
+        "performance_model.proto",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "perf_go_proto",
+    importpath = "fizz/perf",
+    proto = ":perf_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "perf",
+    embed = [":perf_go_proto"],
+    importpath = "fizz/perf",
+    visibility = ["//visibility:public"],
+)

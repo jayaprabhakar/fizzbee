@@ -50,6 +50,9 @@ func steadyStateDistribution(root *Node) []float64 {
 	// Create the transition matrix
 	nodes := getAllNodes(root)
 	for i, node := range nodes {
+		if node.Process == nil {
+			continue
+		}
 		fmt.Printf("%d: %s\n", i, node.Heap.String())
 	}
 
@@ -90,6 +93,9 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 
 	//printMatrix(transitionMatrix)
 	for i, matrix := range transitionMatrix {
+		if nodes[i].Process == nil {
+			continue
+		}
 		if nodes[i].Witness[fileId][invariantId] {
 			for j := range matrix {
 				if i == j {
