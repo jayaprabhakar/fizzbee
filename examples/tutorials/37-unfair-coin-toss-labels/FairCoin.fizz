@@ -1,12 +1,12 @@
 invariants:
-    always 'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]
-    always eventually 'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]
+    always 'FairToss' not in __returns__ or __returns__['FairToss'] in ['head', 'tail']
+    always eventually 'FairToss' in __returns__ and __returns__['FairToss'] in ['head', 'tail']
 
 atomic func UnfairToss():
     oneof:
-        `head` return 0
+        `head` return "head"
         `tail`
-        return 0
+        return "tail"
 
 atomic action FairToss:
     while True:

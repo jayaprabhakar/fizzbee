@@ -3,6 +3,7 @@ package modelchecker
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 func RemoveMergeNodes(root *Node) {
@@ -83,7 +84,7 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 			}
 		}
 		penwidth := 1
-		if len(n.Threads) == 0 {
+		if n.Process != nil && len(n.Threads) == 0 {
 			penwidth = 2
 		}
 		stateString := re.ReplaceAllString(n.String(), "\\")
@@ -95,8 +96,14 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 			//	child = child.Outbound[0]
 			//}
 			childID := fmt.Sprintf("\"%p\"", child.Node)
+			label := child.Name
+			if child.Labels != nil && len(child.Labels) > 0 {
+				label += "[" + strings.Join(child.Labels, ", ") + "]"
+
+			}
+
 			//if color != "green" {
-			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", nodeID, childID, child.Name)
+			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", nodeID, childID, label)
 			//}
 
 			dfs(child.Node)

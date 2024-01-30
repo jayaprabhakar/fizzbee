@@ -22,4 +22,3 @@ go_binary(
     embed = [":fizzbee_lib"],
     visibility = ["//visibility:public"],
 )
-

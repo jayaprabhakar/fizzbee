@@ -460,6 +460,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    10,
 			expectedNodes: 16,
 		},
+		{
+			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
+			maxActions:    10,
+			expectedNodes: 6,
+		},
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir

@@ -75,6 +75,10 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:      "examples/tutorials/34-simple-hour-clock/HourClock.json",
 			maxActions:    100,
 		},
+		{
+			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
+			maxActions:    1,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {

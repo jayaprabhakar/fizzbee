@@ -2,12 +2,12 @@
   "invariants": [
     {
       "always": true,
-      "pyExpr": "'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]"
+      "pyExpr": "'FairToss' not in __returns__ or __returns__['FairToss'] in ['head', 'tail']"
     },
     {
       "always": true,
       "eventually": true,
-      "pyExpr": "'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]"
+      "pyExpr": "'FairToss' in __returns__ and __returns__['FairToss'] in ['head', 'tail']"
     }
   ],
   "actions": [
@@ -74,13 +74,13 @@
           {
             "label": "`head`",
             "returnStmt": {
-              "pyExpr": "0"
+              "pyExpr": "\"head\""
             }
           },
           {
             "label": "`tail`",
             "returnStmt": {
-              "pyExpr": "0"
+              "pyExpr": "\"tail\""
             }
           }
         ]

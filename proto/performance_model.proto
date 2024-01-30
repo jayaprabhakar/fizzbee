@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "fizz/perf";
+
+message PerformanceModel {
+  map<string, TransitionConfig> configs = 1;
+}
+
+message TransitionConfig {
+  // The probability for the branch to be taken.
+  double probability = 1;
+}
