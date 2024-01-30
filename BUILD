@@ -12,7 +12,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//modelchecker",
-        "//proto:ast",
+        "//proto",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",
     ],
 )

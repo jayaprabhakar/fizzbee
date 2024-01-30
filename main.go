@@ -2,7 +2,7 @@ package main
 
 import (
     "errors"
-    "fizz/ast"
+    ast "fizz/proto"
     "fmt"
     "github.com/jayaprabhakar/fizzbee/modelchecker"
     "google.golang.org/protobuf/encoding/protojson"

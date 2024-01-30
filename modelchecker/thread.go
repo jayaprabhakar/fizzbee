@@ -3,7 +3,7 @@ package modelchecker
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fizz/ast"
+	ast "fizz/proto"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jayaprabhakar/fizzbee/lib"
@@ -233,6 +233,10 @@ type CallFrame struct {
 	FileIndex int
 	// pc is the program counter, pointing at the next instruction to execute.
 	pc string
+
+	// Name is the full path of the function/action being executed.
+	Name string
+
 	// scope is the lexical scope of the current frame
 	scope *Scope
 	// vars is the dictionary of arguments passed to the function.
@@ -422,7 +426,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 	protobuf := GetProtoFieldByPath(t.currentFileAst(), t.currentPc())
 	stmt := convertToStatement(protobuf)
 	if stmt.Label != "" {
-		t.Process.Labels = append(t.Process.Labels, stmt.Label)
+		t.Process.Labels = append(t.Process.Labels, t.currentFrame().Name + "." + stmt.Label)
 	}
 	if stmt.PyStmt != nil {
 		vars := t.Process.GetAllVariables()
@@ -600,7 +604,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", pyEquivStmt.GetCode()), err)
 			t.Process.updateAllVariablesInScope(vars)
 		}
-		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block"}
+		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block", Name: stmt.CallStmt.Name}
 		newFrame.callerAssignVarNames = stmt.CallStmt.Vars
 		// TODO: Handle args
 		t.pushFrame(newFrame)

@@ -15,7 +15,7 @@ package modelchecker
 
 import (
 	"crypto/sha256"
-	"fizz/ast"
+	ast "fizz/proto"
 	"fmt"
 	"github.com/zeroflucs-given/generics/collections"
 	_ "github.com/zeroflucs-given/generics/collections"
@@ -483,6 +483,7 @@ func (p *Processor) processNode(node *Node) bool {
 			thread := newNode.Process.NewThread()
 			//thread := newNode.currentThread()
 			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+			thread.currentFrame().Name = action.Name
 			_ = p.queue.Push(newNode)
 		}
 		return false
@@ -574,6 +575,7 @@ func (p *Processor) YieldNode(node *Node) {
 		newNode.Process.NewThread()
 		newNode.Process.current = len(newNode.Process.Threads) - 1
 		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+		newNode.currentThread().currentFrame().Name = action.Name
 
 		_ = p.queue.Push(newNode)
 	}
@@ -600,6 +602,7 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		newNode.Process.NewThread()
 		newNode.Process.current = len(newNode.Process.Threads) - 1
 		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+		newNode.currentThread().currentFrame().Name = action.Name
 
 		_ = p.queue.Push(newNode)
 	}

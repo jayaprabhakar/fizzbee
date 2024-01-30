@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "fizz/perf";
+option go_package = "fizz/proto";
 
 message PerformanceModel {
   map<string, TransitionConfig> configs = 1;

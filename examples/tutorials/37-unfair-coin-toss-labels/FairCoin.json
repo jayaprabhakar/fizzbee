@@ -72,13 +72,13 @@
         "flow": "FLOW_ONEOF",
         "stmts": [
           {
-            "label": "`head`",
+            "label": "head",
             "returnStmt": {
               "pyExpr": "\"head\""
             }
           },
           {
-            "label": "`tail`",
+            "label": "tail",
             "returnStmt": {
               "pyExpr": "\"tail\""
             }

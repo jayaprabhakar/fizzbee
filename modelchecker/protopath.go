@@ -1,7 +1,7 @@
 package modelchecker
 
 import (
-	"fizz/ast"
+	ast "fizz/proto"
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"

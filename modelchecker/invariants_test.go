@@ -1,7 +1,7 @@
 package modelchecker
 
 import (
-	"fizz/ast"
+	ast "fizz/proto"
 	"github.com/stretchr/testify/assert"
 	"go.starlark.net/starlark"
 	"testing"
