@@ -341,7 +341,9 @@ class BuildAstVisitor(FizzParserVisitor):
                 childProto = self.visit(child)
                 print("visitLabeled_stmt childProto",childProto)
                 if isinstance(childProto, ast.Statement):
-                    childProto.label = ctx.getChild(0).getText()
+                    # Get the label from the 0th child's text, and remove the first and last characters
+                    label = ctx.getChild(0).getText()
+                    childProto.label = label[1:-1]
                     return childProto
                 print("visitLabeled_stmt childProto",childProto)
                 raise Exception("visitLabeled_stmt childProto (unknown) type", childProto.__class__.__name__, dir(childProto), childProto)

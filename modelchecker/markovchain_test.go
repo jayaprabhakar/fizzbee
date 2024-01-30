@@ -1,7 +1,7 @@
 package modelchecker
 
 import (
-	"fizz/ast"
+	ast "fizz/proto"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"os"

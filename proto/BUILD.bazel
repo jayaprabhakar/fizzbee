@@ -51,3 +51,17 @@ go_library(
     importpath = "fizz/perf",
     visibility = ["//visibility:public"],
 )
+
+go_proto_library(
+    name = "proto_go_proto",
+    importpath = "fizz/proto",
+    proto = ":perf_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "proto",
+    embed = [":proto_go_proto"],
+    importpath = "fizz/proto",
+    visibility = ["//visibility:public"],
+)

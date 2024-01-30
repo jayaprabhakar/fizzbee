@@ -1,7 +1,7 @@
 package modelchecker
 
 import (
-	"fizz/ast"
+	ast "fizz/proto"
 	"github.com/golang/glog"
 	"go.starlark.net/starlark"
 )

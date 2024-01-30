@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "fizz/ast";
+option go_package = "fizz/proto";
 
 message File {
   SourceInfo source_info = 1;
