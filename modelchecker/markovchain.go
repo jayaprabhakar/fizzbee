@@ -1,6 +1,7 @@
 package modelchecker
 
 import (
+	"fizz/proto"
 	"fmt"
 	"math"
 )
@@ -14,6 +15,31 @@ func matrixVectorProduct(matrix [][]float64, vector []float64) []float64 {
 		}
 	}
 	//fmt.Printf("Matrix Vector Product:%v\n", result)
+	return result
+}
+
+func multiplyMatrices(a, b [][]float64) [][]float64 {
+	rows := len(a)
+	cols := len(a[0])
+
+	// Check if matrices have the same dimensions
+	if len(b) != rows || len(b[0]) != cols {
+		panic("Matrices must have the same dimensions for element-wise multiplication")
+	}
+
+	// Initialize the result matrix
+	result := make([][]float64, rows)
+	for i := range result {
+		result[i] = make([]float64, cols)
+	}
+
+	// Perform element-wise multiplication
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			result[i][j] = a[i][j] * b[i][j]
+		}
+	}
+
 	return result
 }
 
@@ -45,7 +71,7 @@ func printMatrix(matrix [][]float64) {
 	fmt.Println("]")
 }
 
-func steadyStateDistribution(root *Node) []float64 {
+func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) []float64 {
 
 	// Create the transition matrix
 	nodes := getAllNodes(root)
@@ -56,10 +82,21 @@ func steadyStateDistribution(root *Node) []float64 {
 		fmt.Printf("%d: %s\n", i, node.Heap.String())
 	}
 
-	transitionMatrix := createTransitionMatrix(nodes)
-	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
+	//transitionMatrix := createTransitionMatrix(nodes)
+	transitionMatrix := genTransitionMatrix(nodes, perfModel)
+	matrices := genCounterMatrices(nodes, perfModel)
+
+	fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
-	//printMatrix(transitionMatrix)
+	printMatrix(transitionMatrix)
+	counterMatrices := make(map[string][][]float64)
+	counters := make(map[string]float64)
+	for counterName, matrix := range matrices {
+		m := transpose(matrix)
+		counterMatrices[counterName] = multiplyMatrices(m, transitionMatrix)
+		counters[counterName] = 0.0
+	}
+	
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
 	iterations := 20000
 
@@ -70,8 +107,12 @@ func steadyStateDistribution(root *Node) []float64 {
 	currentDistribution := initialDistribution
 	fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
+		for counter, counterMatrix := range counterMatrices {
+				counters[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
+		}
+
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-		//fmt.Println(i, nextDistribution)
+		fmt.Println(i, nextDistribution)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -79,7 +120,7 @@ func steadyStateDistribution(root *Node) []float64 {
 
 		currentDistribution = nextDistribution
 	}
-
+	fmt.Println(counters)
 	return currentDistribution
 }
 

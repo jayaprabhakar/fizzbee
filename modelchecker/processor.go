@@ -489,10 +489,10 @@ func (p *Processor) processNode(node *Node) bool {
 		return false
 	}
 	forks, yield := node.currentThread().Execute()
-	node.Inbound[0].Labels = node.Process.Labels
+	node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
 	for _, link := range node.Inbound[0].Node.Outbound {
 		if link.Node == node {
-			link.Labels = node.Process.Labels
+			link.Labels = append(link.Labels, node.Process.Labels...)
 		}
 	}
 
