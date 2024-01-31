@@ -13,11 +13,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
-		filename             string
-		maxActions           int
-		expectedNodes        int
-		maxConcurrentActions int
-	}{
+	filename             string
+	maxActions           int
+	expectedNodes        int
+	maxConcurrentActions int
+	perfModel            *ast.PerformanceModel
+}{
 
 		{
 			filename:   "examples/tutorials/10-coins-to-dice-atomic-3sided/ThreeSidedDie.json",
@@ -60,6 +61,19 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions: 1,
 		},
 		{
+			filename:   "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie.json",
+			maxActions: 1,
+			perfModel:     &ast.PerformanceModel{
+				Configs: map[string]*ast.TransitionConfig{
+					"Toss.call": {
+						Counters: map[string]*ast.Counter{
+							"toss": {Numeric: 1},
+						},
+					},
+				},
+			},
+		},
+		{
 			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie.json",
 			maxActions: 1,
 		},
@@ -78,6 +92,36 @@ func TestSteadyStateDistribution(t *testing.T) {
 		{
 			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
 			maxActions:    1,
+			perfModel:     &ast.PerformanceModel{},
+		},
+		{
+			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
+			maxActions:    1,
+			perfModel:     &ast.PerformanceModel{
+				Configs: map[string]*ast.TransitionConfig{
+					"UnfairToss.head": {Probability: 0.99},
+					"UnfairToss.tail": {Probability: 0.01},
+					"UnfairToss.call": {
+						Counters: map[string]*ast.Counter{
+							"toss": {Numeric: 1},
+							"latency": {Numeric: 0.5},
+						},
+					},
+				},
+			},
+		},
+		{
+			filename:      "examples/tutorials/38-two-dice-with-coins/TwoDice.json",
+			maxActions:    1,
+			perfModel:     &ast.PerformanceModel{
+				Configs: map[string]*ast.TransitionConfig{
+					"Toss.call": {
+						Counters: map[string]*ast.Counter{
+							"toss": {Numeric: 1},
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -102,7 +146,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 			dotString := generateDotFile(root, make(map[*Node]bool))
 			fmt.Printf("\n%s\n", dotString)
 
-			steadyStateDist := steadyStateDistribution(root)
+			perfModel := test.perfModel
+			if perfModel == nil {
+				perfModel = &ast.PerformanceModel{}
+			}
+
+			steadyStateDist := steadyStateDistribution(root, perfModel)
 			fmt.Println(steadyStateDist)
 			allNodes := getAllNodes(root)
 			for j, prob := range steadyStateDist {

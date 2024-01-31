@@ -8,6 +8,7 @@ go_library(
         "graph.go",
         "invariants.go",
         "markovchain.go",
+        "perf_checker.go",
         "processor.go",
         "protopath.go",
         "starlark.go",

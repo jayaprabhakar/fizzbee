@@ -606,6 +606,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block", Name: stmt.CallStmt.Name}
 		newFrame.callerAssignVarNames = stmt.CallStmt.Vars
+		t.Process.Labels = append(t.Process.Labels, newFrame.Name + ".call")
 		// TODO: Handle args
 		t.pushFrame(newFrame)
 
