@@ -1,4 +1,15 @@
 {
+  "invariants": [
+    {
+      "always": true,
+      "pyExpr": "'Roll' not in __returns__ or __returns__['Roll'] in [1, 2, 3, 4, 5, 6]"
+    },
+    {
+      "always": true,
+      "eventually": true,
+      "pyExpr": "'Roll' in __returns__ and __returns__['Roll'] in [1, 2, 3, 4, 5, 6]"
+    }
+  ],
   "actions": [
     {
       "name": "Roll",

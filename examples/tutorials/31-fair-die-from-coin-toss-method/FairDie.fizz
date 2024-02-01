@@ -1,3 +1,6 @@
+invariants:
+  always 'Roll' not in __returns__ or __returns__['Roll'] in [1, 2, 3, 4, 5, 6]
+  always eventually 'Roll' in __returns__ and __returns__['Roll'] in [1, 2, 3, 4, 5, 6]
 
 atomic func Toss():
     oneof:

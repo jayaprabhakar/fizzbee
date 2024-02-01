@@ -2,8 +2,16 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "lib",
-    srcs = ["stack.go"],
+    srcs = [
+        "stack.go",
+        "yaml.go",
+    ],
     importpath = "github.com/jayaprabhakar/fizzbee/lib",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_huandu_go_clone//:go-clone"],
+    deps = [
+        "@com_github_huandu_go_clone//:go-clone",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
 )

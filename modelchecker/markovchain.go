@@ -71,7 +71,7 @@ func printMatrix(matrix [][]float64) {
 	fmt.Println("]")
 }
 
-func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) []float64 {
+func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]float64, map[string]float64) {
 
 	// Create the transition matrix
 	nodes := getAllNodes(root)
@@ -89,12 +89,18 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) []fl
 	fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
 	printMatrix(transitionMatrix)
-	counterMatrices := make(map[string][][]float64)
+	expectedCounterMatrices := make(map[string][][]float64)
+	rawCounterMatrices := make(map[string][][]float64)
 	counters := make(map[string]float64)
+	rawCounters := make(map[string]float64)
 	for counterName, matrix := range matrices {
 		m := transpose(matrix)
-		counterMatrices[counterName] = multiplyMatrices(m, transitionMatrix)
+		expectedCounterMatrices[counterName] = multiplyMatrices(m, transitionMatrix)
+		rawCounterMatrices[counterName] = m
 		counters[counterName] = 0.0
+		rawCounters[counterName] = 0.0
+		fmt.Println(counterName)
+		printMatrix(expectedCounterMatrices[counterName])
 	}
 	
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
@@ -106,13 +112,35 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) []fl
 	// Iterate to find the steady-state distribution
 	currentDistribution := initialDistribution
 	fmt.Println(currentDistribution)
+	altCurrentDistribution := make([]float64, len(nodes))
+	copy(altCurrentDistribution, currentDistribution)
+	terminationProbability := 0.0
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
-		for counter, counterMatrix := range counterMatrices {
+		terminationProbability = 0.0
+		for counter, counterMatrix := range expectedCounterMatrices {
 				counters[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
+				rawCounters[counter] += sum(matrixVectorProduct(counterMatrix, altCurrentDistribution))
 		}
 
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
-		fmt.Println(i, nextDistribution)
+		altCurrentDistribution = matrixVectorProduct(transitionMatrix, altCurrentDistribution)
+		
+		fmt.Println(i+1, nextDistribution)
+		fmt.Println(i+1, rawCounters)
+		fmt.Println(i+1, counters)
+
+		totalProb := 0.0
+		for j, _ := range altCurrentDistribution {
+			if transitionMatrix[j][j] == 1.0 {
+				altCurrentDistribution[j] = 0.0
+				terminationProbability += nextDistribution[j]
+			}
+			totalProb += altCurrentDistribution[j]
+		}
+		for j, f := range altCurrentDistribution {
+			altCurrentDistribution[j] = f / totalProb
+		}
+		fmt.Println(i+1, terminationProbability)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -121,7 +149,8 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) []fl
 		currentDistribution = nextDistribution
 	}
 	fmt.Println(counters)
-	return currentDistribution
+	fmt.Println(rawCounters)
+	return currentDistribution, counters
 }
 
 func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
