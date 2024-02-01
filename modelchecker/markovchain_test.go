@@ -3,6 +3,7 @@ package modelchecker
 import (
 	ast "fizz/proto"
 	"fmt"
+	"github.com/jayaprabhakar/fizzbee/lib"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 	maxActions           int
 	expectedNodes        int
 	maxConcurrentActions int
-	perfModel            *ast.PerformanceModel
+	perfModel            string
 }{
 
 		{
@@ -63,15 +64,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 		{
 			filename:   "examples/tutorials/31-fair-die-from-coin-toss-method/FairDie.json",
 			maxActions: 1,
-			perfModel:     &ast.PerformanceModel{
-				Configs: map[string]*ast.TransitionConfig{
-					"Toss.call": {
-						Counters: map[string]*ast.Counter{
-							"toss": {Numeric: 1},
-						},
-					},
-				},
-			},
+			perfModel:  "examples/tutorials/31-fair-die-from-coin-toss-method/perf_model.yaml",
 		},
 		{
 			filename:   "examples/tutorials/32-fair-die-from-unfair-coin/FairDie.json",
@@ -92,36 +85,21 @@ func TestSteadyStateDistribution(t *testing.T) {
 		{
 			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
 			maxActions:    1,
-			perfModel:     &ast.PerformanceModel{},
 		},
 		{
 			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
 			maxActions:    1,
-			perfModel:     &ast.PerformanceModel{
-				Configs: map[string]*ast.TransitionConfig{
-					"UnfairToss.head": {Probability: 0.99},
-					"UnfairToss.tail": {Probability: 0.01},
-					"UnfairToss.call": {
-						Counters: map[string]*ast.Counter{
-							"toss": {Numeric: 1},
-							"latency": {Numeric: 0.5},
-						},
-					},
-				},
-			},
+			perfModel:     "examples/tutorials/37-unfair-coin-toss-labels/perf_model_unbiased.yaml",
+		},
+		{
+			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
+			maxActions:    1,
+			perfModel:     "examples/tutorials/37-unfair-coin-toss-labels/perf_model_biased.yaml",
 		},
 		{
 			filename:      "examples/tutorials/38-two-dice-with-coins/TwoDice.json",
 			maxActions:    1,
-			perfModel:     &ast.PerformanceModel{
-				Configs: map[string]*ast.TransitionConfig{
-					"Toss.call": {
-						Counters: map[string]*ast.Counter{
-							"toss": {Numeric: 1},
-						},
-					},
-				},
-			},
+			perfModel:     "examples/tutorials/38-two-dice-with-coins/perf_model.yaml",
 		},
 	}
 	for _, test := range tests {
@@ -146,12 +124,13 @@ func TestSteadyStateDistribution(t *testing.T) {
 			dotString := generateDotFile(root, make(map[*Node]bool))
 			fmt.Printf("\n%s\n", dotString)
 
-			perfModel := test.perfModel
-			if perfModel == nil {
-				perfModel = &ast.PerformanceModel{}
+			perfModel := &ast.PerformanceModel{}
+			if test.perfModel != "" {
+				err = lib.ReadProtoFromFile(test.perfModel, perfModel)
+				require.Nil(t, err)
 			}
 
-			steadyStateDist := steadyStateDistribution(root, perfModel)
+			steadyStateDist, _ := steadyStateDistribution(root, perfModel)
 			fmt.Println(steadyStateDist)
 			allNodes := getAllNodes(root)
 			for j, prob := range steadyStateDist {
