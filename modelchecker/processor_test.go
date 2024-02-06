@@ -290,14 +290,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    2,
-			expectedNodes: 238,
+			expectedNodes: 216,
 		},
 		{
 			filename:      "examples/tutorials/15-elements-counter-serial/Counter.json",
 			maxActions:    3,
-			expectedNodes: 2458,
-			// 4 actions, 11461 nodes, 3.37s
-			// 5 actions, 62233 nodes, 65s
+			expectedNodes: 1964,
 		},
 		{
 			filename:      "examples/tutorials/16-elements-counter-parallel/Counter.json",
@@ -307,25 +305,25 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:    2,
-			expectedNodes: 330,
+			expectedNodes: 308,
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
-			expectedNodes:        3760,
+			expectedNodes:        3088,
 			maxConcurrentActions: 3,
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           3,
 			maxConcurrentActions: 2,
-			expectedNodes:        2237, // 0.16s 131
+			expectedNodes:        1733, // 0.16s 131
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           4,
 			maxConcurrentActions: 2,
-			expectedNodes:        6973, // 0.16s 162
+			expectedNodes:        4773, // 0.16s 162
 		},
 		{
 			filename:      "examples/tutorials/17-for-stmt-atomic/ForLoop.json",
@@ -465,6 +463,21 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    10,
 			expectedNodes: 6,
 		},
+		//{
+		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
+		//	maxActions:    30,
+		//	expectedNodes: 455,
+		//},
+		{
+			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+			maxActions:    1,
+			expectedNodes: 1366,
+		},
+		{
+			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+			maxActions:    30,
+			expectedNodes: 2390,
+		},
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir
@@ -493,11 +506,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 
 			//RemoveMergeNodes(root)
 			//// Print the modified graph
-			//fmt.Println("\nModified Graph:")
 			//fmt.Printf("Removing merge nodes, elapsed: %s\n", time.Since(startTime))
+			//fmt.Println("\nModified Graph:")
 			//dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
-			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
+			//dotFileName := RemoveLastSegment(filenamew, ".json") + ".dot"
 			//WriteFile(t, tempDir, dotFileName, []byte(dotString))
 			//fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
 			//fmt.Printf("\n%s\n", dotString)

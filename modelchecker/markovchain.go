@@ -71,8 +71,43 @@ func printMatrix(matrix [][]float64) {
 	fmt.Println("]")
 }
 
-func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]float64, map[string]float64) {
+type Histogram struct {
+	entries []HistogramEntry
+	mean map[string]float64
+	variance map[string]float64
+}
 
+func (h *Histogram) GetMeanCounts() map[string]float64 {
+	return h.mean
+}
+
+func (h *Histogram) GetAllHistogram() []HistogramEntry {
+	return h.entries
+}
+
+func (h *Histogram) GetMean(counter string) float64 {
+	return h.mean[counter]
+}
+
+type HistogramEntry struct {
+	percentile float64
+	counters  map[string]float64
+}
+
+func (h *Histogram) addEntry(percentile float64, counters map[string]float64) {
+	newCounters := make(map[string]float64)
+	for k, v := range counters {
+		newCounters[k] = v
+	}
+	h.entries = append(h.entries, HistogramEntry{percentile: percentile, counters: newCounters})
+}
+
+func newHistogram() *Histogram {
+	return &Histogram{entries: make([]HistogramEntry, 0), mean: make(map[string]float64), variance: make(map[string]float64)}
+}
+
+func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]float64, *Histogram) {
+	histogram := newHistogram()
 	// Create the transition matrix
 	nodes := getAllNodes(root)
 	for i, node := range nodes {
@@ -86,61 +121,72 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 	transitionMatrix := genTransitionMatrix(nodes, perfModel)
 	matrices := genCounterMatrices(nodes, perfModel)
 
-	fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
+	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
-	printMatrix(transitionMatrix)
+	//printMatrix(transitionMatrix)
 	expectedCounterMatrices := make(map[string][][]float64)
 	rawCounterMatrices := make(map[string][][]float64)
-	counters := make(map[string]float64)
+	mean := make(map[string]float64)
 	rawCounters := make(map[string]float64)
 	for counterName, matrix := range matrices {
 		m := transpose(matrix)
 		expectedCounterMatrices[counterName] = multiplyMatrices(m, transitionMatrix)
 		rawCounterMatrices[counterName] = m
-		counters[counterName] = 0.0
+		mean[counterName] = 0.0
 		rawCounters[counterName] = 0.0
-		fmt.Println(counterName)
-		printMatrix(expectedCounterMatrices[counterName])
+		//fmt.Println(counterName)
+		//printMatrix(expectedCounterMatrices[counterName])
 	}
 	
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
-	iterations := 20000
+	iterations := 10000
 
 	initialDistribution := make([]float64, len(nodes))
 	initialDistribution[0] = 1.0 // Start from the root node
 
 	// Iterate to find the steady-state distribution
 	currentDistribution := initialDistribution
-	fmt.Println(currentDistribution)
+	//fmt.Println(currentDistribution)
 	altCurrentDistribution := make([]float64, len(nodes))
 	copy(altCurrentDistribution, currentDistribution)
-	terminationProbability := 0.0
+	prevTerminationProbability := 0.0
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
-		terminationProbability = 0.0
+		terminationProbability := 0.0
 		for counter, counterMatrix := range expectedCounterMatrices {
-				counters[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
+				mean[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
 				rawCounters[counter] += sum(matrixVectorProduct(counterMatrix, altCurrentDistribution))
 		}
 
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
 		altCurrentDistribution = matrixVectorProduct(transitionMatrix, altCurrentDistribution)
-		
-		fmt.Println(i+1, nextDistribution)
-		fmt.Println(i+1, rawCounters)
-		fmt.Println(i+1, counters)
+
+		//fmt.Println(i+1, nextDistribution)
+
 
 		totalProb := 0.0
 		for j, _ := range altCurrentDistribution {
-			if transitionMatrix[j][j] == 1.0 {
+			if transitionMatrix[j][j] == 1.0 || (nodes[j].Process != nil &&
+					len(nodes[j].Process.Threads) == 0 && len(nodes[j].Process.Witness) > 0 && len(nodes[j].Process.Witness[0]) > 0 &&
+					nodes[j].Process.Witness[0][0]) {
 				altCurrentDistribution[j] = 0.0
 				terminationProbability += nextDistribution[j]
 			}
 			totalProb += altCurrentDistribution[j]
+
+		}
+		if len(mean) > 0 {
+			//fmt.Println(i+1, rawCounters)
+			//fmt.Println(i+1, mean)
+			//fmt.Println(i+1, terminationProbability)
+			if terminationProbability > prevTerminationProbability {
+				prevTerminationProbability = terminationProbability
+				histogram.addEntry(terminationProbability, rawCounters)
+			}
 		}
 		for j, f := range altCurrentDistribution {
 			altCurrentDistribution[j] = f / totalProb
 		}
-		fmt.Println(i+1, terminationProbability)
+		//fmt.Println(i+1, terminationProbability)
 		// Check for convergence (you may define a suitable threshold)
 		if vectorNorm(vectorDifference(nextDistribution, currentDistribution)) < 1e-7 {
 			break
@@ -148,9 +194,10 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 
 		currentDistribution = nextDistribution
 	}
-	fmt.Println(counters)
+	fmt.Println(mean)
 	fmt.Println(rawCounters)
-	return currentDistribution, counters
+	histogram.mean = mean
+	return currentDistribution, histogram
 }
 
 func checkLiveness(root *Node, fileId int, invariantId int) []float64 {

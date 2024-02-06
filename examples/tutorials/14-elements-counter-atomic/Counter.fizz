@@ -16,4 +16,3 @@ atomic action Remove:
    any e in elements:
      elements.remove(e)
      count -= 1
-

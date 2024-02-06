@@ -167,7 +167,9 @@ CLOSE_BRACE   : '}' {self.DecIndentLevel();};
 OPEN_BRACKET  : '[' {self.IncIndentLevel();};
 CLOSE_BRACKET : ']' {self.DecIndentLevel();};
 
-NAME: ID_START ID_CONTINUE*;
+NAME: ID_START ID_CONTINUE*
+    | ANY;
+//NAME_OR_ANY: NAME | 'any'
 
 LINE_JOIN : '\\' [ \t]* RN -> channel(HIDDEN);
 NEWLINE   : RN             {self.HandleNewLine();} -> channel(HIDDEN);

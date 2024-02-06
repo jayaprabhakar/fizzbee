@@ -111,31 +111,31 @@ def serializedATN():
         80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,
         118,120,122,124,126,0,14,1,0,41,42,1,0,41,43,1,0,41,44,1,0,51,52,
         1,1,3,3,1,0,53,54,1,0,81,93,2,0,66,67,71,71,3,0,55,55,68,70,79,79,
-        1,0,66,67,1,0,64,65,2,0,39,40,108,108,1,0,96,99,2,0,55,55,59,59,
-        1195,0,131,1,0,0,0,2,140,1,0,0,0,4,144,1,0,0,0,6,148,1,0,0,0,8,158,
-        1,0,0,0,10,160,1,0,0,0,12,257,1,0,0,0,14,269,1,0,0,0,16,271,1,0,
-        0,0,18,283,1,0,0,0,20,289,1,0,0,0,22,300,1,0,0,0,24,305,1,0,0,0,
-        26,309,1,0,0,0,28,313,1,0,0,0,30,318,1,0,0,0,32,337,1,0,0,0,34,350,
-        1,0,0,0,36,367,1,0,0,0,38,375,1,0,0,0,40,411,1,0,0,0,42,413,1,0,
-        0,0,44,416,1,0,0,0,46,419,1,0,0,0,48,433,1,0,0,0,50,435,1,0,0,0,
-        52,440,1,0,0,0,54,587,1,0,0,0,56,604,1,0,0,0,58,606,1,0,0,0,60,639,
-        1,0,0,0,62,641,1,0,0,0,64,652,1,0,0,0,66,663,1,0,0,0,68,668,1,0,
-        0,0,70,676,1,0,0,0,72,695,1,0,0,0,74,721,1,0,0,0,76,723,1,0,0,0,
-        78,737,1,0,0,0,80,739,1,0,0,0,82,742,1,0,0,0,84,749,1,0,0,0,86,762,
-        1,0,0,0,88,802,1,0,0,0,90,860,1,0,0,0,92,893,1,0,0,0,94,897,1,0,
-        0,0,96,915,1,0,0,0,98,926,1,0,0,0,100,937,1,0,0,0,102,942,1,0,0,
-        0,104,944,1,0,0,0,106,946,1,0,0,0,108,953,1,0,0,0,110,961,1,0,0,
-        0,112,972,1,0,0,0,114,974,1,0,0,0,116,993,1,0,0,0,118,995,1,0,0,
-        0,120,1024,1,0,0,0,122,1026,1,0,0,0,124,1030,1,0,0,0,126,1043,1,
-        0,0,0,128,132,3,2,1,0,129,132,3,4,2,0,130,132,3,6,3,0,131,128,1,
-        0,0,0,131,129,1,0,0,0,131,130,1,0,0,0,131,132,1,0,0,0,132,133,1,
-        0,0,0,133,134,5,0,0,1,134,1,1,0,0,0,135,141,5,3,0,0,136,141,3,52,
-        26,0,137,138,3,12,6,0,138,139,5,3,0,0,139,141,1,0,0,0,140,135,1,
-        0,0,0,140,136,1,0,0,0,140,137,1,0,0,0,141,3,1,0,0,0,142,145,5,3,
-        0,0,143,145,3,8,4,0,144,142,1,0,0,0,144,143,1,0,0,0,145,146,1,0,
-        0,0,146,144,1,0,0,0,146,147,1,0,0,0,147,5,1,0,0,0,148,152,3,96,48,
-        0,149,151,5,3,0,0,150,149,1,0,0,0,151,154,1,0,0,0,152,150,1,0,0,
-        0,152,153,1,0,0,0,153,7,1,0,0,0,154,152,1,0,0,0,155,159,3,52,26,
+        1,0,66,67,1,0,64,65,3,0,39,40,45,45,108,108,1,0,96,99,2,0,55,55,
+        59,59,1195,0,131,1,0,0,0,2,140,1,0,0,0,4,144,1,0,0,0,6,148,1,0,0,
+        0,8,158,1,0,0,0,10,160,1,0,0,0,12,257,1,0,0,0,14,269,1,0,0,0,16,
+        271,1,0,0,0,18,283,1,0,0,0,20,289,1,0,0,0,22,300,1,0,0,0,24,305,
+        1,0,0,0,26,309,1,0,0,0,28,313,1,0,0,0,30,318,1,0,0,0,32,337,1,0,
+        0,0,34,350,1,0,0,0,36,367,1,0,0,0,38,375,1,0,0,0,40,411,1,0,0,0,
+        42,413,1,0,0,0,44,416,1,0,0,0,46,419,1,0,0,0,48,433,1,0,0,0,50,435,
+        1,0,0,0,52,440,1,0,0,0,54,587,1,0,0,0,56,604,1,0,0,0,58,606,1,0,
+        0,0,60,639,1,0,0,0,62,641,1,0,0,0,64,652,1,0,0,0,66,663,1,0,0,0,
+        68,668,1,0,0,0,70,676,1,0,0,0,72,695,1,0,0,0,74,721,1,0,0,0,76,723,
+        1,0,0,0,78,737,1,0,0,0,80,739,1,0,0,0,82,742,1,0,0,0,84,749,1,0,
+        0,0,86,762,1,0,0,0,88,802,1,0,0,0,90,860,1,0,0,0,92,893,1,0,0,0,
+        94,897,1,0,0,0,96,915,1,0,0,0,98,926,1,0,0,0,100,937,1,0,0,0,102,
+        942,1,0,0,0,104,944,1,0,0,0,106,946,1,0,0,0,108,953,1,0,0,0,110,
+        961,1,0,0,0,112,972,1,0,0,0,114,974,1,0,0,0,116,993,1,0,0,0,118,
+        995,1,0,0,0,120,1024,1,0,0,0,122,1026,1,0,0,0,124,1030,1,0,0,0,126,
+        1043,1,0,0,0,128,132,3,2,1,0,129,132,3,4,2,0,130,132,3,6,3,0,131,
+        128,1,0,0,0,131,129,1,0,0,0,131,130,1,0,0,0,131,132,1,0,0,0,132,
+        133,1,0,0,0,133,134,5,0,0,1,134,1,1,0,0,0,135,141,5,3,0,0,136,141,
+        3,52,26,0,137,138,3,12,6,0,138,139,5,3,0,0,139,141,1,0,0,0,140,135,
+        1,0,0,0,140,136,1,0,0,0,140,137,1,0,0,0,141,3,1,0,0,0,142,145,5,
+        3,0,0,143,145,3,8,4,0,144,142,1,0,0,0,144,143,1,0,0,0,145,146,1,
+        0,0,0,146,144,1,0,0,0,146,147,1,0,0,0,147,5,1,0,0,0,148,152,3,96,
+        48,0,149,151,5,3,0,0,150,149,1,0,0,0,151,154,1,0,0,0,152,150,1,0,
+        0,0,152,153,1,0,0,0,153,7,1,0,0,0,154,152,1,0,0,0,155,159,3,52,26,
         0,156,159,3,12,6,0,157,159,3,10,5,0,158,155,1,0,0,0,158,156,1,0,
         0,0,158,157,1,0,0,0,159,9,1,0,0,0,160,162,5,95,0,0,161,163,5,3,0,
         0,162,161,1,0,0,0,162,163,1,0,0,0,163,164,1,0,0,0,164,165,3,8,4,
@@ -2008,7 +2008,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 276 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 24771928406360064) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0)):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 24807112778448896) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0)):
                     break
 
             self.state = 278
@@ -2178,7 +2178,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 293
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630506078287691776) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630541262659780608) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 292
                     self.arglist()
 
@@ -2507,7 +2507,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 332
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                 self.state = 319
                 self.test()
                 self.state = 330
@@ -2622,7 +2622,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 341
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630506078287691776) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630541262659780608) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 340
                     self.arglist()
 
@@ -2729,7 +2729,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 356
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612491198589829120) != 0) or _la==108:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612526382961917952) != 0) or _la==108:
                 self.state = 355
                 self.typedargslist()
 
@@ -2941,7 +2941,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 381
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612491198589829120) != 0) or _la==108:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612526382961917952) != 0) or _la==108:
                 self.state = 380
                 self.typedargslist()
 
@@ -3324,7 +3324,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 433
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [39, 40, 108]:
+            if token in [39, 40, 45, 108]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 427
                 self.named_parameter()
@@ -4064,7 +4064,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 460
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630506078287691776) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630541262659780608) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 459
                     self.arglist()
 
@@ -4100,7 +4100,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 491
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                     self.state = 469
                     self.test()
                     self.state = 474
@@ -4200,7 +4200,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 502
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 501
                     self.testlist()
 
@@ -4215,7 +4215,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 514
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 505
                     self.test()
                     self.state = 512
@@ -4334,7 +4334,7 @@ class FizzParser ( PythonParserBase ):
                     self.state = 542
                     self.match(FizzParser.CLOSE_PAREN)
                     pass
-                elif token in [39, 40, 108]:
+                elif token in [39, 40, 45, 108]:
                     self.state = 544
                     self.import_as_names()
                     pass
@@ -4522,7 +4522,7 @@ class FizzParser ( PythonParserBase ):
                         self.state = 591
                         self._errHandler.sync(self)
                         token = self._input.LA(1)
-                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                             self.state = 589
                             self.test()
                             pass
@@ -4736,7 +4736,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 623
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 55, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 55, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                     self.state = 610
                     self.testlist_star_expr()
                     self.state = 615
@@ -4812,7 +4812,7 @@ class FizzParser ( PythonParserBase ):
                     self.state = 635
                     self.yield_expr()
                     pass
-                elif token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                elif token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                     self.state = 636
                     self.testlist()
                     pass
@@ -5253,7 +5253,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 695
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [20, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+            if token in [20, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 681
                 self.logical_test(0)
@@ -5279,7 +5279,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 691
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612491198589829120) != 0) or _la==108:
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 612526382961917952) != 0) or _la==108:
                     self.state = 690
                     self.varargslist()
 
@@ -5558,7 +5558,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 737
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [39, 40, 108]:
+            if token in [39, 40, 45, 108]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 731
                 self.name()
@@ -5755,7 +5755,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 749
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [20, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+            if token in [20, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                 self.state = 746
                 self.comparison(0)
                 pass
@@ -6370,7 +6370,7 @@ class FizzParser ( PythonParserBase ):
                     self.state = 831
                     self.yield_expr()
                     pass
-                elif token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 55, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                elif token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 55, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                     self.state = 832
                     self.testlist_comp()
                     pass
@@ -6388,7 +6388,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 838
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 54045325984268288) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 54080510356357120) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 837
                     self.testlist_comp()
 
@@ -6403,7 +6403,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 843
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630506078287691776) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630541262659780608) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 842
                     self.dictorsetmaker()
 
@@ -6416,7 +6416,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 846
                 self.match(FizzParser.ELLIPSIS)
                 pass
-            elif token in [39, 40, 108]:
+            elif token in [39, 40, 45, 108]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 847
                 self.name()
@@ -6559,7 +6559,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 868
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                     self.state = 862
                     self.test()
                     self.state = 863
@@ -6586,7 +6586,7 @@ class FizzParser ( PythonParserBase ):
                         self.state = 877
                         self._errHandler.sync(self)
                         token = self._input.LA(1)
-                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                             self.state = 871
                             self.test()
                             self.state = 872
@@ -6706,7 +6706,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 897
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+            if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                 self.state = 895
                 self.test()
                 pass
@@ -6735,7 +6735,7 @@ class FizzParser ( PythonParserBase ):
                         self.state = 903
                         self._errHandler.sync(self)
                         token = self._input.LA(1)
-                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+                        if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                             self.state = 901
                             self.test()
                             pass
@@ -6939,6 +6939,9 @@ class FizzParser ( PythonParserBase ):
         def NAME(self):
             return self.getToken(FizzParser.NAME, 0)
 
+        def ANY(self):
+            return self.getToken(FizzParser.ANY, 0)
+
         def TRUE(self):
             return self.getToken(FizzParser.TRUE, 0)
 
@@ -6974,7 +6977,7 @@ class FizzParser ( PythonParserBase ):
             self.enterOuterAlt(localctx, 1)
             self.state = 937
             _la = self._input.LA(1)
-            if not(_la==39 or _la==40 or _la==108):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 36833639530496) != 0) or _la==108):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -7168,7 +7171,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 948
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304448) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393280) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                 self.state = 947
                 self.yield_arg()
 
@@ -7235,7 +7238,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 951
                 self.test()
                 pass
-            elif token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+            elif token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 952
                 self.testlist()
@@ -7393,7 +7396,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 965
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630506078287691776) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 630541262659780608) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 964
                     self.arglist()
 
@@ -7557,7 +7560,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 993
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [20, 24, 27, 36, 37, 38, 39, 40, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
+            if token in [20, 24, 27, 36, 37, 38, 39, 40, 45, 54, 66, 67, 71, 94, 96, 97, 98, 99, 100, 101, 102, 104, 106, 108]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 985
                 self.test()
@@ -7754,7 +7757,7 @@ class FizzParser ( PythonParserBase ):
                     self.state = 1010
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                         self.state = 1009
                         self.test()
 
@@ -7778,7 +7781,7 @@ class FizzParser ( PythonParserBase ):
                 self.state = 1019
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                     self.state = 1018
                     self.test()
 
@@ -7849,7 +7852,7 @@ class FizzParser ( PythonParserBase ):
             self.state = 1028
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18016528965304320) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 18051713337393152) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 5909069692963) != 0):
                 self.state = 1027
                 self.test()
 

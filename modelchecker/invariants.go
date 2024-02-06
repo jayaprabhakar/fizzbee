@@ -26,15 +26,20 @@ func CheckInvariants(process *Process) map[int][]int {
 }
 
 func CheckInvariant(process *Process, invariant *ast.Invariant) bool {
-	if !invariant.Always {
+	eventuallyAlways := invariant.Eventually && invariant.GetNested().GetAlways()
+	if !invariant.Always && !(eventuallyAlways){
 		panic("Invariant checking not supported for non-always invariants")
 	}
-	if invariant.Nested != nil {
+	if !eventuallyAlways && invariant.Nested != nil {
 		panic("Invariant checking not supported for nested invariants")
+	}
+	pyExpr := invariant.PyExpr
+	if eventuallyAlways && invariant.Nested != nil {
+		pyExpr = invariant.Nested.PyExpr
 	}
 	vars := CloneDict(process.Heap.globals)
 	vars["__returns__"] = NewDictFromStringDict(process.Returns)
-	cond, err := process.Evaluator.EvalPyExpr("filename.fizz", invariant.PyExpr, vars)
+	cond, err := process.Evaluator.EvalPyExpr("filename.fizz", pyExpr, vars)
 	PanicOnError(err)
 	return bool(cond.Truth())
 }

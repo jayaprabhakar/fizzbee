@@ -101,6 +101,15 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions:    1,
 			perfModel:     "examples/tutorials/38-two-dice-with-coins/perf_model.yaml",
 		},
+		//{
+		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
+		//	maxActions:    20,
+		//},
+		{
+			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+			maxActions:    2,
+			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
@@ -126,15 +135,18 @@ func TestSteadyStateDistribution(t *testing.T) {
 
 			perfModel := &ast.PerformanceModel{}
 			if test.perfModel != "" {
-				err = lib.ReadProtoFromFile(test.perfModel, perfModel)
+				perfModelFileName := filepath.Join(runfilesDir, "_main", test.perfModel)
+				err = lib.ReadProtoFromFile(perfModelFileName, perfModel)
 				require.Nil(t, err)
 			}
 
-			steadyStateDist, _ := steadyStateDistribution(root, perfModel)
+			steadyStateDist, histogram := steadyStateDistribution(root, perfModel)
 			fmt.Println(steadyStateDist)
+			fmt.Println(histogram.GetMeanCounts())
+			fmt.Println(histogram.GetAllHistogram())
 			allNodes := getAllNodes(root)
 			for j, prob := range steadyStateDist {
-				if prob > 1e-6 {
+				if prob > 1e-6 && allNodes[j].Process != nil {
 					fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
 				}
 			}
@@ -142,18 +154,36 @@ func TestSteadyStateDistribution(t *testing.T) {
 				if !inv.Eventually {
 					continue
 				}
-				liveness := checkLiveness(root, 0, k)
-				fmt.Println(liveness)
-				fmt.Println("Liveness")
-				for j, prob := range liveness {
-					if prob > 1e-6 {
-						status := "DEAD"
-						if allNodes[j].Process.Witness[0][k] {
-							status = "LIVE"
+				eventuallyAlways := inv.Eventually && inv.GetNested().GetAlways()
+				if eventuallyAlways {
+					fmt.Println("Eventually Always")
+					for j, prob := range steadyStateDist {
+						if prob > 1e-6 && allNodes[j].Process != nil && len(allNodes[j].Process.Threads) == 0 {
+							status := "DEAD"
+							if allNodes[j].Process.Witness[0][k] {
+								status = "LIVE"
+							}
+							fmt.Printf("%s %3d: prob: %1.6f, state: %s / returns: %s\n", status, j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
 						}
-						fmt.Printf("%s %3d: prob: %1.6f, state: %s / returns: %s\n", status, j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
+						
+					}
+					continue
+				} else {
+					liveness := checkLiveness(root, 0, k)
+					fmt.Println(liveness)
+					fmt.Println("Liveness")
+					for j, prob := range liveness {
+						if prob > 1e-6 {
+							status := "DEAD"
+
+							if allNodes[j].Process.Witness[0][k] {
+								status = "LIVE"
+							}
+							fmt.Printf("%s %3d: prob: %1.6f, state: %s / returns: %s\n", status, j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
+						}
 					}
 				}
+
 			}
 		})
 	}

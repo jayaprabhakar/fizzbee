@@ -742,6 +742,7 @@ class BuildAstVisitor(FizzParserVisitor):
         print("\n\nvisitInvariant_stmt",ctx.__class__.__name__)
         print("visitInvariant_stmt\n",ctx.getText())
         invariant = ast.Invariant()
+        rootInvariant = invariant
         for i, child in enumerate(ctx.getChildren()):
             print()
             print("visitInvariant_stmt child index",i,child.getText())
@@ -760,6 +761,9 @@ class BuildAstVisitor(FizzParserVisitor):
                 ):
                     continue
                 if child.getSymbol().type == FizzParser.ALWAYS:
+                    if invariant.eventually:
+                        invariant.nested.CopyFrom(ast.Invariant())
+                        invariant = invariant.nested
                     invariant.always = True
                     continue
                 if child.getSymbol().type == FizzParser.EVENTUALLY:
@@ -770,8 +774,8 @@ class BuildAstVisitor(FizzParserVisitor):
                 print("visitInvariant_stmt child (unknown) type",child.__class__.__name__, dir(child))
                 raise Exception("visitInvariant_stmt child (unknown) type")
 
-        print("visitInvariant_stmt invariant", invariant)
-        return invariant
+        print("visitInvariant_stmt invariant", rootInvariant)
+        return rootInvariant
 
     def get_py_str(self, child):
         return self.input_stream.getText(child.start.start, child.stop.stop)
