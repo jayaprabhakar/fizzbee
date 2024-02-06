@@ -407,15 +407,15 @@ func NewProcessor(files []*ast.File, config *Options) *Processor {
 
 func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	// recover from panic
-	defer func() {
-		if r := recover(); r != nil {
-			if modelErr, ok := r.(*ModelError); ok {
-				err = modelErr
-				return
-			}
-			panic(err)
-		}
-	}()
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//		if modelErr, ok := r.(*ModelError); ok {
+	//			err = modelErr
+	//			return
+	//		}
+	//		panic(r)
+	//	}
+	//}()
 	if p.Init != nil {
 		panic("processor already started")
 	}

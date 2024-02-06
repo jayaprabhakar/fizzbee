@@ -369,6 +369,7 @@ dotted_name
 
 name
     : NAME
+    | ANY
     | TRUE
     | FALSE
     ;

@@ -187,6 +187,7 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 		to = make(starlark.StringDict)
 	}
 	for k, v := range from {
+		/*
 		if v.Type() == "set" {
 			// This might need to happen recursively.
 			iter := v.(starlark.Iterable).Iterate()
@@ -224,6 +225,10 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 			continue
 		}
 		to[k] = v
+		*/
+		newValue, err := deepCloneStarlarkValue(v)
+		PanicOnError(err)
+		to[k] = newValue
 	}
 	return to
 }
@@ -308,6 +313,16 @@ func (t *Thread) InsertNewScope() *Scope {
 	if scope.parent != nil {
 		scope.flow = scope.parent.flow
 	}
+	return scope
+}
+
+// ExitScope removes the current scope and returns the removed scope or nil if no scope was present.
+func (t *Thread) ExitScope() *Scope {
+	scope := t.currentFrame().scope
+	if scope == nil {
+		return nil
+	}
+	t.currentFrame().scope = scope.parent
 	return scope
 }
 
@@ -472,8 +487,12 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		iter := rangeVal.Iterate()
 		defer iter.Done()
 
-		//scope := t.InsertNewScope()
-		//scope.flow = stmt.AnyStmt.Flow
+		scope := t.InsertNewScope()
+		if stmt.AnyStmt.Flow != ast.Flow_FLOW_UNKNOWN {
+			scope.flow = stmt.AnyStmt.Flow
+		} else {
+			scope.flow = t.currentFrame().scope.flow
+		}
 		forks := make([]*Process, 0)
 		var x starlark.Value
 		for iter.Next(&x) {
@@ -487,6 +506,8 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		}
 		if len(forks) > 0 {
 			return forks, false
+		} else {
+			t.ExitScope()
 		}
 
 		//scope.vars[stmt.AnyStmt.LoopVars[0]] = val
@@ -744,12 +765,26 @@ func (t *Thread) executeEndOfBlock() bool {
 		if frame.scope == nil {
 			//t.popFrame()
 			actionPath := strings.Split(t.currentFrame().pc, ".")[0]
-			_ = GetProtoFieldByPath(t.currentFileAst(), actionPath)
-			t.popFrame()
+			protobuf := GetProtoFieldByPath(t.currentFileAst(), actionPath)
+			oldFrame := t.popFrame()
+
 			if t.Stack.Len() == 0 {
 				t.Process.removeCurrentThread()
 				//t.Process.Returns[convertToAction(action).Name] = starlark.None
 				return true
+			} else {
+				frame = t.currentFrame()
+				// if protobuf is of type Function then it is a function call.
+				if _, ok := protobuf.(*ast.Function); ok {
+					if len(oldFrame.callerAssignVarNames) > 1 {
+						panic("Multiple return values not supported yet")
+					}
+					for _, name := range oldFrame.callerAssignVarNames {
+						t.currentFrame().scope.vars[name] = starlark.None
+					}
+					_,yield := t.executeEndOfStatement()
+					return yield
+				}
 			}
 		}
 		t.currentFrame().pc = RemoveLastBlock(t.currentPc())
@@ -796,6 +831,7 @@ func (t *Thread) FindNextProgramCounter() string {
 		return path
 	case *ast.AnyStmt:
 		path, _ := GetNextFieldPath(t.currentFileAst(), frame.pc)
+		frame.scope = frame.scope.parent
 		return path
 	case *ast.ForStmt:
 		// ForStmt is in the same instruction counter, only the iteration variable changes.

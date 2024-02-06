@@ -4,6 +4,7 @@ go_library(
     name = "modelchecker",
     srcs = [
         "checker.go",
+        "clone.go",
         "error.go",
         "graph.go",
         "invariants.go",
@@ -41,7 +42,10 @@ go_test(
         "starlark_test.go",
         "thread_test.go",
     ],
-    data = ["//examples/tutorials"],
+    data = [
+        "//examples/comparisons",
+        "//examples/tutorials",
+    ],
     embed = [":modelchecker"],
     deps = [
         "//lib",
