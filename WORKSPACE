@@ -78,6 +78,27 @@ go_repository(
     version = "v0.0.0-20231105071439-febf5a852473",
 )
 
+go_repository(
+    name = "com_github_pkg_profile",
+    importpath = "github.com/pkg/profile",
+    sum = "h1:hnbDkaNWPCLMO9wGLdBFTIZvzDrDfBM2072E1S9gJkA=",
+    version = "v1.7.0",
+)
+
+go_repository(
+    name = "com_github_felixge_fgprof",
+    importpath = "github.com/felixge/fgprof",
+    sum = "h1:VvyZxILNuCiUCSXtPtYmmtGvb65nqXh2QFWc0Wpf2/g=",
+    version = "v0.9.3",
+)
+
+go_repository(
+    name = "com_github_google_pprof",
+    importpath = "github.com/google/pprof",
+    sum = "h1:E/LAvt58di64hlYjx7AsNS6C/ysHWYo+2qPCZKTQhRo=",
+    version = "v0.0.0-20240207164012-fb44976bdcd5",
+)
+
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.20.5")

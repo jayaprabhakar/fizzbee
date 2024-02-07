@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "lib",
     srcs = [
+        "queue.go",
         "stack.go",
         "yaml.go",
     ],
@@ -13,5 +14,6 @@ go_library(
         "@in_gopkg_yaml_v3//:yaml_v3",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_x_sys//cpu:go_default_library",
     ],
 )

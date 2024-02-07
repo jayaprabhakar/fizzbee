@@ -23,8 +23,6 @@ go_library(
         "//proto",
         "@com_github_golang_glog//:glog",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_zeroflucs_given_generics//collections",
-        "@com_github_zeroflucs_given_generics//collections/linkedlist",
         "@net_starlark_go//starlark",
         "@net_starlark_go//syntax",
     ],
@@ -50,6 +48,7 @@ go_test(
     deps = [
         "//lib",
         "//proto",
+        "@com_github_pkg_profile//:go_default_library",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@net_starlark_go//starlark",
