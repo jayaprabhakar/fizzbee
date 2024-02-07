@@ -481,6 +481,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir
+	//defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
 			filename := filepath.Join(runfilesDir, "_main", test.filename)
@@ -510,7 +511,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 			//fmt.Println("\nModified Graph:")
 			//dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
-			//dotFileName := RemoveLastSegment(filenamew, ".json") + ".dot"
+			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
 			//WriteFile(t, tempDir, dotFileName, []byte(dotString))
 			//fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
 			//fmt.Printf("\n%s\n", dotString)

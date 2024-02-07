@@ -17,10 +17,7 @@ import (
 	"crypto/sha256"
 	ast "fizz/proto"
 	"fmt"
-	"github.com/zeroflucs-given/generics/collections"
-	_ "github.com/zeroflucs-given/generics/collections"
-	"github.com/zeroflucs-given/generics/collections/linkedlist"
-	_ "github.com/zeroflucs-given/generics/collections/linkedlist"
+	"github.com/jayaprabhakar/fizzbee/lib"
 	"go.starlark.net/starlark"
 	"runtime"
 	"sort"
@@ -391,7 +388,7 @@ type Options struct {
 type Processor struct {
 	Init    *Node
 	Files   []*ast.File
-	queue   collections.Queue[*Node]
+	queue   *lib.Queue[*Node]
 	visited map[string]*Node
 	config  *Options
 }
@@ -399,7 +396,7 @@ type Processor struct {
 func NewProcessor(files []*ast.File, config *Options) *Processor {
 	return &Processor{
 		Files:   files,
-		queue:   linkedlist.New[*Node](),
+		queue:   lib.NewQueue[*Node](),
 		visited: make(map[string]*Node),
 		config:  config,
 	}
@@ -475,18 +472,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 
 func (p *Processor) processNode(node *Node) bool {
 	if node.Process.currentThread().currentPc() == "" && node.Name == "init" {
-		node.Process.removeCurrentThread()
-		// This is init node, generate a fork for each action in the file
-		for i, action := range p.Files[0].Actions {
-			newNode := node.ForkForAction(nil, action)
-			//newNode.Process.removeCurrentThread()
-			thread := newNode.Process.NewThread()
-			//thread := newNode.currentThread()
-			thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
-			thread.currentFrame().Name = action.Name
-			_ = p.queue.Push(newNode)
-		}
-		return false
+		return p.processInit(node)
 	}
 	forks, yield := node.currentThread().Execute()
 	node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
@@ -544,6 +530,21 @@ func (p *Processor) processNode(node *Node) bool {
 
 		p.YieldNode(crashNode)
 		return false
+	}
+	return false
+}
+
+func (p *Processor) processInit(node *Node) bool {
+	node.Process.removeCurrentThread()
+	// This is init node, generate a fork for each action in the file
+	for i, action := range p.Files[0].Actions {
+		newNode := node.ForkForAction(nil, action)
+		//newNode.Process.removeCurrentThread()
+		thread := newNode.Process.NewThread()
+		//thread := newNode.currentThread()
+		thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
+		thread.currentFrame().Name = action.Name
+		_ = p.queue.Push(newNode)
 	}
 	return false
 }

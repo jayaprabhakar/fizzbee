@@ -11,14 +11,29 @@ import (
 	"strings"
 )
 
+var re = regexp.MustCompile(`Stmts\[\d+\]`)
+
+type ProtoPath struct {
+	// TODO(jayaprabhakar): A quick hack, fix this. It is safe because this field is immutable.
+	filesMap map[*ast.File]map[string]proto.Message
+}
+var protoPathInstance = &ProtoPath{filesMap: make(map[*ast.File]map[string]proto.Message)}
+
 func GetProtoFieldByPath(file *ast.File, location string) proto.Message {
+	if protoPathInstance.filesMap[file] == nil {
+		protoPathInstance.filesMap[file] = make(map[string]proto.Message)
+	} else if val, ok := protoPathInstance.filesMap[file][location]; ok {
+		return val
+	}
 	field := GetFieldByPath(file, location)
 	if field == nil {
+		protoPathInstance.filesMap[file][location] = nil
 		return nil
 	}
 	glog.Infof("field: %+v, value:%+v, type:%+v", field, field.Interface(), field.Type())
 	protobuf := convertToProto(field.Elem().Interface(), field.Type())
 	glog.Infof("protobuf type: %+v", reflect.TypeOf(protobuf))
+	protoPathInstance.filesMap[file][location] = protobuf
 	return protobuf
 }
 
@@ -56,8 +71,9 @@ func GetFieldByPath(msg proto.Message, path string) *reflect.Value {
 	for _, part := range parts {
 		if strings.Contains(part, "[") && strings.Contains(part, "]") {
 			// Handle repeated field index
-			fieldName := strings.Split(part, "[")[0]
-			indexStr := strings.Split(strings.Split(part, "[")[1], "]")[0]
+			indexedFieldParts := strings.Split(part, "[")
+			fieldName := indexedFieldParts[0]
+			indexStr := strings.Split(indexedFieldParts[1], "]")[0]
 			index, err := strconv.Atoi(indexStr)
 			if err != nil {
 				panic(err)
@@ -183,7 +199,7 @@ func EndOfBlock(path string) string {
 }
 
 func replaceLastStmts(input, replacement string) string {
-	re := regexp.MustCompile(`Stmts\[\d+\]`)
+
 	matches := re.FindAllStringIndex(input, -1)
 
 	if matches == nil {

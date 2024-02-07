@@ -7,7 +7,7 @@ import (
 
 func deepCloneStarlarkValue(value starlark.Value) (starlark.Value, error) {
     // starlark has other types as well "string.elems", "string.codepoints", "function"
-    // "builtin_function_or_method", "tuple", "bytes".
+    // "builtin_function_or_method".
     switch value.Type() {
 
     case "NoneType", "int", "float", "bool", "string", "bytes", "range":
