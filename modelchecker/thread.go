@@ -187,45 +187,6 @@ func CopyDict(from starlark.StringDict, to starlark.StringDict) starlark.StringD
 		to = make(starlark.StringDict)
 	}
 	for k, v := range from {
-		/*
-		if v.Type() == "set" {
-			// This might need to happen recursively.
-			iter := v.(starlark.Iterable).Iterate()
-			var x starlark.Value
-			newSet := starlark.NewSet(10)
-			for iter.Next(&x) {
-				err := newSet.Insert(x)
-				PanicOnError(err)
-			}
-			to[k] = newSet
-			iter.Done()
-			continue
-		} else if v.Type() == "list" {
-			// This might need to happen recursively.
-			iter := v.(starlark.Iterable).Iterate()
-			var x starlark.Value
-			newSet := starlark.NewList(nil)
-			for iter.Next(&x) {
-				err := newSet.Append(x)
-				PanicOnError(err)
-			}
-			to[k] = newSet
-			iter.Done()
-			continue
-		} else if v.Type() == "dict" {
-			// This might need to happen recursively.
-			items := v.(*starlark.Dict).Items()
-			newDict := starlark.NewDict(10)
-
-			for _, tuple := range items {
-				err := newDict.SetKey(tuple.Index(0), tuple.Index(1))
-				PanicOnError(err)
-			}
-			to[k] = newDict
-			continue
-		}
-		to[k] = v
-		*/
 		newValue, err := deepCloneStarlarkValue(v)
 		PanicOnError(err)
 		to[k] = newValue
@@ -438,10 +399,11 @@ func (t *Thread) executeBlock() []*Process {
 }
 
 func (t *Thread) executeStatement() ([]*Process, bool) {
-	protobuf := GetProtoFieldByPath(t.currentFileAst(), t.currentPc())
+	currentFrame := t.currentFrame()
+	protobuf := GetProtoFieldByPath(t.currentFileAst(), currentFrame.pc)
 	stmt := convertToStatement(protobuf)
 	if stmt.Label != "" {
-		t.Process.Labels = append(t.Process.Labels, t.currentFrame().Name + "." + stmt.Label)
+		t.Process.Labels = append(t.Process.Labels, currentFrame.Name + "." + stmt.Label)
 	}
 	if stmt.PyStmt != nil {
 		vars := t.Process.GetAllVariables()
@@ -449,11 +411,11 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", stmt.PyStmt.GetCode()), err)
 		t.Process.updateAllVariablesInScope(vars)
 	} else if stmt.Block != nil {
-		t.currentFrame().pc = t.currentFrame().pc + ".Block"
+		currentFrame.pc = currentFrame.pc + ".Block"
 		forks := t.executeBlock()
 		return forks, false
 	} else if stmt.IfStmt != nil {
-		if stmt.IfStmt.Flow != ast.Flow_FLOW_ATOMIC && t.currentFrame().scope.flow != ast.Flow_FLOW_ATOMIC {
+		if stmt.IfStmt.Flow != ast.Flow_FLOW_ATOMIC && currentFrame.scope.flow != ast.Flow_FLOW_ATOMIC {
 			panic("Only atomic flow is supported for if statements")
 		}
 		for i, branch := range stmt.IfStmt.Branches {
@@ -463,7 +425,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			t.Process.PanicOnError(fmt.Sprintf("Error checking condition: %s", branch.Condition), err)
 			t.Process.updateAllVariablesInScope(vars)
 			if cond.Truth() {
-				t.currentFrame().pc = fmt.Sprintf("%s.IfStmt.Branches[%d].Block", t.currentPc(), i)
+				currentFrame.pc = fmt.Sprintf("%s.IfStmt.Branches[%d].Block", currentFrame.pc, i)
 				return nil, false
 			}
 		}
@@ -491,7 +453,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		if stmt.AnyStmt.Flow != ast.Flow_FLOW_UNKNOWN {
 			scope.flow = stmt.AnyStmt.Flow
 		} else {
-			scope.flow = t.currentFrame().scope.flow
+			scope.flow = currentFrame.scope.flow
 		}
 		forks := make([]*Process, 0)
 		var x starlark.Value
@@ -499,7 +461,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			//fmt.Printf("anyVariable: x: %s\n", x.String())
 			fork := t.Process.Fork()
 			fork.Name = fmt.Sprintf("Any:%s", x.String())
-			fork.currentThread().currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", t.currentPc())
+			fork.currentThread().currentFrame().pc = fmt.Sprintf("%s.AnyStmt.Block", currentFrame.pc)
 			fork.currentThread().currentFrame().scope.vars[stmt.AnyStmt.LoopVars[0]] = x
 			forks = append(forks, fork)
 
@@ -535,31 +497,31 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		for iter.Next(&x) {
 			scope.loopRange = append(scope.loopRange, x)
 		}
-		t.currentFrame().pc = t.currentFrame().pc + ".ForStmt"
+		currentFrame.pc = currentFrame.pc + ".ForStmt"
 		return nil, false
 	} else if stmt.WhileStmt != nil {
 		scope := t.InsertNewScope()
 		scope.SetFlow(stmt.WhileStmt.Flow)
-		t.currentFrame().pc = fmt.Sprintf("%s.WhileStmt", t.currentPc())
+		currentFrame.pc = fmt.Sprintf("%s.WhileStmt", currentFrame.pc)
 		return nil, false
 	} else if stmt.BreakStmt != nil {
-		for !(strings.HasSuffix(t.currentPc(), ".ForStmt") || strings.HasSuffix(t.currentPc(), ".WhileStmt")) {
-			t.currentFrame().pc = RemoveLastBlock(t.currentPc())
-			t.currentFrame().scope = t.currentFrame().scope.parent
+		for !(strings.HasSuffix(currentFrame.pc, ".ForStmt") || strings.HasSuffix(currentFrame.pc, ".WhileStmt")) {
+			currentFrame.pc = RemoveLastBlock(currentFrame.pc)
+			currentFrame.scope = currentFrame.scope.parent
 		}
-		t.currentFrame().scope = t.currentFrame().scope.parent
-		t.currentFrame().pc = RemoveLastLoop(t.currentPc())
+		currentFrame.scope = currentFrame.scope.parent
+		currentFrame.pc = RemoveLastLoop(currentFrame.pc)
 		return t.executeEndOfStatement()
 
 	} else if stmt.ContinueStmt != nil {
 		for {
-			t.currentFrame().pc = RemoveLastBlock(t.currentPc())
-			if strings.HasSuffix(t.currentPc(), ".ForStmt") || strings.HasSuffix(t.currentPc(), ".WhileStmt") {
+			currentFrame.pc = RemoveLastBlock(currentFrame.pc)
+			if strings.HasSuffix(currentFrame.pc, ".ForStmt") || strings.HasSuffix(currentFrame.pc, ".WhileStmt") {
 				break
 			}
-			t.currentFrame().scope = t.currentFrame().scope.parent
+			currentFrame.scope = currentFrame.scope.parent
 		}
-		t.currentFrame().pc = t.currentPc() + ".Block.$"
+		currentFrame.pc = currentFrame.pc + ".Block.$"
 		return nil, false
 	} else if stmt.ReturnStmt != nil {
 		vars := t.Process.GetAllVariables()
@@ -570,7 +532,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			//PanicOnError(err)
 			val = v
 		}
-		actionPath := strings.Split(t.currentFrame().pc, ".")[0]
+		actionPath := strings.Split(currentFrame.pc, ".")[0]
 		action := GetProtoFieldByPath(t.currentFileAst(), actionPath)
 		oldFrame := t.popFrame()
 		if t.Stack.Len() == 0 {
@@ -591,7 +553,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		return nil, false
 	} else if stmt.CallStmt != nil {
 
-		frame := t.currentFrame()
+		frame := currentFrame
 		if frame.scope.flow != ast.Flow_FLOW_ATOMIC {
 			panic("Only atomic flow is supported for call statements for now")
 		}
@@ -639,14 +601,15 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 }
 
 func (t *Thread) executeForStatement() ([]*Process, bool) {
-	if len(t.currentFrame().scope.loopRange) == 0 {
-		t.currentFrame().scope = t.currentFrame().scope.parent
-		t.currentFrame().pc = RemoveLastForStmt(t.currentPc())
+	currentFrame := t.currentFrame()
+	if len(currentFrame.scope.loopRange) == 0 {
+		currentFrame.scope = currentFrame.scope.parent
+		currentFrame.pc = RemoveLastForStmt(t.currentPc())
 		return t.executeEndOfStatement()
 		//return nil, false
 	}
-	scope := t.currentFrame().scope
-	t.currentFrame().pc = fmt.Sprintf("%s.Block", t.currentPc())
+	scope := currentFrame.scope
+	currentFrame.pc = fmt.Sprintf("%s.Block", t.currentPc())
 
 	// only atomic flow is supported for now.
 	if scope.flow == ast.Flow_FLOW_ATOMIC || scope.flow == ast.Flow_FLOW_SERIAL {
@@ -711,15 +674,16 @@ func removeElement[T any](slice []T, index int) []T {
 
 func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 
-	switch t.currentFrame().scope.flow {
+	currentFrame := t.currentFrame()
+	switch currentFrame.scope.flow {
 	case ast.Flow_FLOW_ATOMIC:
-		t.currentFrame().pc = t.FindNextProgramCounter()
+		currentFrame.pc = t.FindNextProgramCounter()
 		return nil, false
 	case ast.Flow_FLOW_SERIAL:
-		t.currentFrame().pc = t.FindNextProgramCounter()
+		currentFrame.pc = t.FindNextProgramCounter()
 		return nil, true
 	case ast.Flow_FLOW_ONEOF:
-		t.currentFrame().pc = EndOfBlock(t.currentPc())
+		currentFrame.pc = EndOfBlock(t.currentPc())
 		return nil, false
 	case ast.Flow_FLOW_PARALLEL:
 		// if currentPc ends with .ForStmt do not execute end of statement.
@@ -732,9 +696,9 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 		}
 		protobuf := GetProtoFieldByPath(t.currentFileAst(), blockPath)
 		b := convertToBlock(protobuf)
-		skipstmts := t.currentFrame().scope.skipstmts
+		skipstmts := currentFrame.scope.skipstmts
 		if len(skipstmts) == len(b.Stmts) {
-			t.currentFrame().pc = EndOfBlock(t.currentPc())
+			currentFrame.pc = EndOfBlock(t.currentPc())
 			return nil, false
 		}
 		forks := make([]*Process, 0, len(b.Stmts)-len(skipstmts))
@@ -748,7 +712,7 @@ func (t *Thread) executeEndOfStatement() ([]*Process, bool) {
 			fork.currentThread().currentFrame().scope.skipstmts = append(fork.currentThread().currentFrame().scope.skipstmts, i)
 			forks = append(forks, fork)
 		}
-		t.currentFrame().pc = ""
+		currentFrame.pc = ""
 		return forks, true
 	default:
 		panic(fmt.Sprintf("Unknown flow type at %s", t.currentPc()))
@@ -764,7 +728,7 @@ func (t *Thread) executeEndOfBlock() bool {
 		frame.scope = frame.scope.parent
 		if frame.scope == nil {
 			//t.popFrame()
-			actionPath := strings.Split(t.currentFrame().pc, ".")[0]
+			actionPath := strings.Split(frame.pc, ".")[0]
 			protobuf := GetProtoFieldByPath(t.currentFileAst(), actionPath)
 			oldFrame := t.popFrame()
 
@@ -780,14 +744,14 @@ func (t *Thread) executeEndOfBlock() bool {
 						panic("Multiple return values not supported yet")
 					}
 					for _, name := range oldFrame.callerAssignVarNames {
-						t.currentFrame().scope.vars[name] = starlark.None
+						frame.scope.vars[name] = starlark.None
 					}
 					_,yield := t.executeEndOfStatement()
 					return yield
 				}
 			}
 		}
-		t.currentFrame().pc = RemoveLastBlock(t.currentPc())
+		frame.pc = RemoveLastBlock(t.currentPc())
 		forks, yield := t.executeEndOfStatement()
 		if len(forks) > 0 || yield {
 			return yield
