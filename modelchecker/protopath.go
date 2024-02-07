@@ -3,7 +3,6 @@ package modelchecker
 import (
 	ast "fizz/proto"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	"reflect"
 	"regexp"
@@ -30,9 +29,7 @@ func GetProtoFieldByPath(file *ast.File, location string) proto.Message {
 		protoPathInstance.filesMap[file][location] = nil
 		return nil
 	}
-	glog.Infof("field: %+v, value:%+v, type:%+v", field, field.Interface(), field.Type())
 	protobuf := convertToProto(field.Elem().Interface(), field.Type())
-	glog.Infof("protobuf type: %+v", reflect.TypeOf(protobuf))
 	protoPathInstance.filesMap[file][location] = protobuf
 	return protobuf
 }
@@ -43,7 +40,6 @@ func GetStringFieldByPath(file *ast.File, location string) (string, bool) {
 		return "", false
 	}
 	t := field.Type()
-	glog.Infof("field: %+v, value:%+v, type:%+v", field, field.Interface(), t)
 	if t.Kind() == reflect.String {
 		str := field.Interface().(string)
 		return str, true
