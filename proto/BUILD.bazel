@@ -32,7 +32,6 @@ go_library(
 proto_library(
     name = "perf_proto",
     srcs = [
-        "fizz_ast.proto",
         "performance_model.proto",
     ],
     visibility = ["//visibility:public"],
@@ -52,16 +51,48 @@ go_library(
     visibility = ["//visibility:public"],
 )
 
-go_proto_library(
-    name = "proto_go_proto",
-    importpath = "fizz/proto",
-    proto = ":perf_proto",
-    visibility = ["//visibility:public"],
-)
-
 go_library(
     name = "proto",
     embed = [":proto_go_proto"],
     importpath = "fizz/proto",
+    visibility = ["//visibility:public"],
+)
+
+proto_library(
+    name = "options_proto",
+    srcs = [
+        "statespace_options.proto",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "options_go_proto",
+    importpath = "fizz/proto",
+    proto = ":options_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "options",
+    embed = [":options_go_proto"],
+    importpath = "fizz/proto",
+    visibility = ["//visibility:public"],
+)
+
+proto_library(
+    name = "proto_proto",
+    srcs = [
+        "fizz_ast.proto",
+        "performance_model.proto",
+        "statespace_options.proto",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "proto_go_proto",
+    importpath = "fizz/proto",
+    proto = ":proto_proto",
     visibility = ["//visibility:public"],
 )

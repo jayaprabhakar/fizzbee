@@ -376,34 +376,20 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 	return forkNode
 }
 
-type Options struct {
-	// If true, continue processing even if an invariant fails
-	IgnoreInvariantFailures bool
-	// If true, continue processing other paths, but stop processing the current path
-	// If false (default), usually returns the shortest path to the invariant failure
-	ContinueOnInvariantFailure bool
-	// The maximum number of nodes to process
-	MaxNodes int
-	// The maximum number of actions to process
-	MaxActions int
-
-	MaxConcurrentActions int
-}
-
 type Processor struct {
 	Init    *Node
 	Files   []*ast.File
 	queue   *lib.Queue[*Node]
 	visited map[string]*Node
-	config  *Options
+	config  *ast.StateSpaceOptions
 }
 
-func NewProcessor(files []*ast.File, config *Options) *Processor {
+func NewProcessor(files []*ast.File, options *ast.StateSpaceOptions) *Processor {
 	return &Processor{
 		Files:   files,
 		queue:   lib.NewQueue[*Node](),
 		visited: make(map[string]*Node),
-		config:  config,
+		config:  options,
 	}
 }
 
@@ -434,7 +420,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	failed := CheckInvariants(process)
 	if len(failed[0]) > 0 {
 		init.Process.FailedInvariants = failed
-		if !p.config.IgnoreInvariantFailures {
+		if !p.config.ContinuePathOnInvariantFailures {
 			return p.Init, nil, nil
 		}
 	}
@@ -453,7 +439,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 		//	continue
 		//}
 
-		if node.actionDepth > p.config.MaxActions {
+		if node.actionDepth > int(p.config.Options.MaxActions) {
 			// Add a node to indicate why this node was not processed
 			continue
 		}
@@ -470,7 +456,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 		if invariantFailure && failedNode == nil {
 			failedNode = node
 		}
-		if invariantFailure && !p.config.ContinueOnInvariantFailure {
+		if invariantFailure && !p.config.ContinueOnInvariantFailures {
 			break
 		}
 	}
@@ -510,7 +496,7 @@ func (p *Processor) processNode(node *Node) bool {
 	if len(failedInvariants[0]) > 0 {
 		//panic(fmt.Sprintf("Invariant failed: %v", failedInvariants))
 		node.Process.FailedInvariants = failedInvariants
-		if !p.config.IgnoreInvariantFailures {
+		if !p.config.ContinuePathOnInvariantFailures {
 			return true
 		}
 	}
@@ -583,7 +569,8 @@ func (p *Processor) YieldNode(node *Node) {
 		_ = p.queue.Push(newNode)
 	}
 
-	if node.actionDepth >= p.config.MaxActions || len(node.Threads) >= p.config.MaxConcurrentActions {
+	if node.actionDepth >= int(p.config.Options.MaxActions) ||
+		len(node.Threads) >= int(p.config.Options.MaxConcurrentActions) {
 		return
 	}
 	for i, action := range p.Files[0].Actions {
@@ -608,8 +595,8 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 
 		_ = p.queue.Push(newNode)
 	}
-	if node.actionDepth >= p.config.MaxActions ||
-		len(process.Threads) >= p.config.MaxConcurrentActions {
+	if node.actionDepth >= int(p.config.Options.MaxActions) ||
+		len(process.Threads) >= int(p.config.Options.MaxConcurrentActions) {
 
 		return
 	}

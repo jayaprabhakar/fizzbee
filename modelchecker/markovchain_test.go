@@ -19,6 +19,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 	expectedNodes        int
 	maxConcurrentActions int
 	perfModel            string
+	fizzConfig		     string
 }{
 
 		{
@@ -121,12 +122,15 @@ func TestSteadyStateDistribution(t *testing.T) {
 			if maxThreads == 0 {
 				maxThreads = test.maxActions
 			}
-			p1 := NewProcessor(files, &Options{
-				IgnoreInvariantFailures:    true,
-				ContinueOnInvariantFailure: true,
-				MaxActions:                 test.maxActions,
-				MaxConcurrentActions:       maxThreads,
-			})
+			stateCfg := &ast.StateSpaceOptions{
+				ContinuePathOnInvariantFailures: true,
+				ContinueOnInvariantFailures: true,
+				Options: &ast.Options{
+					MaxActions:           int64(test.maxActions),
+					MaxConcurrentActions: int64(maxThreads),
+				},
+			}
+			p1 := NewProcessor(files, stateCfg)
 			root, _, _ := p1.Start()
 			RemoveMergeNodes(root)
 

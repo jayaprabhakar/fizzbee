@@ -33,9 +33,11 @@ func main() {
         os.Exit(1)
     }
 
-    p1 := modelchecker.NewProcessor([]*ast.File{f}, &modelchecker.Options{
-        MaxActions:           5,
-        MaxConcurrentActions: 3,
+    p1 := modelchecker.NewProcessor([]*ast.File{f}, &ast.StateSpaceOptions{
+        Options:                         &ast.Options{
+            MaxActions:           5,
+            MaxConcurrentActions: 3,
+        },
     })
     startTime := time.Now()
     _, failedNode, err := p1.Start()

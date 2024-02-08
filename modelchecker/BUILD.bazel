@@ -9,6 +9,7 @@ go_library(
         "graph.go",
         "invariants.go",
         "markovchain.go",
+        "options.go",
         "perf_checker.go",
         "processor.go",
         "protopath.go",
@@ -21,6 +22,7 @@ go_library(
     deps = [
         "//lib",
         "//proto",
+        "//proto:options",
         "@com_github_golang_glog//:glog",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@net_starlark_go//starlark",
