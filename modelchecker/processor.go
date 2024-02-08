@@ -328,22 +328,26 @@ func NewNode(process *Process) *Node {
 	}
 }
 
-func (n *Node) Merge(other *Node) *Node {
-	mergeNode := &Node{
-		Inbound:     []*Link{&Link{Node: n}},
-		Outbound:    []*Link{&Link{Node: other}},
-		actionDepth: n.actionDepth,
-		forkDepth:   n.forkDepth,
-	}
-	n.Outbound = append(n.Outbound, &Link{Node: mergeNode})
-	other.Inbound = append(other.Inbound, &Link{Node: mergeNode})
-	return mergeNode
+func (n *Node) Duplicate(other *Node) {
+	parent := n.Inbound[0].Node
+	other.Inbound = append(other.Inbound, n.Inbound[0])
+	parent.Outbound = append(parent.Outbound, &Link{Node: other, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
+}
+
+func (n *Node) Attach() {
+	parent := n.Inbound[0].Node
+	parent.Outbound = append(parent.Outbound, &Link{Node: n, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
 }
 
 func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 	if process == nil {
 		process = n.Process
 	}
+	// Creates a new node, that can potentially be a child node. There is a chance, after executing
+	// this node will lead to a duplicate state. To avoid adding and then replacing later, we will
+	// create the node and add it to the queue, but do not add the outbound link from the parent node.
+	// If the node leads to duplicate state, it will eventually call Duplicate(), else Attach()
+	// that will add to the appropriate outbound link to the parent node.
 	forkNode := &Node{
 		Process:     process.Fork(),
 		Inbound:     make([]*Link, 0, 10),
@@ -354,7 +358,7 @@ func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 	}
 	forkNode.Process.Name = action.Name
 	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: action.Name})
-	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: action.Name})
+
 	return forkNode
 }
 
@@ -369,7 +373,6 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 		stacktrace:  captureStackTrace(),
 	}
 	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: name})
-	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: name})
 	return forkNode
 }
 
@@ -480,14 +483,11 @@ func (p *Processor) processNode(node *Node) bool {
 		return p.processInit(node)
 	}
 	forks, yield := node.currentThread().Execute()
-	// Add the labels from the process to the inbound and outbound links
+	// Add the labels from the process to the inbound links
 	// This must be done even for duplicate nodes
+	// The labels for the outbound links are added when the node is merged/attached
 	node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
-	for _, link := range node.Inbound[0].Node.Outbound {
-		if link.Node == node {
-			link.Labels = append(link.Labels, node.Process.Labels...)
-		}
-	}
+
 	// If the node is already visited, merge the nodes and return
 	// In this case, we are skipping checking invariants as well.
 	// Reevaluate if this is the right thing to do. Invariants are checked only
@@ -497,8 +497,10 @@ func (p *Processor) processNode(node *Node) bool {
 	// this may not be an issue.
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
-		node.Merge(other)
+		node.Duplicate(other)
 		return false
+	} else {
+		node.Attach()
 	}
 
 	var failedInvariants map[int][]int
@@ -540,7 +542,13 @@ func (p *Processor) processNode(node *Node) bool {
 		// TODO: We could just copy the failed invariants from the parent
 		// instead of checking again
 		CheckInvariants(crashFork)
-
+		if other, ok := p.visited[node.HashCode()]; ok {
+			// Check if visited before scheduling children
+			node.Duplicate(other)
+			return false
+		} else {
+			node.Attach()
+		}
 		p.YieldNode(crashNode)
 		return false
 	}
@@ -563,12 +571,6 @@ func (p *Processor) processInit(node *Node) bool {
 }
 
 func (p *Processor) YieldNode(node *Node) {
-	//node.Name = "yield"
-	if other, ok := p.visited[node.HashCode()]; ok {
-		// Check if visited before scheduling children
-		node.Merge(other)
-		return
-	}
 
 	for i, thread := range node.Threads {
 		if thread.currentPc() == "" {

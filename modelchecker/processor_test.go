@@ -506,9 +506,10 @@ func TestProcessor_Tutorials(t *testing.T) {
 			fmt.Printf("Completed Nodes: %d, elapsed: %s\n", len(p1.visited), time.Since(startTime))
 
 			//RemoveMergeNodes(root)
-			//// Print the modified graph
+			// Print the modified graph
 			//fmt.Printf("Removing merge nodes, elapsed: %s\n", time.Since(startTime))
 			//fmt.Println("\nModified Graph:")
+
 			//dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
 			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"

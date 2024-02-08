@@ -110,12 +110,12 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 	histogram := newHistogram()
 	// Create the transition matrix
 	nodes := getAllNodes(root)
-	for i, node := range nodes {
-		if node.Process == nil {
-			continue
-		}
-		fmt.Printf("%d: %s\n", i, node.Heap.String())
-	}
+	//for i, node := range nodes {
+	//	if node.Process == nil {
+	//		continue
+	//	}
+	//	fmt.Printf("%d: %s\n", i, node.Heap.String())
+	//}
 
 	//transitionMatrix := createTransitionMatrix(nodes)
 	transitionMatrix := genTransitionMatrix(nodes, perfModel)
