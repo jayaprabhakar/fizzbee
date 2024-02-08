@@ -48,7 +48,6 @@ go_test(
     deps = [
         "//lib",
         "//proto",
-        "@com_github_pkg_profile//:go_default_library",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@net_starlark_go//starlark",

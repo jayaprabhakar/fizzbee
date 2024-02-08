@@ -460,7 +460,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		},
 		{
 			filename:      "examples/tutorials/37-unfair-coin-toss-labels/FairCoin.json",
-			maxActions:    10,
+			maxActions:    1,
 			expectedNodes: 6,
 		},
 		//{

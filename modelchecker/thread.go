@@ -18,7 +18,7 @@ type Heap struct {
 }
 
 func StringDictToMap(stringDict starlark.StringDict) map[string]string {
-	m := make(map[string]string)
+	m := make(map[string]string, len(stringDict))
 	for k, v := range stringDict {
 		if v.Type() == "set" {
 			// Convert set to a list.
@@ -57,7 +57,8 @@ func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 			continue
 		}
 		// list is okay. no changes needed
-		m[k] = v.String()
+		str := v.String()
+		m[k] = str
 	}
 	return m
 }

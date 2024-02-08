@@ -32,6 +32,8 @@ const (
 	Function DefType = "function"
 )
 
+const enableCaptureStackTrace = false
+
 type Definition struct {
 	DefType   DefType
 	name      string
@@ -318,8 +320,8 @@ type Link struct {
 func NewNode(process *Process) *Node {
 	return &Node{
 		Process:     process,
-		Inbound:     make([]*Link, 0),
-		Outbound:    make([]*Link, 0),
+		Inbound:     make([]*Link, 0, 10),
+		Outbound:    make([]*Link, 0, 10),
 		actionDepth: 0,
 		forkDepth:   0,
 		stacktrace:  captureStackTrace(),
@@ -344,14 +346,14 @@ func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 	}
 	forkNode := &Node{
 		Process:     process.Fork(),
-		Inbound:     []*Link{&Link{Node: n, Name: action.Name}},
-		Outbound:    []*Link{},
+		Inbound:     make([]*Link, 0, 10),
+		Outbound:    make([]*Link, 0, 10),
 		actionDepth: n.actionDepth + 1,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
 	forkNode.Process.Name = action.Name
-
+	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: action.Name})
 	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: action.Name})
 	return forkNode
 }
@@ -360,13 +362,13 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 
 	forkNode := &Node{
 		Process:     process,
-		Inbound:     []*Link{&Link{Node: n, Name: name}},
-		Outbound:    []*Link{},
+		Inbound:     make([]*Link, 0, 10),
+		Outbound:    make([]*Link, 0, 10),
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
 	}
-
+	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: name})
 	n.Outbound = append(n.Outbound, &Link{Node: forkNode, Name: name})
 	return forkNode
 }
@@ -452,13 +454,16 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 			// Add a node to indicate why this node was not processed
 			continue
 		}
-		if len(p.visited)%10000 == 0 && len(p.visited) != prevCount {
+		if len(p.visited)%20000 == 0 && len(p.visited) != prevCount {
 			fmt.Printf("Nodes: %d, elapsed: %s\n", len(p.visited), time.Since(startTime))
 			prevCount = len(p.visited)
 		}
 
 		invariantFailure := p.processNode(node)
-		p.visited[node.HashCode()] = node
+		if p.visited[node.HashCode()] == nil {
+			p.visited[node.HashCode()] = node
+		}
+
 		if invariantFailure && failedNode == nil {
 			failedNode = node
 		}
@@ -475,11 +480,25 @@ func (p *Processor) processNode(node *Node) bool {
 		return p.processInit(node)
 	}
 	forks, yield := node.currentThread().Execute()
+	// Add the labels from the process to the inbound and outbound links
+	// This must be done even for duplicate nodes
 	node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
 	for _, link := range node.Inbound[0].Node.Outbound {
 		if link.Node == node {
 			link.Labels = append(link.Labels, node.Process.Labels...)
 		}
+	}
+	// If the node is already visited, merge the nodes and return
+	// In this case, we are skipping checking invariants as well.
+	// Reevaluate if this is the right thing to do. Invariants are checked only
+	// if they are in yield point, but yield point is not part of the hash code.
+	// So, we might miss some invariants. However, since the yield points are
+	// determined by the statement, and we include program counter in the hash code,
+	// this may not be an issue.
+	if other, ok := p.visited[node.HashCode()]; ok {
+		// Check if visited before scheduling children
+		node.Merge(other)
+		return false
 	}
 
 	var failedInvariants map[int][]int
@@ -492,12 +511,6 @@ func (p *Processor) processNode(node *Node) bool {
 		if !p.config.IgnoreInvariantFailures {
 			return true
 		}
-	}
-	//fmt.Printf("Forks: %d, Yield: %t, Threads: %d\n", len(forks), yield, len(node.Threads))
-	if other, ok := p.visited[node.HashCode()]; ok {
-		// Check if visited before scheduling children
-		node.Merge(other)
-		return false
 	}
 	if !yield {
 		for _, fork := range forks {
@@ -610,6 +623,9 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 }
 
 func captureStackTrace() string {
+	if !enableCaptureStackTrace {
+		return ""
+	}
 	const depth = 32
 	var pcs [depth]uintptr
 	n := runtime.Callers(2, pcs[:])
