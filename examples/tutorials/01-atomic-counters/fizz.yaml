@@ -1,1 +1,2 @@
-max_depth:5
+options:
+  maxActions: 5

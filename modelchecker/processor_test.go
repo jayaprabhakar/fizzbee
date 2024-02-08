@@ -94,8 +94,10 @@ func TestProcessor_Start(t *testing.T) {
 	file, err := parseAstFromString(ActionsWithMultipleBlocks)
 	require.Nil(t, err)
 	files := []*ast.File{file}
-	p1 := NewProcessor(files, &Options{
-		MaxActions: 1,
+	p1 := NewProcessor(files, &ast.StateSpaceOptions{
+		Options: &ast.Options{
+			MaxActions:           1,
+		},
 	})
 	root, _, _ := p1.Start()
 	assert.NotNil(t, root)
@@ -119,6 +121,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
 		filename             string
+		stateConfig		 	 string
 		maxActions           int
 		expectedNodes        int
 		maxConcurrentActions int
@@ -137,6 +140,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
 			maxActions:    3,
 			expectedNodes: 4, // 2 nodes: 1 for the init and 1 for each action
+		},
+		{
+			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
+			stateConfig:   "examples/tutorials/01-atomic-counters/fizz.yaml",
+			expectedNodes: 6,
 		},
 		{
 			filename:      "examples/tutorials/01-atomic-counters/Counter.json",
@@ -321,6 +329,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 		},
 		{
 			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
+			stateConfig: 		  "examples/tutorials/16-elements-counter-parallel/fizz.yaml",
+			expectedNodes:        1733, // 0.16s 131
+		},
+		{
+			filename:             "examples/tutorials/16-elements-counter-parallel/Counter.json",
 			maxActions:           4,
 			maxConcurrentActions: 2,
 			expectedNodes:        4773, // 0.16s 162
@@ -488,16 +501,27 @@ func TestProcessor_Tutorials(t *testing.T) {
 			file, err := readAstFromFile(filename)
 			require.Nil(t, err)
 			files := []*ast.File{file}
-			maxThreads := test.maxConcurrentActions
-			if maxThreads == 0 {
-				maxThreads = test.maxActions
+			stateConfig := &ast.StateSpaceOptions{}
+			if test.stateConfig != "" {
+				stateCfgFileName := filepath.Join(runfilesDir, "_main", test.stateConfig)
+				stateConfig, err = ReadOptionsFromYaml(stateCfgFileName)
+				require.Nil(t, err)
+			} else {
+				maxThreads := test.maxConcurrentActions
+				if maxThreads == 0 {
+					maxThreads = test.maxActions
+				}
+				stateConfig = &ast.StateSpaceOptions{
+					ContinuePathOnInvariantFailures: true,
+					ContinueOnInvariantFailures:     true,
+					Options: &ast.Options{
+						MaxActions:           int64(test.maxActions),
+						MaxConcurrentActions: int64(maxThreads),
+					},
+				}
 			}
-			p1 := NewProcessor(files, &Options{
-				MaxActions:                 test.maxActions,
-				MaxConcurrentActions:       maxThreads,
-				IgnoreInvariantFailures:    true,
-				ContinueOnInvariantFailure: true,
-			})
+
+			p1 := NewProcessor(files, stateConfig)
 			startTime := time.Now()
 			root, _, err := p1.Start()
 			require.Nil(t, err)
