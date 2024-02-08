@@ -1,18 +1,21 @@
 package lib
 
 import (
-	"sync"
-
 	"github.com/huandu/go-clone"
+	"sync"
 )
 
 type Stack[T any] struct {
 	lock sync.Mutex // you don't have to do this if you don't want thread safety
 	s    []T
+	// peak is a pointer to the last element in the stack
+	// When doing profiling, peak makes it easier to get the last element in the stack
+	// and it is used a huge number of times
+	peak *T
 }
 
 func NewStack[T any]() *Stack[T] {
-	return &Stack[T]{sync.Mutex{}, make([]T, 0)}
+	return &Stack[T]{sync.Mutex{}, make([]T, 0, 10), nil}
 }
 
 func (s *Stack[T]) Push(v T) *Stack[T] {
@@ -20,6 +23,7 @@ func (s *Stack[T]) Push(v T) *Stack[T] {
 	defer s.lock.Unlock()
 
 	s.s = append(s.s, v)
+	s.peak = &v
 	return s
 }
 
@@ -32,22 +36,33 @@ func (s *Stack[T]) Pop() (T, bool) {
 		return v, false
 	}
 
+	s.peak = nil
 	res := s.s[l-1]
 	s.s = s.s[:l-1]
+	if l > 1 {
+		s.peak = &s.s[l-2]
+	}
 	return res, true
 }
 
 func (s *Stack[T]) Peek() (T, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	l := len(s.s)
-	if l == 0 {
+	if s.peak != nil {
+		return *s.peak, true
+	} else {
 		var v T
 		return v, false
 	}
-
-	res := s.s[l-1]
-	return res, true
+	//l := len(s.s)
+	//if l == 0 {
+	//	var v T
+	//	return v, false
+	//}
+	//
+	//res := s.s[l-1]
+	//s.peak = &res
+	//return res, true
 }
 
 func (s *Stack[T]) Clone() *Stack[T] {
