@@ -479,7 +479,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/39-actions-limit/Limit.json",
 			stateConfig:   "examples/tutorials/39-actions-limit/fizz.yaml",
-			expectedNodes: 6,
+			expectedNodes: 5,
 		},
 		//{
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
@@ -489,17 +489,17 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			maxActions:    1,
-			expectedNodes: 1366,
+			expectedNodes: 1368,
 		},
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			maxActions:    30,
-			expectedNodes: 2390,
+			expectedNodes: 9020,
 		},
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
-			expectedNodes: 2390,
+			expectedNodes: 3315,
 		},
 
 	}

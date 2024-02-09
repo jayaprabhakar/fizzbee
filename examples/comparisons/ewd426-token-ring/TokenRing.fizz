@@ -19,7 +19,7 @@ atomic action Disrupt:
     for i in reversed(NODES):
         any j in range(0, M):
             counters[i] = j
-    ready = True
+    disrupted = True
 
 atomic action CreateToken:
     if counters[0] == counters[N-1]:
