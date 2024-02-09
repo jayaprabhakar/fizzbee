@@ -1,0 +1,6 @@
+options:
+  maxActions: 10
+
+actionOptions:
+  Disrupt:
+    maxActions: 1
