@@ -476,6 +476,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    1,
 			expectedNodes: 6,
 		},
+		{
+			filename:      "examples/tutorials/39-actions-limit/Limit.json",
+			stateConfig:   "examples/tutorials/39-actions-limit/fizz.yaml",
+			expectedNodes: 6,
+		},
 		//{
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
 		//	maxActions:    30,
@@ -491,6 +496,12 @@ func TestProcessor_Tutorials(t *testing.T) {
 			maxActions:    30,
 			expectedNodes: 2390,
 		},
+		{
+			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
+			expectedNodes: 2390,
+		},
+
 	}
 	tempDir := CreateTempDirectory(t)
 	_ = tempDir

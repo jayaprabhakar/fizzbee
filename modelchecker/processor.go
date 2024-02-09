@@ -41,6 +41,34 @@ type Definition struct {
 	path      string
 }
 
+type Stats struct {
+	TotalActions int
+	Counts map[string]int
+}
+
+// NewStats returns a new Stats object
+func NewStats() *Stats {
+	return &Stats{
+		Counts: make(map[string]int),
+	}
+}
+
+func (s *Stats) Clone() *Stats {
+	stats := &Stats{
+		TotalActions: s.TotalActions,
+		Counts: make(map[string]int),
+	}
+	for k, v := range s.Counts {
+		stats.Counts[k] = v
+	}
+	return stats
+}
+
+func (s *Stats) Increment(action string) {
+	s.TotalActions++
+	s.Counts[action]++
+}
+
 type Process struct {
 	Heap             *Heap
 	Threads          []*Thread
@@ -51,6 +79,7 @@ type Process struct {
 	Evaluator        *Evaluator
 	Children         []*Process
 	FailedInvariants map[int][]int
+	Stats            *Stats
 	// Witness indicates the successful liveness checks
 	// For liveness checks, not all nodes will pass the condition, witness indicates
 	// which invariants this node passed.
@@ -58,6 +87,7 @@ type Process struct {
 	Returns     starlark.StringDict
 	SymbolTable map[string]*Definition
 	Labels 		[]string
+
 }
 
 func NewProcess(name string, files []*ast.File, parent *Process) *Process {
@@ -94,6 +124,7 @@ func NewProcess(name string, files []*ast.File, parent *Process) *Process {
 		Returns:     make(starlark.StringDict),
 		SymbolTable: symbolTable,
 		Labels: 	 make([]string, 0),
+		Stats:       NewStats(),
 	}
 	p.Witness = make([][]bool, len(files))
 	for i, file := range files {
@@ -128,6 +159,7 @@ func (p *Process) Fork() *Process {
 		Returns:     make(starlark.StringDict),
 		SymbolTable: p.SymbolTable,
 		Labels: 	 make([]string, 0),
+		Stats:       p.Stats.Clone(),
 	}
 	p2.Witness = make([][]bool, len(p.Files))
 	for i, file := range p.Files {
@@ -358,7 +390,7 @@ func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 	}
 	forkNode.Process.Name = action.Name
 	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: action.Name})
-
+	forkNode.Process.Stats.Increment(action.Name)
 	return forkNode
 }
 
@@ -574,6 +606,11 @@ func (p *Processor) YieldNode(node *Node) {
 		return
 	}
 	for i, action := range p.Files[0].Actions {
+
+		if p.config.ActionOptions[action.Name] != nil &&
+			node.Stats.Counts[action.Name] >= int(p.config.ActionOptions[action.Name].MaxActions) {
+			continue
+		}
 		newNode := node.ForkForAction(nil, action)
 		newNode.Process.NewThread()
 		newNode.Process.current = len(newNode.Process.Threads) - 1
@@ -601,6 +638,10 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		return
 	}
 	for i, action := range p.Files[0].Actions {
+		if p.config.ActionOptions[action.Name] != nil &&
+			process.Stats.Counts[action.Name] >= int(p.config.ActionOptions[action.Name].MaxActions) {
+			continue
+		}
 		newNode := node.ForkForAction(process, action)
 		newNode.Process.NewThread()
 		newNode.Process.current = len(newNode.Process.Threads) - 1

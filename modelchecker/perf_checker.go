@@ -59,6 +59,9 @@ func genTransitionMatrix(nodes []*Node, model *proto.PerformanceModel) [][]float
 
 func genCounterMatrices(nodes []*Node, model *proto.PerformanceModel) map[string][][]float64 {
     matrices := make(map[string][][]float64)
+    if model == nil {
+        return matrices
+    }
     for _, config := range model.Configs {
         for name, _ := range config.Counters {
             if matrices[name] == nil {

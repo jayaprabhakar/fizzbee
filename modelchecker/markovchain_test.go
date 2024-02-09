@@ -15,6 +15,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 	runfilesDir := os.Getenv("RUNFILES_DIR")
 	tests := []struct {
 	filename             string
+	stateConfig		 	 string
 	maxActions           int
 	expectedNodes        int
 	maxConcurrentActions int
@@ -111,6 +112,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions:    2,
 			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
 		},
+		{
+			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
+			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
+			expectedNodes: 2390,
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {
@@ -118,24 +125,31 @@ func TestSteadyStateDistribution(t *testing.T) {
 			file, err := readAstFromFile(filename)
 			require.Nil(t, err)
 			files := []*ast.File{file}
-			maxThreads := test.maxConcurrentActions
-			if maxThreads == 0 {
-				maxThreads = test.maxActions
-			}
-			stateCfg := &ast.StateSpaceOptions{
-				ContinuePathOnInvariantFailures: true,
-				ContinueOnInvariantFailures: true,
-				Options: &ast.Options{
-					MaxActions:           int64(test.maxActions),
-					MaxConcurrentActions: int64(maxThreads),
-				},
+			stateCfg := &ast.StateSpaceOptions{}
+			if test.stateConfig != "" {
+				stateCfgFileName := filepath.Join(runfilesDir, "_main", test.stateConfig)
+				stateCfg, err = ReadOptionsFromYaml(stateCfgFileName)
+				require.Nil(t, err)
+			} else {
+				maxThreads := test.maxConcurrentActions
+				if maxThreads == 0 {
+					maxThreads = test.maxActions
+				}
+				stateCfg = &ast.StateSpaceOptions{
+					ContinuePathOnInvariantFailures: true,
+					ContinueOnInvariantFailures: true,
+					Options: &ast.Options{
+						MaxActions:           int64(test.maxActions),
+						MaxConcurrentActions: int64(maxThreads),
+					},
+				}
 			}
 			p1 := NewProcessor(files, stateCfg)
 			root, _, _ := p1.Start()
-			RemoveMergeNodes(root)
+			//RemoveMergeNodes(root)
 
-			dotString := generateDotFile(root, make(map[*Node]bool))
-			fmt.Printf("\n%s\n", dotString)
+			//dotString := generateDotFile(root, make(map[*Node]bool))
+			//fmt.Printf("\n%s\n", dotString)
 
 			perfModel := &ast.PerformanceModel{}
 			if test.perfModel != "" {
