@@ -49,7 +49,7 @@
           },
           {
             "pyStmt": {
-              "code": "ready = True"
+              "code": "disrupted = True"
             }
           }
         ]

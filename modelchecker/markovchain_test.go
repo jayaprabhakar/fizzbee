@@ -116,7 +116,6 @@ func TestSteadyStateDistribution(t *testing.T) {
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
 			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
-			expectedNodes: 2390,
 		},
 	}
 	for _, test := range tests {
@@ -162,7 +161,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 			fmt.Println(steadyStateDist)
 			fmt.Println(histogram.GetMeanCounts())
 			//fmt.Println(histogram.GetAllHistogram())
-			allNodes := getAllNodes(root)
+			allNodes, _ := getAllNodes(root)
 			for j, prob := range steadyStateDist {
 				if prob > 1e-6 && allNodes[j].Process != nil {
 					fmt.Printf("%2d: prob: %1.6f, state: %s / returns: %s\n", j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
@@ -172,7 +171,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 				if !inv.Eventually {
 					continue
 				}
+				_, histogram := FindAbsorptionCosts(root, perfModel, 0, k)
+				fmt.Println("Absorption Cost")
+				fmt.Println(histogram.GetMeanCounts())
+				//fmt.Println(histogram.GetAllHistogram())
 				eventuallyAlways := inv.Eventually && inv.GetNested().GetAlways()
+
 				if eventuallyAlways {
 					fmt.Println("Eventually Always")
 					for j, prob := range steadyStateDist {
@@ -183,11 +187,12 @@ func TestSteadyStateDistribution(t *testing.T) {
 							}
 							fmt.Printf("%s %3d: prob: %1.6f, state: %s / returns: %s\n", status, j, prob, allNodes[j].Heap.String(), allNodes[j].Returns.String())
 						}
-						
+
 					}
 					continue
 				} else {
-					liveness := checkLiveness(root, 0, k)
+					liveness, _ := checkLivenessAndCost(root, perfModel, 0, k)
+					//liveness := checkLiveness(root, 0, k)
 					fmt.Println(liveness)
 					fmt.Println("Liveness")
 					for j, prob := range liveness {

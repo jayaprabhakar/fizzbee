@@ -107,9 +107,14 @@ func newHistogram() *Histogram {
 }
 
 func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]float64, *Histogram) {
-	histogram := newHistogram()
+
+
 	// Create the transition matrix
-	nodes := getAllNodes(root)
+	nodes, _ := getAllNodes(root)
+	initialDistribution := make([]float64, len(nodes))
+	initialDistribution[0] = 1.0 // Start from the root node
+	
+
 	//for i, node := range nodes {
 	//	if node.Process == nil {
 	//		continue
@@ -119,8 +124,13 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 
 	//transitionMatrix := createTransitionMatrix(nodes)
 	transitionMatrix := genTransitionMatrix(nodes, perfModel)
-	matrices := genCounterMatrices(nodes, perfModel)
+	return markovChainAnalysis(nodes, perfModel, transitionMatrix, initialDistribution)
+}
 
+func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, transitionMatrix [][]float64, initialDistribution []float64) ([]float64, *Histogram) {
+	matrices := genCounterMatrices(nodes, perfModel)
+	histogram := newHistogram()
+	fmt.Printf("\ninitial distribution:\n%v\n", initialDistribution)
 	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
 	//printMatrix(transitionMatrix)
@@ -137,12 +147,9 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 		//fmt.Println(counterName)
 		//printMatrix(expectedCounterMatrices[counterName])
 	}
-	
+
 	// Compute the matrix power (raise the matrix to a sufficiently large power)
 	iterations := 10000
-
-	initialDistribution := make([]float64, len(nodes))
-	initialDistribution[0] = 1.0 // Start from the root node
 
 	// Iterate to find the steady-state distribution
 	currentDistribution := initialDistribution
@@ -153,8 +160,8 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		terminationProbability := 0.0
 		for counter, counterMatrix := range expectedCounterMatrices {
-				mean[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
-				rawCounters[counter] += sum(matrixVectorProduct(counterMatrix, altCurrentDistribution))
+			mean[counter] += sum(matrixVectorProduct(counterMatrix, currentDistribution))
+			rawCounters[counter] += sum(matrixVectorProduct(counterMatrix, altCurrentDistribution))
 		}
 
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
@@ -166,8 +173,8 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 		totalProb := 0.0
 		for j, _ := range altCurrentDistribution {
 			if transitionMatrix[j][j] == 1.0 || (nodes[j].Process != nil &&
-					len(nodes[j].Process.Threads) == 0 && len(nodes[j].Process.Witness) > 0 && len(nodes[j].Process.Witness[0]) > 0 &&
-					nodes[j].Process.Witness[0][0]) {
+				len(nodes[j].Process.Threads) == 0 && len(nodes[j].Process.Witness) > 0 && len(nodes[j].Process.Witness[0]) > 0 &&
+				nodes[j].Process.Witness[0][0]) {
 				altCurrentDistribution[j] = 0.0
 				terminationProbability += nextDistribution[j]
 			}
@@ -200,9 +207,78 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 	return currentDistribution, histogram
 }
 
+func FindAbsorptionCosts(root *Node, perfModel *proto.PerformanceModel, fileId int, invariantId int) ([]float64, *Histogram) {
+	// Create the transition matrix
+	nodes, yields := getAllNodes(root)
+	fmt.Println("Yields", yields)
+	yields += 1 // Add the root node
+
+	transitionMatrix := createAbsorptionTransitionMatrix(nodes, fileId, invariantId)
+	//printMatrix(transitionMatrix)
+	initialDistribution := make([]float64, len(nodes))
+	for i, _ := range initialDistribution {
+		if nodes[i].Name == "init" || nodes[i].Name == "yield" {
+			initialDistribution[i] = 1.0 / float64(yields) // Set every node to 1.0/n
+		}
+	}
+	steadstate, histogram := markovChainAnalysis(nodes, perfModel, transitionMatrix, initialDistribution)
+	//fmt.Println("liveness ", steadstate)
+	fmt.Println("liveness mean counts", histogram.GetMeanCounts())
+	fmt.Println("liveness histogram", histogram.GetAllHistogram())
+	return steadstate, histogram
+}
+
+func createAbsorptionTransitionMatrix(nodes []*Node, fileId int, invariantId int) [][]float64 {
+	transitionMatrix := createTransitionMatrix(nodes)
+	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
+
+	//printMatrix(transitionMatrix)
+	for i, matrix := range transitionMatrix {
+		if nodes[i].Process == nil {
+			continue
+		}
+		if nodes[i].Witness[fileId][invariantId] {
+			for j := range matrix {
+				if i == j {
+					matrix[j] = 1.0
+				} else {
+					matrix[j] = 0.0
+				}
+			}
+		}
+	}
+	//transitionMatrix = transpose(transitionMatrix)
+	//printMatrix(transitionMatrix)
+	//transitionMatrix = normalizeColumns(transitionMatrix)
+	transitionMatrix = normalizeRows(transitionMatrix)
+	return transitionMatrix
+}
+
+
+func checkLivenessAndCost(root *Node, perfModel *proto.PerformanceModel, fileId int, invariantId int) ([]float64, *Histogram) {
+	// Create the transition matrix
+	nodes, yields := getAllNodes(root)
+	fmt.Println("Yields", yields)
+	yields += 1 // Add the root node
+
+	transitionMatrix := createAbsorptionTransitionMatrix(nodes, fileId, invariantId)
+	//printMatrix(transitionMatrix)
+	initialDistribution := make([]float64, len(nodes))
+	for i, _ := range initialDistribution {
+		if nodes[i].Name == "init" || nodes[i].Name == "yield" {
+			initialDistribution[i] = 1.0 / float64(yields) // Set every node to 1.0/n
+		}
+	}
+	steadstate, histogram := markovChainAnalysis(nodes, perfModel, transitionMatrix, initialDistribution)
+	//fmt.Println("liveness ", steadstate)
+	fmt.Println("liveness mean counts", histogram.GetMeanCounts())
+	fmt.Println("liveness histogram", histogram.GetAllHistogram())
+	return steadstate, histogram
+}
+
 func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 	// Create the transition matrix
-	nodes := getAllNodes(root)
+	nodes, _ := getAllNodes(root)
 
 	transitionMatrix := createTransitionMatrix(nodes)
 	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
@@ -252,7 +328,26 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 
 	return currentDistribution
 }
+func normalizeRows(matrix [][]float64) [][]float64 {
 
+	// Iterate over each column
+	for _, row := range matrix {
+		// Calculate the sum of values in the column
+		rowSum := 0.0
+		for _, val := range row {
+			rowSum += val
+		}
+
+		// Normalize the values in the column
+		if rowSum != 0 {
+			for columnIndex := range row {
+				row[columnIndex] /= rowSum
+			}
+		}
+	}
+
+	return matrix
+}
 func normalizeColumns(matrix [][]float64) [][]float64 {
 	// Get the number of columns
 	numColumns := len(matrix[0])
@@ -332,7 +427,7 @@ func transpose(matrix [][]float64) [][]float64 {
 
 	return result
 }
-func getAllNodes(root *Node) []*Node {
+func getAllNodes(root *Node) ([]*Node, int) {
 	// Implement a traversal to get all nodes in the graph
 	// This can be a simple depth-first or breadth-first traversal
 	// depending on your requirements and graph structure.
@@ -340,19 +435,23 @@ func getAllNodes(root *Node) []*Node {
 
 	visited := make(map[*Node]bool)
 	var result []*Node
-	traverseDFS(root, visited, &result)
-	return result
+	yield := 0
+	traverseDFS(root, visited, &result, &yield)
+	return result, yield
 }
 
-func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node) {
+func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int) {
 	if node == nil || visited[node] {
 		return
 	}
 
 	visited[node] = true
 	*result = append(*result, node)
+	if node.Name == "yield" {
+		*yield++
+	}
 
 	for _, outboundNode := range node.Outbound {
-		traverseDFS(outboundNode.Node, visited, result)
+		traverseDFS(outboundNode.Node, visited, result, yield)
 	}
 }
