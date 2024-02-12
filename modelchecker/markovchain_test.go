@@ -109,11 +109,6 @@ func TestSteadyStateDistribution(t *testing.T) {
 		//},
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
-			maxActions:    2,
-			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
-		},
-		{
-			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
 			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
 		},

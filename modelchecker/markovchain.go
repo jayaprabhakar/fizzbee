@@ -201,8 +201,8 @@ func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, trans
 
 		currentDistribution = nextDistribution
 	}
-	fmt.Println(mean)
-	fmt.Println(rawCounters)
+	//fmt.Println(mean)
+	//fmt.Println(rawCounters)
 	histogram.mean = mean
 	return currentDistribution, histogram
 }
@@ -210,7 +210,7 @@ func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, trans
 func FindAbsorptionCosts(root *Node, perfModel *proto.PerformanceModel, fileId int, invariantId int) ([]float64, *Histogram) {
 	// Create the transition matrix
 	nodes, yields := getAllNodes(root)
-	fmt.Println("Yields", yields)
+	//fmt.Println("Yields", yields)
 	yields += 1 // Add the root node
 
 	transitionMatrix := createAbsorptionTransitionMatrix(nodes, fileId, invariantId)

@@ -547,9 +547,9 @@ func TestProcessor_Tutorials(t *testing.T) {
 
 			//dotString := generateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
-			//dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
-			//WriteFile(t, tempDir, dotFileName, []byte(dotString))
-			//fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
+			////dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
+			////WriteFile(t, tempDir, dotFileName, []byte(dotString))
+			////fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
 			//fmt.Printf("\n%s\n", dotString)
 		})
 	}

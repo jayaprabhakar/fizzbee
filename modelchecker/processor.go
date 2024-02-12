@@ -366,6 +366,11 @@ func (n *Node) Duplicate(other *Node) {
 	parent.Outbound = append(parent.Outbound, &Link{Node: other, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
 }
 
+func (n *Node) Stutter() {
+	n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
+	n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
+}
+
 func (n *Node) Attach() {
 	parent := n.Inbound[0].Node
 	parent.Outbound = append(parent.Outbound, &Link{Node: n, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
@@ -550,6 +555,7 @@ func (p *Processor) processNode(node *Node) bool {
 			p.YieldNode(node)
 			node.Name = "yield"
 		}
+		node.Stutter()
 		if len(node.Process.Threads) == 0 {
 			return false
 		}
@@ -560,13 +566,16 @@ func (p *Processor) processNode(node *Node) bool {
 		// TODO: We could just copy the failed invariants from the parent
 		// instead of checking again
 		CheckInvariants(crashFork)
-		if other, ok := p.visited[node.HashCode()]; ok {
-			// Check if visited before scheduling children
-			node.Duplicate(other)
-			return false
-		} else {
-			node.Attach()
-		}
+		crashNode.Attach()
+		crashNode.Stutter()
+
+		//if other, ok := p.visited[node.HashCode()]; ok {
+		//	// Check if visited before scheduling children
+		//	node.Duplicate(other)
+		//	return false
+		//} else {
+		//	node.Attach()
+		//}
 		p.YieldNode(crashNode)
 		return false
 	}
