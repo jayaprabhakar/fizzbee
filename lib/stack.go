@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"github.com/huandu/go-clone"
 	"sync"
 )
@@ -84,4 +85,11 @@ func (s *Stack[T]) Len() int {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return len(s.s)
+}
+
+func (s *Stack[T]) MarshalJSON() ([]byte, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return json.Marshal(s.s)
 }

@@ -23,21 +23,21 @@ func TestRemoveCurrentThread(t *testing.T) {
 			&Thread{},
 			&Thread{},
 		},
-		current: 1,
+		Current: 1,
 	}
 	p.removeCurrentThread()
 	assert.Equal(t, 2, len(p.Threads))
-	assert.Equal(t, 0, p.current)
+	assert.Equal(t, 0, p.Current)
 
-	p.current = 1
+	p.Current = 1
 	p.removeCurrentThread()
 	assert.Equal(t, 1, len(p.Threads))
-	assert.Equal(t, 0, p.current)
+	assert.Equal(t, 0, p.Current)
 
-	p.current = 0
+	p.Current = 0
 	p.removeCurrentThread()
 	assert.Equal(t, 0, len(p.Threads))
-	assert.Equal(t, 0, p.current)
+	assert.Equal(t, 0, p.Current)
 }
 
 // TestHash is a unit test for Process.Hash.
@@ -69,7 +69,7 @@ func TestHash(t *testing.T) {
 			t2,
 			t3,
 		},
-		current: 1,
+		Current: 1,
 		Heap: &Heap{
 			globals: starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)},
 		},
@@ -81,7 +81,7 @@ func TestHash(t *testing.T) {
 			t0,
 			t1,
 		},
-		current: 3,
+		Current: 3,
 		Heap: &Heap{
 			globals: starlark.StringDict{"a": starlark.MakeInt(10), "b": starlark.MakeInt(20)},
 		},
@@ -551,6 +551,17 @@ func TestProcessor_Tutorials(t *testing.T) {
 			////WriteFile(t, tempDir, dotFileName, []byte(dotString))
 			////fmt.Printf("Writing dotfile, elapsed: %s\n", time.Since(startTime))
 			//fmt.Printf("\n%s\n", dotString)
+
+
+			nodes, _ := getAllNodes(root)
+			outFileName := RemoveLastSegment(filename, ".json") + "-out"
+			filenamePrefix := filepath.Join(tempDir, outFileName)
+			fmt.Println("Generating proto of json", filenamePrefix)
+			//_ = nodes
+			nodeFiles, linkFileNames, err := GenerateProtoOfJson(nodes, filenamePrefix)
+			require.Nil(t, err)
+			fmt.Println("Generated proto of json", nodeFiles, linkFileNames)
+			fmt.Printf("Generating proto of json, elapsed: %s\n", time.Since(startTime))
 		})
 	}
 }
