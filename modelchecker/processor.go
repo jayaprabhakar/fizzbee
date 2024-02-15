@@ -42,8 +42,8 @@ type Definition struct {
 }
 
 type Stats struct {
-	TotalActions int
-	Counts map[string]int
+	TotalActions int         `json:"totalActions"`
+	Counts map[string]int    `json:"counts"`
 }
 
 // NewStats returns a new Stats object
@@ -70,24 +70,23 @@ func (s *Stats) Increment(action string) {
 }
 
 type Process struct {
-	Heap             *Heap
-	Threads          []*Thread
-	current          int
-	Name             string
-	Files            []*ast.File
-	Parent           *Process
-	Evaluator        *Evaluator
-	Children         []*Process
-	FailedInvariants map[int][]int
-	Stats            *Stats
+	Heap             *Heap		      `json:"globals"`
+	Threads          []*Thread        `json:"threads"`
+	Current          int              `json:"current"`
+	Name             string           `json:"name"`
+	Files            []*ast.File      `json:"_"`
+	Parent           *Process         `json:"-"`
+	Evaluator        *Evaluator       `json:"-"`
+	Children         []*Process       `json:"-"`
+	FailedInvariants map[int][]int    `json:"failedInvariants"`
+	Stats            *Stats           `json:"stats"`
 	// Witness indicates the successful liveness checks
 	// For liveness checks, not all nodes will pass the condition, witness indicates
 	// which invariants this node passed.
-	Witness     [][]bool
-	Returns     starlark.StringDict
-	SymbolTable map[string]*Definition
-	Labels 		[]string
-
+	Witness     [][]bool               `json:"witness"`
+	Returns     starlark.StringDict    `json:"returns"`
+	SymbolTable map[string]*Definition `json:"-"`
+	Labels 		[]string               `json:"-"`
 }
 
 func NewProcess(name string, files []*ast.File, parent *Process) *Process {
@@ -116,14 +115,14 @@ func NewProcess(name string, files []*ast.File, parent *Process) *Process {
 		Name:        name,
 		Heap:        &Heap{starlark.StringDict{}},
 		Threads:     []*Thread{},
-		current:     0,
+		Current:     0,
 		Files:       files,
 		Parent:      parent,
 		Evaluator:   mc,
 		Children:    []*Process{},
 		Returns:     make(starlark.StringDict),
 		SymbolTable: symbolTable,
-		Labels: 	 make([]string, 0),
+		Labels:      make([]string, 0),
 		Stats:       NewStats(),
 	}
 	p.Witness = make([][]bool, len(files))
@@ -151,14 +150,14 @@ func (p *Process) Fork() *Process {
 	p2 := &Process{
 		Name:        p.Name,
 		Heap:        p.Heap.Clone(),
-		current:     p.current,
+		Current:     p.Current,
 		Parent:      p,
 		Evaluator:   p.Evaluator,
 		Children:    []*Process{},
 		Files:       p.Files,
 		Returns:     make(starlark.StringDict),
 		SymbolTable: p.SymbolTable,
-		Labels: 	 make([]string, 0),
+		Labels:      make([]string, 0),
 		Stats:       p.Stats.Clone(),
 	}
 	p2.Witness = make([][]bool, len(p.Files))
@@ -195,7 +194,7 @@ func (n *Node) String() string {
 	n.appendState(p, buf)
 	buf.WriteString("\n")
 	if len(p.Threads) > 0 {
-		buf.WriteString(fmt.Sprintf("Threads: %d/%d\n", p.current, len(p.Threads)))
+		buf.WriteString(fmt.Sprintf("Threads: %d/%d\n", p.Current, len(p.Threads)))
 	} else {
 		buf.WriteString("Threads: 0\n")
 	}
@@ -242,10 +241,10 @@ func (p *Process) HashCode() string {
 
 	h := sha256.New()
 
-	// Use the current thread's hash first, not the index
+	// Use the Current thread's hash first, not the index
 	currentThreadHash := ""
 	if len(threadHashes) > 0 {
-		currentThreadHash = threadHashes[p.current]
+		currentThreadHash = threadHashes[p.Current]
 	}
 	h.Write([]byte(currentThreadHash))
 
@@ -264,20 +263,20 @@ func (p *Process) HashCode() string {
 }
 
 func (p *Process) currentThread() *Thread {
-	return p.Threads[p.current]
+	return p.Threads[p.Current]
 }
 
 func (p *Process) removeCurrentThread() {
 	if len(p.Threads) == 0 {
 		return
 	}
-	p.Threads = append(p.Threads[:p.current],
-		p.Threads[p.current+1:]...)
-	p.current = 0
+	p.Threads = append(p.Threads[:p.Current],
+		p.Threads[p.Current+1:]...)
+	p.Current = 0
 }
 
-// GetAllVariables returns all variables visible in the current thread.
-// This includes state variables and variables from the current thread's variables in the top call frame
+// GetAllVariables returns all variables visible in the Current thread.
+// This includes state variables and variables from the Current thread's variables in the top call frame
 func (p *Process) GetAllVariables() starlark.StringDict {
 	dict := CloneDict(p.Heap.globals)
 	frame := p.currentThread().currentFrame()
@@ -299,7 +298,7 @@ func (p *Process) updateAllVariablesInScope(dict starlark.StringDict) {
 			// variable, then update the state variable
 			continue
 		}
-		// Declare the variable to the current scope
+		// Declare the variable to the Current scope
 		frame.scope.vars[k] = v
 	}
 }
@@ -326,10 +325,10 @@ func (p *Process) PanicOnError(msg string, nestedError error)  {
 }
 
 type Node struct {
-	*Process
+	*Process            `json:"process"`
 
-	Inbound  []*Link
-	Outbound []*Link
+	Inbound  []*Link    `json:"-"`
+	Outbound []*Link    `json:"-"`
 
 	// The number of actions started until this node
 	// Note: This is the shorted path to this node from the root as we do BFS.
@@ -605,7 +604,7 @@ func (p *Processor) YieldNode(node *Node) {
 		}
 		name := fmt.Sprintf("thread-%d", i)
 		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
-		newNode.current = i
+		newNode.Current = i
 
 		_ = p.queue.Push(newNode)
 	}
@@ -622,7 +621,7 @@ func (p *Processor) YieldNode(node *Node) {
 		}
 		newNode := node.ForkForAction(nil, action)
 		newNode.Process.NewThread()
-		newNode.Process.current = len(newNode.Process.Threads) - 1
+		newNode.Process.Current = len(newNode.Process.Threads) - 1
 		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
 		newNode.currentThread().currentFrame().Name = action.Name
 
@@ -637,7 +636,7 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		}
 		name := fmt.Sprintf("thread-%d", i)
 		newNode := node.ForkForAlternatePaths(thread.Process.Fork(), name)
-		newNode.current = i
+		newNode.Current = i
 
 		_ = p.queue.Push(newNode)
 	}
@@ -653,7 +652,7 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		}
 		newNode := node.ForkForAction(process, action)
 		newNode.Process.NewThread()
-		newNode.Process.current = len(newNode.Process.Threads) - 1
+		newNode.Process.Current = len(newNode.Process.Threads) - 1
 		newNode.currentThread().currentFrame().pc = fmt.Sprintf("Actions[%d]", i)
 		newNode.currentThread().currentFrame().Name = action.Name
 

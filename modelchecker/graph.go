@@ -1,10 +1,133 @@
 package modelchecker
 
 import (
+	"fizz/proto"
 	"fmt"
+	proto2 "github.com/golang/protobuf/proto"
+	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, error) {
+	dir := filepath.Dir(pathPrefix)
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		fmt.Printf("Error creating directory %s: %v\n", dir, err)
+		return nil, nil, err
+	}
+
+	shardSize := 10000
+	n := len(nodes)
+	shards := n / shardSize
+
+	indexMap := make(map[*Node]int)
+	filename := fmt.Sprintf("%s_nodes_%06d_of_%06d.pb", pathPrefix, 0, shards)
+	nodeJsons := make([]string, 0, shardSize)
+	jsonFileNames := make([]string, 0, shards)
+	edges := 0
+	for i, node := range nodes {
+		indexMap[node] = i
+		edges += max(1, len(node.Outbound))
+		if len(nodeJsons) >= shardSize {
+			err := writeNodeJsonsToFile(nodeJsons, filename)
+			if err != nil {
+				return nil, nil, err
+			}
+			jsonFileNames = append(jsonFileNames, filename)
+			nodeJsons = nodeJsons[:0]
+			filename = fmt.Sprintf("%s_nodes_%06d_of_%06d.pb", pathPrefix, i/shardSize, shards)
+		}
+		nodeJsons = append(nodeJsons, node.String())
+
+	}
+	if len(nodeJsons) > 0 {
+		err := writeNodeJsonsToFile(nodeJsons, filename)
+		if err != nil {
+			return nil, nil, err
+		}
+		jsonFileNames = append(jsonFileNames, filename)
+		nodeJsons = nodeJsons[:0]
+	}
+
+	linksShardSize := 100000
+	linkShards := edges / linksShardSize
+
+	links := make([]*proto.Link, 0, linksShardSize)
+	adjListFileName := fmt.Sprintf("%s_adjacency_lists_%06d_of_%06d.pb", pathPrefix, 0, linkShards)
+	linksFileNames := make([]string, 0, linkShards)
+	for i, node := range nodes {
+		if len(node.Outbound) == 0 {
+			links = append(links, &proto.Link{
+				From: int64(i),
+				To:   int64(i),
+				Name: "end",
+			})
+		}
+		for _, outboundLink := range node.Outbound {
+			links = append(links, &proto.Link{
+				From:  int64(i),
+				To:    int64(indexMap[outboundLink.Node]),
+				Name:  outboundLink.Name,
+				Labels: outboundLink.Labels,
+			})
+			if len(links) >= linksShardSize {
+				err := writeProtoMsgToFile(&proto.Links{Links: links}, adjListFileName)
+				if err != nil {
+					return nil, nil, err
+				}
+				linksFileNames = append(linksFileNames, adjListFileName)
+				links = links[:0]
+				adjListFileName = fmt.Sprintf("%s_adjacency_lists_%06d_of_%06d.pb", pathPrefix, len(linksFileNames), linkShards)
+			}
+		}
+	}
+	if len(links) > 0 {
+		err := writeProtoMsgToFile(&proto.Links{Links: links}, adjListFileName)
+		if err != nil {
+			return nil, nil, err
+		}
+		linksFileNames = append(linksFileNames, adjListFileName)
+		links = links[:0]
+	}
+
+	return jsonFileNames, linksFileNames, nil
+}
+
+func writeNodeJsonsToFile(nodeJsons []string, filename string) error {
+	// Serialize the message to binary format
+	return writeProtoMsgToFile(&proto.Nodes{Json: nodeJsons}, filename)
+}
+
+func writeProtoMsgToFile(message proto2.Message, filename string) error {
+	data, err := proto2.Marshal(message)
+	if err != nil {
+		log.Fatalf("Failed to serialize message: %v", err)
+		return err
+	}
+	err = writeFile(filename, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFile(filename string, data []byte) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func RemoveMergeNodes(root *Node) {
 	removed := true

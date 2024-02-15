@@ -17,6 +17,10 @@ type Heap struct {
 	globals starlark.StringDict
 }
 
+func (h *Heap) MarshalJSON() ([]byte, error) {
+	return StringDictToJson(h.globals)
+}
+
 func StringDictToMap(stringDict starlark.StringDict) map[string]string {
 	m := make(map[string]string, len(stringDict))
 	for k, v := range stringDict {
@@ -119,6 +123,15 @@ type Scope struct {
 	loopRange []starlark.Value
 }
 
+func (s *Scope) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"parent":    s.parent,
+		"vars":      StringDictToJsonString(s.vars),
+		"skipstmts": s.skipstmts,
+		"loopRange": s.loopRange,
+	})
+}
+
 func (s *Scope) SetFlow(flow ast.Flow) {
 	if flow != ast.Flow_FLOW_UNKNOWN {
 		s.flow = flow
@@ -204,13 +217,24 @@ type CallFrame struct {
 	// Name is the full path of the function/action being executed.
 	Name string
 
-	// scope is the lexical scope of the current frame
+	// scope is the lexical scope of the Current frame
 	scope *Scope
 	// vars is the dictionary of arguments passed to the function.
 	// This should eventually replace local variables from the scope as python doesn't have block scope.
 	vars starlark.StringDict
 
 	callerAssignVarNames []string
+}
+
+func (c *CallFrame) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"fileIndex": c.FileIndex,
+		"pc":        c.pc,
+		"name":      c.Name,
+		"scope":     c.scope,
+		"vars":      StringDictToJsonString(c.vars),
+	})
+
 }
 
 func (c *CallFrame) HashCode() string {
@@ -249,9 +273,9 @@ func (s *CallStack) HashCode() string {
 
 // Thread represents a thread of execution.
 type Thread struct {
-	Process *Process
-	Files   []*ast.File
-	Stack   *CallStack
+	Process *Process      `json:"-"`
+	Files   []*ast.File   `json:"-"`
+	Stack   *CallStack	  `json:"stack"`
 }
 
 func NewThread(Process *Process, files []*ast.File, fileIndex int, action string) *Thread {
@@ -268,7 +292,7 @@ func (t *Thread) HashCode() string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// InsertNewScope adds a new scope to the current stack frame and returns the newly created scope.
+// InsertNewScope adds a new scope to the Current stack frame and returns the newly created scope.
 func (t *Thread) InsertNewScope() *Scope {
 	scope := &Scope{parent: t.currentFrame().scope, vars: starlark.StringDict{}}
 	t.currentFrame().scope = scope
@@ -278,7 +302,7 @@ func (t *Thread) InsertNewScope() *Scope {
 	return scope
 }
 
-// ExitScope removes the current scope and returns the removed scope or nil if no scope was present.
+// ExitScope removes the Current scope and returns the removed scope or nil if no scope was present.
 func (t *Thread) ExitScope() *Scope {
 	scope := t.currentFrame().scope
 	if scope == nil {
@@ -622,9 +646,9 @@ func (t *Thread) executeForStatement() ([]*Process, bool) {
 	for i, x := range scope.loopRange {
 		// TODO(jp): This is a hack. We should not be forking for each iteration,
 		// instead, create a new thread for each iteration.
-		// That is because, even though, for the correctness analysis, the current formulation is fine,
+		// That is because, even though, for the correctness analysis, the Current formulation is fine,
 		// if we eventually want to reason about performance, this formulation is not sufficient.
-		// That is, in the current formulation, a loop on n elements means, there are n! permutations in which,
+		// That is, in the Current formulation, a loop on n elements means, there are n! permutations in which,
 		// they can be executed sequentially. That is, if each iteration takes 1 second, then it would imply, the total
 		// time will take n seconds. But we need a way to capture they are actually happening in parallel, so they
 		// should take only 1 second. Technically max time taken for each iteration.

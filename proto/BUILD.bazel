@@ -84,6 +84,7 @@ proto_library(
     name = "proto_proto",
     srcs = [
         "fizz_ast.proto",
+        "graph.proto",
         "performance_model.proto",
         "statespace_options.proto",
     ],
