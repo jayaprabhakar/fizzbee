@@ -40,7 +40,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 			nodeJsons = nodeJsons[:0]
 			filename = fmt.Sprintf("%s_nodes_%06d_of_%06d.pb", pathPrefix, i/shardSize, shards)
 		}
-		nodeJsons = append(nodeJsons, node.String())
+		nodeJsons = append(nodeJsons, node.GetJsonString())
 
 	}
 	if len(nodeJsons) > 0 {
@@ -59,22 +59,27 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 	adjListFileName := fmt.Sprintf("%s_adjacency_lists_%06d_of_%06d.pb", pathPrefix, 0, linkShards)
 	linksFileNames := make([]string, 0, linkShards)
 	for i, node := range nodes {
+
+		//fmt.Printf("Processing node %d of %+v\n", i, node)
 		if len(node.Outbound) == 0 {
 			links = append(links, &proto.Link{
-				From: int64(i),
-				To:   int64(i),
-				Name: "end",
+				Src:    int64(i),
+				Dest:   int64(i),
+				Name:   "end",
+				Weight: 1.0,
 			})
 		}
+		numLinks := len(node.Outbound)
 		for _, outboundLink := range node.Outbound {
 			links = append(links, &proto.Link{
-				From:  int64(i),
-				To:    int64(indexMap[outboundLink.Node]),
-				Name:  outboundLink.Name,
+				Src:    int64(i),
+				Dest:   int64(indexMap[outboundLink.Node]),
+				Name:   outboundLink.Name,
 				Labels: outboundLink.Labels,
+				Weight: 1.0 / float64(numLinks),
 			})
 			if len(links) >= linksShardSize {
-				err := writeProtoMsgToFile(&proto.Links{Links: links}, adjListFileName)
+				err := writeProtoMsgToFile(&proto.Links{TotalNodes: int64(n), Links: links}, adjListFileName)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -85,7 +90,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 		}
 	}
 	if len(links) > 0 {
-		err := writeProtoMsgToFile(&proto.Links{Links: links}, adjListFileName)
+		err := writeProtoMsgToFile(&proto.Links{TotalNodes: int64(n), Links: links}, adjListFileName)
 		if err != nil {
 			return nil, nil, err
 		}

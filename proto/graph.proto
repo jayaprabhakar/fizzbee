@@ -21,12 +21,14 @@ message Nodes {
 }
 
 message Link {
-  int64 from = 1;
-  int64 to = 2;
+  int64 src = 1;
+  int64 dest = 2;
   string name = 3;
   repeated string labels = 4;
+  double weight = 5;
 }
 
 message Links {
-  repeated Link links = 1;
+  int64 total_nodes = 1;
+  repeated Link links = 2;
 }

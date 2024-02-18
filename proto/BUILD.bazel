@@ -51,6 +51,12 @@ go_library(
     visibility = ["//visibility:public"],
 )
 
+py_proto_library(
+    name = "perf_py_proto",
+    srcs = ["performance_model.proto"],
+    visibility = ["//visibility:public"],
+)
+
 go_library(
     name = "proto",
     embed = [":proto_go_proto"],
@@ -95,5 +101,11 @@ go_proto_library(
     name = "proto_go_proto",
     importpath = "fizz/proto",
     proto = ":proto_proto",
+    visibility = ["//visibility:public"],
+)
+
+py_proto_library(
+    name = "graph_py_proto",
+    srcs = ["graph.proto"],
     visibility = ["//visibility:public"],
 )
