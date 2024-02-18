@@ -436,11 +436,13 @@ func getAllNodes(root *Node) ([]*Node, int) {
 	visited := make(map[*Node]bool)
 	var result []*Node
 	yield := 0
-	traverseDFS(root, visited, &result, &yield)
+	maxDepth := 0
+	traverseDFS(root, visited, &result, &yield, &maxDepth)
+	fmt.Println("Max Depth", maxDepth)
 	return result, yield
 }
 
-func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int) {
+func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int, maxDepth *int) {
 	if node == nil || visited[node] {
 		return
 	}
@@ -450,8 +452,11 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int
 	if node.Name == "yield" {
 		*yield++
 	}
+	if node.forkDepth > *maxDepth {
+		*maxDepth = node.forkDepth
+	}
 
 	for _, outboundNode := range node.Outbound {
-		traverseDFS(outboundNode.Node, visited, result, yield)
+		traverseDFS(outboundNode.Node, visited, result, yield, maxDepth)
 	}
 }

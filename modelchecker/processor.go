@@ -15,6 +15,7 @@ package modelchecker
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	ast "fizz/proto"
 	"fmt"
 	"github.com/jayaprabhakar/fizzbee/lib"
@@ -74,7 +75,7 @@ type Process struct {
 	Threads          []*Thread        `json:"threads"`
 	Current          int              `json:"current"`
 	Name             string           `json:"name"`
-	Files            []*ast.File      `json:"_"`
+	Files            []*ast.File      `json:"-"`
 	Parent           *Process         `json:"-"`
 	Evaluator        *Evaluator       `json:"-"`
 	Children         []*Process       `json:"-"`
@@ -200,6 +201,15 @@ func (n *Node) String() string {
 	}
 
 	return buf.String()
+}
+
+func (n *Node) GetJsonString() string {
+	bytes, err := json.Marshal(n)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return ""
+	}
+	return string(bytes)
 }
 
 func (n *Node) GetStateString() string {

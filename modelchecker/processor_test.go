@@ -554,10 +554,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 
 
 			nodes, _ := getAllNodes(root)
+			_ = nodes
 			outFileName := RemoveLastSegment(filename, ".json") + "-out"
 			filenamePrefix := filepath.Join(tempDir, outFileName)
 			fmt.Println("Generating proto of json", filenamePrefix)
-			//_ = nodes
+
 			nodeFiles, linkFileNames, err := GenerateProtoOfJson(nodes, filenamePrefix)
 			require.Nil(t, err)
 			fmt.Println("Generated proto of json", nodeFiles, linkFileNames)

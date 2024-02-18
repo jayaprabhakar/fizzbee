@@ -1,0 +1,22 @@
+#load("@rules_python//python:rules.bzl", "py_library")
+
+py_library(
+    name = "performance",
+    srcs = [
+        "fmt.py",
+        "markov_chain.py",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto:perf_py_proto",
+        "//proto:graph_py_proto",
+    ],
+)
+
+py_binary(
+    name = "performance_bin",
+    srcs = ["main.py"],
+    main = "main.py",
+    visibility = ["//visibility:public"],
+    deps = [":performance"],
+)
