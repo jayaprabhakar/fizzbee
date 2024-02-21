@@ -135,13 +135,13 @@ func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, trans
 	transitionMatrix = transpose(transitionMatrix)
 	//printMatrix(transitionMatrix)
 	expectedCounterMatrices := make(map[string][][]float64)
-	rawCounterMatrices := make(map[string][][]float64)
+	//rawCounterMatrices := make(map[string][][]float64)
 	mean := make(map[string]float64)
 	rawCounters := make(map[string]float64)
 	for counterName, matrix := range matrices {
 		m := transpose(matrix)
 		expectedCounterMatrices[counterName] = multiplyMatrices(m, transitionMatrix)
-		rawCounterMatrices[counterName] = m
+		//rawCounterMatrices[counterName] = m
 		mean[counterName] = 0.0
 		rawCounters[counterName] = 0.0
 		//fmt.Println(counterName)
