@@ -1,7 +1,11 @@
 import json
 import sys
+
+import performance.files as files
 import performance.markov_chain as markov_chain
 import proto.performance_model_pb2 as perf
+import proto.fizz_ast_pb2 as ast
+
 import performance.fmt as fmt
 import argparse
 
@@ -36,7 +40,6 @@ def plot_cdf(histogram):
     # Plot CDF for each label
     for label in labels:
         plt.figure()  # Create a new figure for each label
-        # cdf = [sum(cost <= costs[label][i] for cost in costs[label]) / len(costs[label]) for i in range(len(costs[label]))]
         plt.plot(costs[label], probabilities, label=label)
 
         # Add labels and legend
@@ -54,6 +57,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Example of command-line flags in Python')
     parser.add_argument('-s', '--states', type=str, help='Path prefix for the states file')
     parser.add_argument('-m', '--perf', type=str, help='Path for the performance model spec file')
+    parser.add_argument('-b', '--source', type=str, help='Path for the behaviour model spec file')
 
     args = parser.parse_args()
 
@@ -64,18 +68,23 @@ def main(argv):
     perf_model = perf.PerformanceModel()
     if args.perf:
         print("perf file", args.perf)
-        perf_model = markov_chain.load_performance_model_from_file(args.perf)
+        perf_model = files.load_performance_model_from_file(args.perf)
 
+    source_model = ast.File()
+    if args.source:
+        print("source file", args.source)
+        source_model = files.load_behavior_model_from_file(args.source)
+        print(source_model)
     # print(perf_model)
 
-    nodespb = markov_chain.load_nodes_from_proto_files(args.states)
+    nodespb = files.load_nodes_from_proto_files(args.states)
     # print(nodespb)
     nodes = []
     for i, node in enumerate(nodespb.json):
         # print(i, node)
         nodes.append(json.loads(node))
 
-    links = markov_chain.load_adj_lists_from_proto_files(args.states)
+    links = files.load_adj_lists_from_proto_files(args.states)
 
     steady_state,metrics = markov_chain.steady_state(links, perf_model)
     print(steady_state)
@@ -87,8 +96,54 @@ def main(argv):
             print(f'{i:4d}: {prob:.8f} {fmt.get_state_string(nodes[i])}')
             steady_state_nodes.append((i, prob, nodes[i]))
 
-    plot_histogram(metrics.histogram)
-    plot_cdf(metrics.histogram)
+    # plot_histogram(metrics.histogram)
+    # plot_cdf(metrics.histogram)
+
+    for i,invariant in enumerate(source_model.invariants):
+        print(invariant)
+
+        if "always" not in invariant.temporal_operators or  "eventually" not in invariant.temporal_operators:
+            continue
+        elif "eventually" == invariant.temporal_operators[0] and "always" == invariant.temporal_operators[1]:
+            print(invariant.name, "eventually always")
+            for j,prob,node in steady_state_nodes:
+                if node['process']['witness'][0][i]:
+                    print("LIVE", i,j,prob,node)
+                else:
+                    print("DEAD", i,j,prob,node)
+        elif "always" == invariant.temporal_operators[0] and "eventually" == invariant.temporal_operators[1]:
+            print(invariant.name, "always eventually")
+            # copied_array = np.copy(original_array)
+            trans_matrix = markov_chain.create_transition_matrix(links, perf_model)
+            witness_nodes = []
+            for j,node in filter(lambda x: x[1]['process']['witness'][0][i], enumerate(nodes)):
+                print(j, node)
+                witness_nodes.append(j)
+
+            live_prob,metrics = markov_chain.steady_state_liveness(links, perf_model, witness_nodes)
+            print(live_prob)
+            dead_nodes = []
+            for j,prob in enumerate(live_prob):
+                if prob > 1e-6:
+                    state = "LIVE"
+                    if not nodes[j]['process']['witness'][0][i]:
+                        dead_nodes.append((j, prob, nodes[j]))
+                        state = "DEAD"
+
+                    print(f'{state} {j:4d}: {prob:.8f} {fmt.get_state_string(nodes[j])}')
+            # for j,prob,node in steady_state_nodes:
+            #     if node['process']['witness'][0][i]:
+            #         print("LIVE", i,j,prob,node)
+            #     else:
+            #         print("DEAD", i,j,prob,node)
+            # print(witness_nodes)
+            # print(trans_matrix)
+            # new_matrix = markov_chain.make_terminal_nodes(trans_matrix, witness_nodes)
+            #
+            # print(new_matrix)
+            # _,metrics = markov_chain.steady_state(links, perf_model, new_matrix)
+
+
     # markov_chain.create_cost_matrices(links, perf_model)
     # Time to reach steady state
     # Clone the transition matrix, and for each

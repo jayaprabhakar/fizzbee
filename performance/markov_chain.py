@@ -1,14 +1,4 @@
-import os
-import glob
-import proto.graph_pb2 as graph # Import your Protocol Buffers generated code
-import proto.performance_model_pb2 as perf # Import your Protocol Buffers generated code
-
-import yaml
-import json
-from google.protobuf import json_format
-
 import numpy as np
-from scipy.sparse import csr_matrix
 
 
 class Metrics:
@@ -24,50 +14,6 @@ class Metrics:
 
     def __str__(self):
         return f"Metrics(mean={self.mean}, histogram={self.histogram})"
-
-
-def load_performance_model_from_file(file_path):
-    # Create an empty PerformanceModel message
-    perf_model = perf.PerformanceModel()
-
-    yaml_to_proto(file_path, perf_model)
-
-    return perf_model
-
-
-def yaml_to_proto(yaml_filename, proto_msg):
-    # Read the YAML file
-    with open(yaml_filename, 'r') as yaml_file:
-        yaml_content = yaml.safe_load(yaml_file)
-
-    # Convert YAML content to JSON string
-    json_str = json.dumps(yaml_content)
-
-    # Parse JSON string into Proto message
-    json_format.Parse(json_str, proto_msg)
-
-    return proto_msg
-
-
-def load_adj_lists_from_proto_files(path_prefix):
-    pattern = os.path.join(f"{path_prefix}*adjacency_lists_*.pb")
-    links = graph.Links()
-    return load_proto_files(pattern, links)
-
-
-def load_nodes_from_proto_files(path_prefix):
-    pattern = os.path.join(f"{path_prefix}*nodes_*.pb")
-    pb = graph.Nodes()
-    return load_proto_files(pattern, pb)
-
-
-def load_proto_files(pattern, pb):
-    file_paths = glob.glob(pattern)
-    for file_path in file_paths:
-        with open(file_path, "rb") as f:
-            pb.MergeFromString(f.read())
-            # print(pb)
-    return pb
 
 
 # def update_transition_matrix(matrix, links):
@@ -151,7 +97,7 @@ def create_cost_matrices(links, model):
     return cost_matrices
 
 
-def analyze(matrix, cost_matrices, initial_distribution, num_iterations=2000, tolerance=1e-6):
+def analyze(matrix, cost_matrices, initial_distribution, num_iterations=2000, tolerance=1e-12):
     """
     Runs the power iteration algorithm to analyze the markov chain. Specifically, it does two things:
     1. It computes the steady state distribution of the markov chain.
@@ -235,6 +181,12 @@ def initial_distribution_from_init_state(n):
     return v
 
 
+def initial_distribution_from_any_states(n):
+    # Create a vector of length n with all elements = 0 except the first element = 1
+    v = np.full((n), 1/n)
+    return v
+
+
 def steady_state(links, perf_model):
     matrix = create_transition_matrix(links, perf_model)
     cost_matrices = create_cost_matrices(links, perf_model)
@@ -245,10 +197,28 @@ def steady_state(links, perf_model):
     return prob,metrics
 
 
-def steady_state_cost_metrics(links, perf_model):
-    matrix = create_transition_matrix(links, perf_model)
+def make_terminal_nodes(transition_matrix, terminal_nodes):
+    # Create a copy of the transition matrix to avoid modifying the original
+    modified_matrix = np.copy(transition_matrix)
+
+    # Iterate over each terminal node
+    for node in terminal_nodes:
+        # Set all out probability to 0 and self-loop probability to 1 for the terminal node
+        modified_matrix[node, :] = 0
+        modified_matrix[node, node] = 1
+
+    return modified_matrix
+
+
+def steady_state_liveness(links, perf_model, terminal_nodes):
+    trans_matrix = create_transition_matrix(links, perf_model)
+    # print(trans_matrix)
+    matrix = make_terminal_nodes(trans_matrix, terminal_nodes)
+    cost_matrices = {}
     # print(matrix)
-    initial_distribution = initial_distribution_from_init_state(links.total_nodes)
+    initial_distribution = initial_distribution_from_any_states(links.total_nodes)
     # print(initial_distribution)
-    prob = analyze(matrix, initial_distribution)
-    return prob
+    prob,metrics = analyze(matrix, cost_matrices, initial_distribution)
+    return prob,metrics
+
+

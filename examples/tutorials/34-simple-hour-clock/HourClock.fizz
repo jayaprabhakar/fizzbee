@@ -1,9 +1,13 @@
 init:
   hour = 1
 
-invariants:
-  always hour <= 12 and hour >= 1
-  always eventually hour in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+always assertion Safety:
+  return hour < 12 and hour >= 1
+
+always eventually assertion Liveness:
+    return hour in [6]
+
 
 atomic action Tick:
     hour = hour%12 + 1

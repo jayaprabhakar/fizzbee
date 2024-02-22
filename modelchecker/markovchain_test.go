@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -163,14 +164,15 @@ func TestSteadyStateDistribution(t *testing.T) {
 				}
 			}
 			for k, inv := range files[0].Invariants {
-				if !inv.Eventually {
+				if !inv.Eventually && !slices.Contains(inv.TemporalOperators, "eventually") {
 					continue
 				}
 				_, histogram := FindAbsorptionCosts(root, perfModel, 0, k)
 				fmt.Println("Absorption Cost")
 				fmt.Println(histogram.GetMeanCounts())
 				//fmt.Println(histogram.GetAllHistogram())
-				eventuallyAlways := inv.Eventually && inv.GetNested().GetAlways()
+				eventuallyAlways := inv.Eventually && inv.GetNested().GetAlways() ||
+									inv.TemporalOperators[0] == "eventually" && inv.TemporalOperators[1] == "always"
 
 				if eventuallyAlways {
 					fmt.Println("Eventually Always")

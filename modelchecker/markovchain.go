@@ -130,7 +130,7 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, transitionMatrix [][]float64, initialDistribution []float64) ([]float64, *Histogram) {
 	matrices := genCounterMatrices(nodes, perfModel)
 	histogram := newHistogram()
-	fmt.Printf("\ninitial distribution:\n%v\n", initialDistribution)
+	//fmt.Printf("\ninitial distribution:\n%v\n", initialDistribution)
 	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
 	transitionMatrix = transpose(transitionMatrix)
 	//printMatrix(transitionMatrix)
@@ -314,7 +314,7 @@ func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 
 	// Iterate to find the steady-state distribution
 	currentDistribution := initialDistribution
-	fmt.Println(currentDistribution)
+	//fmt.Println(currentDistribution)
 	for i := 0; i < iterations; i++ { // Max iterations to avoid infinite loop
 		nextDistribution := matrixVectorProduct(transitionMatrix, currentDistribution)
 		//fmt.Println(i, nextDistribution)
