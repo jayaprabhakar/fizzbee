@@ -43,6 +43,8 @@ class BuildAstVisitor(FizzParserVisitor):
                     file.actions.append(childProto)
                 elif isinstance(childProto, ast.Function):
                     file.functions.append(childProto)
+                elif isinstance(childProto, ast.Invariant):
+                    file.invariants.append(childProto)
                 elif BuildAstVisitor.is_list_of_type(childProto, ast.Invariant):
                     file.invariants.extend(childProto)
                 else:
@@ -145,6 +147,57 @@ class BuildAstVisitor(FizzParserVisitor):
 
         print("action", action)
         return action
+
+    # Visit a parse tree produced by FizzParser#assertiondef.
+    def visitAssertiondef(self, ctx:FizzParser.AssertiondefContext):
+        print("\n\nvisitAssertiondef",ctx.__class__.__name__)
+        print("visitAssertiondef",ctx.getText())
+        print("visitAssertiondef",dir(ctx))
+        print("visitAssertiondef children count",ctx.getChildCount())
+        print("visitAssertiondef full text\n", self.get_py_str(ctx))
+
+        invariant = ast.Invariant()
+        py_code = "def "
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitAssertiondef child index",i,child.getText())
+            if hasattr(child, 'start'):
+                print("visitAssertiondef child start,stop",child.start,child.stop)
+
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.NameContext):
+                    invariant.name = child.getText()
+                    py_code += child.getText() + "():\n"
+                    continue
+
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                if isinstance(childProto, ast.Block):
+                    invariant.block.CopyFrom(childProto)
+
+                print("visitAssertiondef childProto",childProto)
+            elif hasattr(child, 'getSymbol'):
+
+                if (child.getSymbol().type == FizzParser.LINE_BREAK
+                        or child.getSymbol().type == FizzParser.ASSERTION
+                        or child.getSymbol().type == FizzParser.COLON
+                ):
+                    continue
+                if child.getSymbol().type == FizzParser.EVENTUALLY or child.getSymbol().type == FizzParser.ALWAYS:
+                    invariant.temporal_operators.append(child.getText())
+                    continue
+
+                self.log_symbol(child)
+            else:
+                print("visitAssertiondef child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitAssertiondef child (unknown) type")
+
+        block_str = self.get_py_str(ctx)
+        py_code += '\n'.join(block_str.split('\n')[1:])
+        invariant.block.flow = ast.Flow.FLOW_ATOMIC
+        invariant.py_code = py_code
+        print("assertion", invariant)
+        return invariant
 
     # Visit a parse tree produced by FizzParser#functiondef.
     def visitFunctiondef(self, ctx:FizzParser.FunctiondefContext):

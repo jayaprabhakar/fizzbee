@@ -161,6 +161,11 @@ message Invariant {
   bool eventually = 3;
   string pyExpr = 4;
   Invariant nested = 5;
+
+  string name = 6;
+  repeated string temporal_operators = 7;
+  Block block = 8;
+  string py_code = 9;
 }
 
 message StateVars {

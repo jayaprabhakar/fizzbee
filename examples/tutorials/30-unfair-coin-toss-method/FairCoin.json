@@ -1,13 +1,44 @@
 {
   "invariants": [
     {
-      "always": true,
-      "pyExpr": "'FairToss' not in __returns__ or __returns__['FairToss'] in [0, 1]"
+      "name": "Safety",
+      "temporalOperators": [
+        "always"
+      ],
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "pyStmt": {
+              "code": "name = \"FairToss\""
+            }
+          },
+          {
+            "returnStmt": {
+              "pyExpr": "('FairToss' not in __returns__ or\n        __returns__['FairToss'] in [0, 1])"
+            }
+          }
+        ]
+      },
+      "pyCode": "def Safety():\n    name = \"FairToss\"\n    return ('FairToss' not in __returns__ or\n        __returns__['FairToss'] in [0, 1])\n\n"
     },
     {
-      "always": true,
-      "eventually": true,
-      "pyExpr": "'FairToss'  in __returns__ and __returns__['FairToss'] in [0, 1]"
+      "name": "Liveness",
+      "temporalOperators": [
+        "always",
+        "eventually"
+      ],
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "returnStmt": {
+              "pyExpr": "'FairToss' in __returns__ and __returns__['FairToss'] in [0, 1]"
+            }
+          }
+        ]
+      },
+      "pyCode": "def Liveness():\n    return 'FairToss' in __returns__ and __returns__['FairToss'] in [0, 1]\n\n"
     }
   ],
   "actions": [

@@ -93,9 +93,11 @@ ANY      : 'any';
 ACTION   : 'action';
 FUNC     : 'func';
 
+
 PARAMS   : 'params';
 INIT     : 'init';
 
+ASSERTION      : 'assertion';
 INVARIANTS     : 'invariants';
 ALWAYS         : 'always';
 EVENTUALLY     : 'eventually';

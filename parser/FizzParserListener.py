@@ -143,6 +143,15 @@ class FizzParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by FizzParser#assertion_stmt.
+    def enterAssertion_stmt(self, ctx:FizzParser.Assertion_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#assertion_stmt.
+    def exitAssertion_stmt(self, ctx:FizzParser.Assertion_stmtContext):
+        pass
+
+
     # Enter a parse tree produced by FizzParser#action_stmt.
     def enterAction_stmt(self, ctx:FizzParser.Action_stmtContext):
         pass
@@ -284,6 +293,15 @@ class FizzParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FizzParser#functiondef.
     def exitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        pass
+
+
+    # Enter a parse tree produced by FizzParser#assertiondef.
+    def enterAssertiondef(self, ctx:FizzParser.AssertiondefContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#assertiondef.
+    def exitAssertiondef(self, ctx:FizzParser.AssertiondefContext):
         pass
 
 
