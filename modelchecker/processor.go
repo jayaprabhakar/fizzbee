@@ -592,6 +592,7 @@ func (p *Processor) processNode(node *Node) bool {
 }
 
 func (p *Processor) processInit(node *Node) bool {
+	node.Stutter()
 	node.Process.removeCurrentThread()
 	// This is init node, generate a fork for each action in the file
 	for i, action := range p.Files[0].Actions {

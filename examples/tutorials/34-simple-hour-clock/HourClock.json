@@ -1,16 +1,42 @@
 {
   "states": {
-    "code": "hour = 1\n\n"
+    "code": "hour = 1\n\n\n"
   },
   "invariants": [
     {
-      "always": true,
-      "pyExpr": "hour <= 12 and hour >= 1"
+      "name": "Safety",
+      "temporalOperators": [
+        "always"
+      ],
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "returnStmt": {
+              "pyExpr": "hour < 12 and hour >= 1"
+            }
+          }
+        ]
+      },
+      "pyCode": "def Safety():\n  return hour < 12 and hour >= 1\n\n"
     },
     {
-      "always": true,
-      "eventually": true,
-      "pyExpr": "hour in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+      "name": "Liveness",
+      "temporalOperators": [
+        "always",
+        "eventually"
+      ],
+      "block": {
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "returnStmt": {
+              "pyExpr": "hour in [6]"
+            }
+          }
+        ]
+      },
+      "pyCode": "def Liveness():\n    return hour in [6]\n\n\n"
     }
   ],
   "actions": [

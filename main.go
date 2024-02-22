@@ -7,6 +7,7 @@ import (
     "github.com/jayaprabhakar/fizzbee/modelchecker"
     "google.golang.org/protobuf/encoding/protojson"
     "os"
+    "path/filepath"
     "time"
 )
 
@@ -33,12 +34,20 @@ func main() {
         os.Exit(1)
     }
 
-    p1 := modelchecker.NewProcessor([]*ast.File{f}, &ast.StateSpaceOptions{
-        Options:                         &ast.Options{
-            MaxActions:           5,
-            MaxConcurrentActions: 3,
-        },
-    })
+    dirPath := filepath.Dir(jsonFilename)
+    fmt.Println("dirPath:", dirPath)
+    // Calculate the relative path
+    configFileName := filepath.Join(dirPath, "fizz.yaml")
+    fmt.Println("configFileName:", configFileName)
+    stateConfig, err := modelchecker.ReadOptionsFromYaml(configFileName)
+    if err != nil {
+        fmt.Println("Error reading fizz.yaml:", err)
+        os.Exit(1)
+    }
+    if stateConfig.Options.MaxConcurrentActions == 0 {
+        stateConfig.Options.MaxConcurrentActions = stateConfig.Options.MaxActions
+    }
+    p1 := modelchecker.NewProcessor([]*ast.File{f}, stateConfig)
     startTime := time.Now()
     _, failedNode, err := p1.Start()
     if err != nil {
