@@ -3,6 +3,7 @@ package modelchecker
 import (
 	ast "fizz/proto"
 	"go.starlark.net/starlark"
+	"slices"
 )
 
 func CheckInvariants(process *Process) map[int][]int {
@@ -13,12 +14,21 @@ func CheckInvariants(process *Process) map[int][]int {
 	for i, file := range process.Files {
 		results[i] = make([]int, 0)
 		for j, invariant := range file.Invariants {
-			passed := CheckInvariant(process, invariant)
-
-			if invariant.Eventually && passed && len(process.Threads) == 0 {
-				process.Witness[i][j] = true
-			} else if !invariant.Eventually && !passed {
-				results[i] = append(results[i], j)
+			passed := false
+			if invariant.Block == nil {
+				passed = CheckInvariant(process, invariant)
+				if invariant.Eventually && passed && len(process.Threads) == 0 {
+					process.Witness[i][j] = true
+				} else if !invariant.Eventually && !passed {
+					results[i] = append(results[i], j)
+				}
+			} else {
+				passed = CheckAssertion(process, invariant)
+				if slices.Contains(invariant.TemporalOperators, "eventually") && passed && len(process.Threads) == 0  {
+					process.Witness[i][j] = true
+				} else if !slices.Contains(invariant.TemporalOperators, "eventually") && !passed {
+					results[i] = append(results[i], j)
+				}
 			}
 		}
 	}
@@ -42,6 +52,21 @@ func CheckInvariant(process *Process, invariant *ast.Invariant) bool {
 	cond, err := process.Evaluator.EvalPyExpr("filename.fizz", pyExpr, vars)
 	PanicOnError(err)
 	return bool(cond.Truth())
+}
+
+func CheckAssertion(process *Process, invariant *ast.Invariant) bool {
+	if !slices.Contains(invariant.TemporalOperators, "always") {
+		panic("Invariant checking supported only for always/always-eventually/eventually-always invariants")
+	}
+
+	vars := CloneDict(process.Heap.globals)
+	vars["__returns__"] = NewDictFromStringDict(process.Returns)
+	pyStmt := &ast.PyStmt{
+		Code: invariant.PyCode + "\n" + "__retval__ = " + invariant.Name + "()\n",
+	}
+	_, err := process.Evaluator.ExecPyStmt("filename.fizz", pyStmt, vars)
+	PanicOnError(err)
+	return bool(vars["__retval__"].Truth())
 }
 
 func NewDictFromStringDict(vals starlark.StringDict) *starlark.Dict {

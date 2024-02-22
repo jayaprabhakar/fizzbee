@@ -203,7 +203,7 @@ func generateDotFile(node *Node, visited map[*Node]bool) string {
 		if n.Process != nil && n.Process.Witness != nil {
 			for _, w := range n.Process.Witness {
 				for _, pass := range w {
-					if pass {
+					if pass && color != "red" {
 						color = "green"
 						// Ideally this should break from outerloop, for now okay. not sure if go has labelled stmts
 						break

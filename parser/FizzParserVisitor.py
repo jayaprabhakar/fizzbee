@@ -84,6 +84,11 @@ class FizzParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FizzParser#assertion_stmt.
+    def visitAssertion_stmt(self, ctx:FizzParser.Assertion_stmtContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FizzParser#action_stmt.
     def visitAction_stmt(self, ctx:FizzParser.Action_stmtContext):
         return self.visitChildren(ctx)
@@ -161,6 +166,11 @@ class FizzParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by FizzParser#functiondef.
     def visitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by FizzParser#assertiondef.
+    def visitAssertiondef(self, ctx:FizzParser.AssertiondefContext):
         return self.visitChildren(ctx)
 
 
