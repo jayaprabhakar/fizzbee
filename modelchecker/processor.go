@@ -135,6 +135,19 @@ func NewProcess(name string, files []*ast.File, parent *Process) *Process {
 	return p
 }
 
+func (p *Process) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"state":     p.Heap,
+		"threads":   p.Threads,
+		"current":   p.Current,
+		"name":      p.Name,
+		"failedInvariants": p.FailedInvariants,
+		"stats":     p.Stats,
+		"witness":   p.Witness,
+		"returns":   StringDictToJsonString(p.Returns),
+	})
+}
+
 func (p *Process) HasFailedInvariants() bool {
 	if p == nil || p.FailedInvariants == nil {
 		return false
