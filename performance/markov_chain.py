@@ -62,7 +62,7 @@ def update_transition_matrix(matrix, links, model):
     print('missing_prob\n', missing_prob)
     print('missing_count\n', missing_count)
     print('out_degree\n', out_degree)
-    print('link_probs\n', link_probs)
+    # print('link_probs\n', link_probs)
 
 
 def create_transition_matrix(links, model):
@@ -190,9 +190,11 @@ def initial_distribution_from_any_states(n):
 def steady_state(links, perf_model):
     matrix = create_transition_matrix(links, perf_model)
     cost_matrices = create_cost_matrices(links, perf_model)
-    # print(matrix)
+
     initial_distribution = initial_distribution_from_init_state(links.total_nodes)
-    # print(initial_distribution)
+    if links.total_nodes < 30:
+        print(matrix)
+        print(initial_distribution)
     prob,metrics = analyze(matrix, cost_matrices, initial_distribution)
     return prob,metrics
 
@@ -214,7 +216,7 @@ def steady_state_liveness(links, perf_model, terminal_nodes):
     trans_matrix = create_transition_matrix(links, perf_model)
     # print(trans_matrix)
     matrix = make_terminal_nodes(trans_matrix, terminal_nodes)
-    cost_matrices = {}
+    cost_matrices = create_cost_matrices(links, perf_model)
     # print(matrix)
     initial_distribution = initial_distribution_from_any_states(links.total_nodes)
     # print(initial_distribution)

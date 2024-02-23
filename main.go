@@ -1,6 +1,7 @@
 package main
 
 import (
+    "encoding/json"
     "errors"
     ast "fizz/proto"
     "fmt"
@@ -8,6 +9,7 @@ import (
     "google.golang.org/protobuf/encoding/protojson"
     "os"
     "path/filepath"
+    "slices"
     "time"
 )
 
@@ -47,9 +49,32 @@ func main() {
     if stateConfig.Options.MaxConcurrentActions == 0 {
         stateConfig.Options.MaxConcurrentActions = stateConfig.Options.MaxActions
     }
+
     p1 := modelchecker.NewProcessor([]*ast.File{f}, stateConfig)
     startTime := time.Now()
-    _, failedNode, err := p1.Start()
+    rootNode, failedNode, err := p1.Start()
+    endTime := time.Now()
+    fmt.Printf("Time taken: %v\n", endTime.Sub(startTime))
+
+    outDir, err := createOutputDir(dirPath)
+    if err != nil {
+        return
+    }
+    if p1.GetVisitedNodesCount() < 100 {
+        dotString := modelchecker.GenerateDotFile(rootNode, make(map[*modelchecker.Node]bool))
+        dotFileName := filepath.Join(outDir, "graph.dot")
+        // Write the content to the file
+        err := os.WriteFile(dotFileName, []byte(dotString), 0644)
+        if err != nil {
+            fmt.Println("Error writing to file:", err)
+            return
+        }
+        fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n" +
+            "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
+    } else {
+        fmt.Printf("Skipping dotfile generation. Too many nodes: %d\n", p1.GetVisitedNodesCount())
+    }
+
     if err != nil {
         var modelErr *modelchecker.ModelError
         if errors.As(err, &modelErr) {
@@ -60,31 +85,85 @@ func main() {
         }
         os.Exit(1)
     }
-    endTime := time.Now()
-    fmt.Printf("Time taken: %v\n", endTime.Sub(startTime))
+
     //fmt.Println("root", root)
     if failedNode == nil {
         fmt.Println("PASSED: Model checker completed successfully")
+        nodes, _ := modelchecker.GetAllNodes(rootNode)
+        nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir + "/")
+        if err != nil {
+            fmt.Println("Error generating proto files:", err)
+            return
+        }
+        fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
+
+
         return
     }
     fmt.Println("FAILED: Model checker failed")
 
     // newStack of *Node
-    nodes := make([]*modelchecker.Node, 0)
+    failurePath := make([]*modelchecker.Node, 0)
 
     node := failedNode
     //fmt.Println(node.String())
     for node != nil {
-        nodes = append(nodes, node)
+        failurePath = append(failurePath, node)
         if len(node.Inbound) == 0 || node.Name == "init" {
             break
         }
-        node.Name = node.Name + "/" + node.Inbound[0].Name
+        //node.Name = node.Name + "/" + node.Inbound[0].Name
         node = node.Inbound[0].Node
     }
-    for i := len(nodes) - 1; i >= 0; i-- {
-        node = nodes[i]
-        fmt.Printf("--\n%s\n", node.GetName())
-        fmt.Printf("--\n%s\n", node.GetStateString())
+    slices.Reverse(failurePath)
+    for _,node := range failurePath {
+        stepName := node.Inbound[0].Name
+        if stepName == "" || stepName == "stutter" {
+            stepName = node.GetName()
+        }
+        fmt.Printf("------\n%s\n", stepName)
+
+        fmt.Printf("--\nstate: %s\n", node.Heap.ToJson())
+        if len(node.Returns) > 0 {
+            fmt.Printf("returns: %s\n", node.Returns.String())
+        }
     }
+    errJsonFileName := filepath.Join(outDir, "error-graph.json")
+    bytes, err := json.MarshalIndent(failurePath, "", "  ")
+    if err != nil {
+        fmt.Println("Error creating json:", err)
+    }
+    err = os.WriteFile(errJsonFileName, bytes, 0644)
+    if err != nil {
+        fmt.Println("Error writing to file:", err)
+        return
+    }
+    fmt.Printf("Writen graph json: %s\n", errJsonFileName)
+    dotStr := modelchecker.GenerateFailurePath(failurePath)
+    //fmt.Println(dotStr)
+    dotFileName := filepath.Join(outDir, "error-graph.dot")
+    // Write the content to the file
+    err = os.WriteFile(dotFileName, []byte(dotStr), 0644)
+    if err != nil {
+        fmt.Println("Error writing to file:", err)
+        return
+    }
+    fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n" +
+        "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
+}
+
+func createOutputDir(dirPath string) (string, error) {
+    // Create the directory name with current date and time
+    dateTimeStr := time.Now().Format("2006-01-02_15-04-05") // Format: YYYY-MM-DD_HH-MM-SS
+    newDirName := fmt.Sprintf("run_%s", dateTimeStr)
+
+    // Create the full path for the new directory
+    newDirPath := filepath.Join(dirPath, "out", newDirName)
+
+    // Create the directory
+    if err := os.MkdirAll(newDirPath, 0755); err != nil {
+        fmt.Println("Error creating directory:", err)
+        return newDirPath, err
+    }
+    return newDirPath, nil
 }

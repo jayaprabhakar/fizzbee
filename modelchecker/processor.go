@@ -71,7 +71,7 @@ func (s *Stats) Increment(action string) {
 }
 
 type Process struct {
-	Heap             *Heap		      `json:"globals"`
+	Heap             *Heap		      `json:"state"`
 	Threads          []*Thread        `json:"threads"`
 	Current          int              `json:"current"`
 	Name             string           `json:"name"`
@@ -203,8 +203,12 @@ func (n *Node) String() string {
 	return buf.String()
 }
 
+func (n *Node) MarshalJSON() ([]byte, error) {
+	return json.Marshal(n.Process)
+}
+
 func (n *Node) GetJsonString() string {
-	bytes, err := json.Marshal(n)
+	bytes, err := json.Marshal(n.Process)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return ""
@@ -439,6 +443,10 @@ func NewProcessor(files []*ast.File, options *ast.StateSpaceOptions) *Processor 
 	}
 }
 
+func (p *Processor) GetVisitedNodesCount() int {
+	return len(p.visited)
+}
+// Start the model checker
 func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	// recover from panic
 	//defer func() {

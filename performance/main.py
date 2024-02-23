@@ -33,6 +33,9 @@ def plot_histogram(histogram):
 
 
 def plot_cdf(histogram):
+    if len(histogram) == 0:
+        print("No histogram")
+        return
     labels = list(histogram[0][1].keys())  # Extract labels from the first tuple
     probabilities = [entry[0] for entry in histogram]  # Extract probabilities
     costs = {label: [entry[1][label] for entry in histogram] for label in labels}  # Extract costs for each label
@@ -81,7 +84,6 @@ def main(argv):
     # print(nodespb)
     nodes = []
     for i, node in enumerate(nodespb.json):
-        # print(i, node)
         nodes.append(json.loads(node))
 
     links = files.load_adj_lists_from_proto_files(args.states)
@@ -97,7 +99,7 @@ def main(argv):
             steady_state_nodes.append((i, prob, nodes[i]))
 
     # plot_histogram(metrics.histogram)
-    # plot_cdf(metrics.histogram)
+    plot_cdf(metrics.histogram)
 
     for i,invariant in enumerate(source_model.invariants):
         print(invariant)
@@ -107,7 +109,7 @@ def main(argv):
         elif "eventually" == invariant.temporal_operators[0] and "always" == invariant.temporal_operators[1]:
             print(invariant.name, "eventually always")
             for j,prob,node in steady_state_nodes:
-                if node['process']['witness'][0][i]:
+                if node['witness'][0][i]:
                     print("LIVE", i,j,prob,node)
                 else:
                     print("DEAD", i,j,prob,node)
@@ -116,23 +118,24 @@ def main(argv):
             # copied_array = np.copy(original_array)
             trans_matrix = markov_chain.create_transition_matrix(links, perf_model)
             witness_nodes = []
-            for j,node in filter(lambda x: x[1]['process']['witness'][0][i], enumerate(nodes)):
+            for j,node in filter(lambda x: x[1]['witness'][0][i], enumerate(nodes)):
                 print(j, node)
                 witness_nodes.append(j)
 
             live_prob,metrics = markov_chain.steady_state_liveness(links, perf_model, witness_nodes)
             print(live_prob)
+            print(metrics)
             dead_nodes = []
             for j,prob in enumerate(live_prob):
                 if prob > 1e-6:
                     state = "LIVE"
-                    if not nodes[j]['process']['witness'][0][i]:
+                    if not nodes[j]['witness'][0][i]:
                         dead_nodes.append((j, prob, nodes[j]))
                         state = "DEAD"
 
                     print(f'{state} {j:4d}: {prob:.8f} {fmt.get_state_string(nodes[j])}')
             # for j,prob,node in steady_state_nodes:
-            #     if node['process']['witness'][0][i]:
+            #     if node['witness'][0][i]:
             #         print("LIVE", i,j,prob,node)
             #     else:
             #         print("DEAD", i,j,prob,node)

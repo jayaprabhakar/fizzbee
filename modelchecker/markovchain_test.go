@@ -143,7 +143,7 @@ func TestSteadyStateDistribution(t *testing.T) {
 			root, _, _ := p1.Start()
 			//RemoveMergeNodes(root)
 
-			//dotString := generateDotFile(root, make(map[*Node]bool))
+			//dotString := GenerateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("\n%s\n", dotString)
 
 			perfModel := &ast.PerformanceModel{}
@@ -171,8 +171,8 @@ func TestSteadyStateDistribution(t *testing.T) {
 				fmt.Println("Absorption Cost")
 				fmt.Println(histogram.GetMeanCounts())
 				//fmt.Println(histogram.GetAllHistogram())
-				eventuallyAlways := inv.Eventually && inv.GetNested().GetAlways() ||
-									inv.TemporalOperators[0] == "eventually" && inv.TemporalOperators[1] == "always"
+				eventuallyAlways := (inv.Eventually && inv.GetNested().GetAlways()) || (len(inv.TemporalOperators) == 2 &&
+									inv.TemporalOperators[0] == "eventually" && inv.TemporalOperators[1] == "always")
 
 				if eventuallyAlways {
 					fmt.Println("Eventually Always")

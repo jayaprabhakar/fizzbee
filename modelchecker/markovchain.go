@@ -427,6 +427,11 @@ func transpose(matrix [][]float64) [][]float64 {
 
 	return result
 }
+
+func GetAllNodes(root *Node) ([]*Node, int) {
+	return getAllNodes(root)
+
+}
 func getAllNodes(root *Node) ([]*Node, int) {
 	// Implement a traversal to get all nodes in the graph
 	// This can be a simple depth-first or breadth-first traversal
