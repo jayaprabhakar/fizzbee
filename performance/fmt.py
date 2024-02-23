@@ -1,11 +1,10 @@
 
 def get_state_string(node):
     node_str = ""
-    process = node['process']
-    if 'globals' in process:
-        node_str += f"state: {process['globals']} / "
+    if 'state' in node:
+        node_str += f"state: {node['state']} / "
 
-    if 'returns' in process:
-        node_str += f"returns: {process['returns']}"
+    if 'returns' in node:
+        node_str += f"returns: {node['returns']}"
 
     return node_str

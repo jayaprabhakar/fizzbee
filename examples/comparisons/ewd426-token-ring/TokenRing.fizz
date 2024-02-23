@@ -7,25 +7,33 @@ init:
     # At present init should produce a single state, no non determinism allowed yet
     disrupted = False
 
-invariants:
-    eventually always any(
-        [ all([counters[j] == counters[0] for j in range(0,i)]) and
-          all([counters[j] == (counters[0]-1)%M for j in range(i,N)])
-            for i in range(N+1)
-        ]
-    )
+
+always eventually assertion Stabilized:
+    return disrupted and any(
+                   [ all([counters[j] == counters[0] for j in range(0,i)]) and
+                     all([counters[j] == (counters[0]-1)%M for j in range(i,N)])
+                       for i in range(N+1)
+                   ]
+               )
+
 
 atomic action Disrupt:
+    if disrupted:
+        return
     for i in reversed(NODES):
         any j in range(0, M):
             counters[i] = j
     disrupted = True
 
 atomic action CreateToken:
+    if not disrupted:
+        return
     if counters[0] == counters[N-1]:
         `createtoken` counters[0] = (counters[N-1] + 1) % M
 
 atomic action PassToken:
+    if not disrupted:
+        return
     any i in NODES[1:]:
         if counters[i] != counters[i-1]:
             `passtoken`

@@ -24,7 +24,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 	shards := n / shardSize
 
 	indexMap := make(map[*Node]int)
-	filename := fmt.Sprintf("%s_nodes_%06d_of_%06d.pb", pathPrefix, 0, shards)
+	filename := fmt.Sprintf("%snodes_%06d_of_%06d.pb", pathPrefix, 0, shards)
 	nodeJsons := make([]string, 0, shardSize)
 	jsonFileNames := make([]string, 0, shards)
 	edges := 0
@@ -38,7 +38,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 			}
 			jsonFileNames = append(jsonFileNames, filename)
 			nodeJsons = nodeJsons[:0]
-			filename = fmt.Sprintf("%s_nodes_%06d_of_%06d.pb", pathPrefix, i/shardSize, shards)
+			filename = fmt.Sprintf("%snodes_%06d_of_%06d.pb", pathPrefix, i/shardSize, shards)
 		}
 		nodeJsons = append(nodeJsons, node.GetJsonString())
 
@@ -56,7 +56,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 	linkShards := edges / linksShardSize
 
 	links := make([]*proto.Link, 0, linksShardSize)
-	adjListFileName := fmt.Sprintf("%s_adjacency_lists_%06d_of_%06d.pb", pathPrefix, 0, linkShards)
+	adjListFileName := fmt.Sprintf("%sadjacency_lists_%06d_of_%06d.pb", pathPrefix, 0, linkShards)
 	linksFileNames := make([]string, 0, linkShards)
 	for i, node := range nodes {
 
@@ -85,7 +85,7 @@ func GenerateProtoOfJson(nodes []*Node, pathPrefix string) ([]string, []string, 
 				}
 				linksFileNames = append(linksFileNames, adjListFileName)
 				links = links[:0]
-				adjListFileName = fmt.Sprintf("%s_adjacency_lists_%06d_of_%06d.pb", pathPrefix, len(linksFileNames), linkShards)
+				adjListFileName = fmt.Sprintf("%sadjacency_lists_%06d_of_%06d.pb", pathPrefix, len(linksFileNames), linkShards)
 			}
 		}
 	}
@@ -183,7 +183,7 @@ func removeMergeNodes(currentNode *Node, parentNode *Node, visited map[*Node]boo
 	return removed
 }
 
-func generateDotFile(node *Node, visited map[*Node]bool) string {
+func GenerateDotFile(node *Node, visited map[*Node]bool) string {
 	re := regexp.MustCompile(`\\+`)
 	dotGraph := "digraph G {\n"
 
@@ -259,4 +259,41 @@ func printGraph(node *Node) {
 		fmt.Printf("  -> ")
 		printGraph(outbound.Node)
 	}
+}
+
+func GenerateFailurePath(nodes []*Node) string {
+	re := regexp.MustCompile(`\\+`)
+
+	builder := strings.Builder{}
+	builder.WriteString("digraph G {\n")
+
+	parentID := ""
+	for i, node := range nodes {
+		nodeID := fmt.Sprintf("\"%d\"", i)
+
+		color := "black"
+		if node.Process.HasFailedInvariants() {
+			color = "red"
+		}
+		penwidth := 1
+		if node.Process != nil && len(node.Threads) == 0 {
+			penwidth = 2
+		}
+		stateString := re.ReplaceAllString(node.String(), "\\")
+		builder.WriteString(fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, stateString, color, penwidth))
+
+		if parentID != "" {
+			label := ""
+			if len(node.Inbound) > 0 {
+				label = node.Inbound[0].Name
+			}
+			builder.WriteString(fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", parentID, nodeID, label))
+		}
+		parentID = nodeID
+	}
+
+
+
+	builder.WriteString("}\n")
+	return builder.String()
 }
