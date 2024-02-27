@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online IDE</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="toolbar">
+        <button>New</button>
+        <button>Run</button>
+        <!-- Add more buttons here as needed -->
+    </div>
+    <div class="file-explorer">
+        <!-- File explorer content goes here -->
+        File Explorer
+    </div>
+    <div class="ide" id="ide">
+        <!-- Code editor (e.g., CodeMirror) goes here -->
+        <div class="editor" id="editor"></div>
+    </div>
+    <div class="bottom-panel">
+        <!-- Logs/Console output goes here -->
+        Logs/Console Output
+    </div>
+</div>
+<script src="./js/cm6.bundle.js"></script>
+<script>
+        // Create an initial state for the view
+        const initialState = cm6.createEditorState("function foo() {\n    console.log(123);\n}");
+        const view = cm6.createEditorView(initialState, document.getElementById("editor"));
+
+        // Programmatically change editor contents
+        console.log("Before:\n", view.state.doc.toString())
+        view.dispatch({ changes: { from: 0, insert: "// Programmatically add a comment to the first line\n" } })
+        console.log("After:\n", view.state.doc.toString())
+</script>
+</body>
+</html>
