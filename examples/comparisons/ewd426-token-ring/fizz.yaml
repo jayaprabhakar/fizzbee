@@ -1,5 +1,5 @@
 options:
-  maxActions: 10
+  maxActions: 200
 
 actionOptions:
   Disrupt:

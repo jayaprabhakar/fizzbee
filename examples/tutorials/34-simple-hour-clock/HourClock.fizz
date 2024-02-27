@@ -3,7 +3,7 @@ init:
 
 
 always assertion Safety:
-  return hour < 12 and hour >= 1
+  return hour <= 12 and hour >= 1
 
 always eventually assertion Liveness:
     return hour in [6]
