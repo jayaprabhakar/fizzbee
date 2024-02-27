@@ -32,7 +32,9 @@ def plot_histogram(histogram):
     plt.show()
 
 
-def plot_cdf(histogram):
+def plot_cdf(metrics):
+    histogram = metrics.histogram
+    mean = metrics.mean
     if len(histogram) == 0:
         print("No histogram")
         return
@@ -51,6 +53,8 @@ def plot_cdf(histogram):
         plt.title(f'{label} CDF')
         plt.legend()
         plt.grid(True)
+        plt.axvline(x=mean[label], color='r', linestyle='--', label=f'Mean = {mean[label]}')
+
 
     # Show plots
     plt.show()
@@ -88,7 +92,10 @@ def main(argv):
 
     links = files.load_adj_lists_from_proto_files(args.states)
 
-    steady_state,metrics = markov_chain.steady_state(links, perf_model)
+    trans_matrix = markov_chain.create_transition_matrix_sparse(links, perf_model)
+    cost_matrices = markov_chain.create_cost_matrices_sparse(links, perf_model)
+    print('perf_model', perf_model)
+    steady_state,metrics = markov_chain.steady_state_sparse(links, perf_model)
     print(steady_state)
     print(metrics)
 
@@ -99,7 +106,7 @@ def main(argv):
             steady_state_nodes.append((i, prob, nodes[i]))
 
     # plot_histogram(metrics.histogram)
-    plot_cdf(metrics.histogram)
+    plot_cdf(metrics)
 
     for i,invariant in enumerate(source_model.invariants):
         print(invariant)
@@ -108,15 +115,24 @@ def main(argv):
             continue
         elif "eventually" == invariant.temporal_operators[0] and "always" == invariant.temporal_operators[1]:
             print(invariant.name, "eventually always")
+            witness_nodes = []
             for j,prob,node in steady_state_nodes:
+                if len(node['threads']) != 0:
+                    continue
                 if node['witness'][0][i]:
                     print("LIVE", i,j,prob,node)
+                    witness_nodes.append(j)
                 else:
                     print("DEAD", i,j,prob,node)
+            if len(witness_nodes) > 0:
+                new_matrix = markov_chain.make_terminal_nodes_sparse(trans_matrix, witness_nodes)
+                initial_distribution = markov_chain.initial_distribution_from_init_state(links.total_nodes)
+                first_stable_states,stabilization_metrics = markov_chain.analyze_sparse(new_matrix, cost_matrices,initial_distribution)
+                print(first_stable_states)
+                print(stabilization_metrics)
+
         elif "always" == invariant.temporal_operators[0] and "eventually" == invariant.temporal_operators[1]:
             print(invariant.name, "always eventually")
-            # copied_array = np.copy(original_array)
-            trans_matrix = markov_chain.create_transition_matrix(links, perf_model)
             witness_nodes = []
             for j,node in filter(lambda x: x[1]['witness'][0][i], enumerate(nodes)):
                 print(j, node)
@@ -125,6 +141,7 @@ def main(argv):
             live_prob,metrics = markov_chain.steady_state_liveness(links, perf_model, witness_nodes)
             print(live_prob)
             print(metrics)
+            plot_cdf(metrics)
             dead_nodes = []
             for j,prob in enumerate(live_prob):
                 if prob > 1e-6:

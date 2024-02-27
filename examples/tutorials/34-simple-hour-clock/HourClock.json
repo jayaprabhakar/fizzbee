@@ -13,12 +13,12 @@
         "stmts": [
           {
             "returnStmt": {
-              "pyExpr": "hour < 12 and hour >= 1"
+              "pyExpr": "hour <= 12 and hour >= 1"
             }
           }
         ]
       },
-      "pyCode": "def Safety():\n  return hour < 12 and hour >= 1\n\n"
+      "pyCode": "def Safety():\n  return hour <= 12 and hour >= 1\n\n"
     },
     {
       "name": "Liveness",
