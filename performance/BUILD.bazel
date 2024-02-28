@@ -1,4 +1,4 @@
-#load("@rules_python//python:rules.bzl", "py_library")
+load("@my_deps//:requirements.bzl", "requirement")
 
 py_library(
     name = "performance",
@@ -12,6 +12,10 @@ py_library(
         "//proto:ast_py_proto",
         "//proto:perf_py_proto",
         "//proto:graph_py_proto",
+        requirement("PyYAML"),
+        requirement("numpy"),
+        requirement("matplotlib"),
+        requirement("scipy"),
     ],
 )
 
