@@ -29,14 +29,36 @@
 </div>
 <script src="./js/cm6.bundle.js"></script>
 <script>
+        function debounce(func, delay=300) {
+            let timerId;
+            return function(...args) {
+                clearTimeout(timerId);
+                timerId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+
+        function callback(view) {
+            console.log("Document changed", view.state.doc.toString());
+        }
+        const debouncedCallback = debounce(callback, 500);
+
+        viewUpdateFn = function(view) {
+            if (view.docChanged) {
+                debouncedCallback(view);
+            }
+        }
         // Create an initial state for the view
-        const initialState = cm6.createEditorState("function foo() {\n    console.log(123);\n}");
+        const initialState = cm6.createEditorState("function foo() {\n    console.log(123);\n}", {viewUpdateFn: viewUpdateFn});
         const view = cm6.createEditorView(initialState, document.getElementById("editor"));
 
         // Programmatically change editor contents
         console.log("Before:\n", view.state.doc.toString())
         view.dispatch({ changes: { from: 0, insert: "// Programmatically add a comment to the first line\n" } })
         console.log("After:\n", view.state.doc.toString())
+
+
 </script>
 </body>
 </html>

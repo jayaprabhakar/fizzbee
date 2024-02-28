@@ -24425,6 +24425,7 @@ var cm6 = (function (exports) {
            ]),
            python(),
            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+           EditorView.updateListener.of( options.viewUpdateFn || (() => {}) )
        ];
 
        if (options.oneDark)
