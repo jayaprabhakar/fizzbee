@@ -10,8 +10,8 @@
 
 <div class="container">
     <div class="toolbar">
-        <button>New</button>
-        <button>Run</button>
+        <button id="newButton">New</button>
+        <button id="runButton">Run</button>
         <!-- Add more buttons here as needed -->
     </div>
     <div class="file-explorer">
@@ -58,7 +58,27 @@
         view.dispatch({ changes: { from: 0, insert: "// Programmatically add a comment to the first line\n" } })
         console.log("After:\n", view.state.doc.toString())
 
+        // Get a reference to the "Run" button
+        const runButton = document.getElementById('runButton');
+
+        // Function to handle the click event
+        function handleRunButtonClick() {
+            // Your logic for running the code goes here
+            console.log("Run button clicked");
+            let docContent = view.state.doc.toString();
+            console.log("current doc:\n", docContent)
+            // Example: Run some code when the button is clicked
+            socket.emit('run', { 'contents': docContent, 'now': Date.now(), 'clientTime': (new Date()).toUTCString() });
+        }
+
+        // Add click event listener to the "Run" button
+        runButton.addEventListener('click', handleRunButtonClick);
 
 </script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+</script>
+
 </body>
 </html>
