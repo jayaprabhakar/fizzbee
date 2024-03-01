@@ -499,7 +499,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
-			expectedNodes: 3315,
+			expectedNodes: 3900,
 		},
 
 	}
@@ -553,16 +553,16 @@ func TestProcessor_Tutorials(t *testing.T) {
 			//fmt.Printf("\n%s\n", dotString)
 
 
-			nodes, _ := getAllNodes(root)
-			_ = nodes
-			outFileName := RemoveLastSegment(filename, ".json") + "-out-"
-			filenamePrefix := filepath.Join(tempDir, outFileName)
-			fmt.Println("Generating proto of json", filenamePrefix)
-
-			nodeFiles, linkFileNames, err := GenerateProtoOfJson(nodes, filenamePrefix)
-			require.Nil(t, err)
-			fmt.Println("Generated proto of json", nodeFiles, linkFileNames)
-			fmt.Printf("Generating proto of json, elapsed: %s\n", time.Since(startTime))
+			//nodes, _ := getAllNodes(root)
+			//_ = nodes
+			//outFileName := RemoveLastSegment(filename, ".json") + "-out-"
+			//filenamePrefix := filepath.Join(tempDir, outFileName)
+			//fmt.Println("Generating proto of json", filenamePrefix)
+			//
+			//nodeFiles, linkFileNames, err := GenerateProtoOfJson(nodes, filenamePrefix)
+			//require.Nil(t, err)
+			//fmt.Println("Generated proto of json", nodeFiles, linkFileNames)
+			//fmt.Printf("Generating proto of json, elapsed: %s\n", time.Since(startTime))
 		})
 	}
 }

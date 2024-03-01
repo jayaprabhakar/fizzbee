@@ -88,18 +88,28 @@
                             "ifStmt": {
                               "branches": [
                                 {
-                                  "condition": "local != remote and running[local] and not running[remote] and peer_status[local][remote]",
+                                  "condition": "local != remote and running[local]",
                                   "block": {
                                     "stmts": [
                                       {
                                         "pyStmt": {
-                                          "code": "peer_status[local][remote] = False"
+                                          "code": "not running[remote]"
+                                        }
+                                      },
+                                      {
+                                        "pyStmt": {
+                                          "code": "peer_status[local][remote]:"
                                         }
                                       }
                                     ]
                                   }
                                 }
                               ]
+                            }
+                          },
+                          {
+                            "pyStmt": {
+                              "code": "peer_status[local][remote] = False"
                             }
                           }
                         ]
@@ -139,18 +149,33 @@
                             "ifStmt": {
                               "branches": [
                                 {
-                                  "condition": "local != remote and running[local] and running[remote] and peer_status[local][remote]",
+                                  "condition": "local != remote",
                                   "block": {
                                     "stmts": [
                                       {
                                         "pyStmt": {
-                                          "code": "peer_status[local][remote] = False"
+                                          "code": "running[local]"
+                                        }
+                                      },
+                                      {
+                                        "pyStmt": {
+                                          "code": "running[remote]"
+                                        }
+                                      },
+                                      {
+                                        "pyStmt": {
+                                          "code": "peer_status[local][remote]:"
                                         }
                                       }
                                     ]
                                   }
                                 }
                               ]
+                            }
+                          },
+                          {
+                            "pyStmt": {
+                              "code": "peer_status[local][remote] = False"
                             }
                           }
                         ]

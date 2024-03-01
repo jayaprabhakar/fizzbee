@@ -18,22 +18,16 @@ always eventually assertion Stabilized:
 
 
 atomic action Disrupt:
-    if disrupted:
-        return
     for i in reversed(NODES):
         any j in range(0, M):
             counters[i] = j
     disrupted = True
 
 atomic action CreateToken:
-    if not disrupted:
-        return
     if counters[0] == counters[N-1]:
         `createtoken` counters[0] = (counters[N-1] + 1) % M
 
 atomic action PassToken:
-    if not disrupted:
-        return
     any i in NODES[1:]:
         if counters[i] != counters[i-1]:
             `passtoken`

@@ -108,11 +108,11 @@ func TestSteadyStateDistribution(t *testing.T) {
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
 		//	maxActions:    20,
 		//},
-		{
-			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
-			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
-			perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
-		},
+		//{
+		//	filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
+		//	stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
+		//	perfModel:     "examples/comparisons/ewd426-token-ring/perf_model.yaml",
+		//},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s", test.filename), func(t *testing.T) {

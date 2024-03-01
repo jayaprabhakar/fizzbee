@@ -30,22 +30,6 @@
         "flow": "FLOW_ATOMIC",
         "stmts": [
           {
-            "ifStmt": {
-              "branches": [
-                {
-                  "condition": "disrupted",
-                  "block": {
-                    "stmts": [
-                      {
-                        "returnStmt": {}
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          {
             "forStmt": {
               "loopVars": [
                 "i"
@@ -92,22 +76,6 @@
             "ifStmt": {
               "branches": [
                 {
-                  "condition": "not disrupted",
-                  "block": {
-                    "stmts": [
-                      {
-                        "returnStmt": {}
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          {
-            "ifStmt": {
-              "branches": [
-                {
                   "condition": "counters[0] == counters[N-1]",
                   "block": {
                     "stmts": [
@@ -132,22 +100,6 @@
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
-          {
-            "ifStmt": {
-              "branches": [
-                {
-                  "condition": "not disrupted",
-                  "block": {
-                    "stmts": [
-                      {
-                        "returnStmt": {}
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          },
           {
             "anyStmt": {
               "loopVars": [
