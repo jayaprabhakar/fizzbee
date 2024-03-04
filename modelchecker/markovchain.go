@@ -453,6 +453,11 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int
 	}
 
 	visited[node] = true
+
+	if node.Process != nil && !node.Process.Enabled {
+		return
+	}
+
 	*result = append(*result, node)
 	if node.Name == "yield" {
 		*yield++
@@ -460,6 +465,15 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int
 	if node.forkDepth > *maxDepth {
 		*maxDepth = node.forkDepth
 	}
+
+	enabledLinks := make([]*Link, 0)
+	for _, link := range node.Outbound {
+		if !link.Node.Enabled {
+			continue
+		}
+		enabledLinks = append(enabledLinks, link)
+	}
+	node.Outbound = enabledLinks
 
 	for _, outboundNode := range node.Outbound {
 		traverseDFS(outboundNode.Node, visited, result, yield, maxDepth)

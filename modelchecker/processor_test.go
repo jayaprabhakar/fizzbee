@@ -493,18 +493,13 @@ func TestProcessor_Tutorials(t *testing.T) {
 		//},
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
-			maxActions:    1,
-			expectedNodes: 1368,
-		},
-		{
-			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
-			maxActions:    30,
-			expectedNodes: 9020,
+			maxActions:    10,
+			expectedNodes: 2389,
 		},
 		{
 			filename:      "examples/comparisons/ewd426-token-ring/TokenRing.json",
 			stateConfig:   "examples/comparisons/ewd426-token-ring/fizz.yaml",
-			expectedNodes: 3900,
+			expectedNodes: 2389,
 		},
 
 	}

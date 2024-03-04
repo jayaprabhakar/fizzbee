@@ -88,6 +88,8 @@ type Process struct {
 	Returns     starlark.StringDict    `json:"returns"`
 	SymbolTable map[string]*Definition `json:"-"`
 	Labels 		[]string               `json:"-"`
+
+	Enabled		bool                   `json:"-"`
 }
 
 func NewProcess(name string, files []*ast.File, parent *Process) *Process {
@@ -189,6 +191,18 @@ func (p *Process) Fork() *Process {
 	return p2
 }
 
+func (p *Process) Enable() {
+	if !p.Enabled {
+		parent := p.Parent
+		for parent != nil && !parent.Enabled {
+			parent.Enabled = true
+			parent = parent.Parent
+
+		}
+	}
+	p.Enabled = true
+}
+
 func (p *Process) NewThread() *Thread {
 	thread := NewThread(p, p.Files, 0, "")
 	p.Threads = append(p.Threads, thread)
@@ -204,6 +218,7 @@ func (n *Node) String() string {
 	buf := &strings.Builder{}
 	buf.WriteString(fmt.Sprintf("%s\n", p.Name))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
+	buf.WriteString(fmt.Sprintf("Enabled: %t\n", n.Process.Enabled))
 
 	n.appendState(p, buf)
 	buf.WriteString("\n")
@@ -387,14 +402,17 @@ func NewNode(process *Process) *Node {
 }
 
 func (n *Node) Duplicate(other *Node) {
+	if !n.Enabled {
+		return
+	}
 	parent := n.Inbound[0].Node
 	other.Inbound = append(other.Inbound, n.Inbound[0])
 	parent.Outbound = append(parent.Outbound, &Link{Node: other, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
 }
 
 func (n *Node) Stutter() {
-	//n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
-	//n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
+	n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
+	n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
 }
 
 func (n *Node) Attach() {
