@@ -7,7 +7,8 @@ message File {
   repeated Import imports = 2;
   repeated Constant constants = 3;
   StateVars states = 4;
-  StateVars variables = 5;
+//  StateVars variables = 5;
+//  Action init = 5;
   repeated Invariant invariants = 6;
   repeated Action actions = 7;
   repeated Function functions = 8;

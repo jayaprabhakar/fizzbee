@@ -104,6 +104,10 @@ func TestSteadyStateDistribution(t *testing.T) {
 			maxActions:    1,
 			perfModel:     "examples/tutorials/38-two-dice-with-coins/perf_model.yaml",
 		},
+		{
+			filename:      "examples/tutorials/40-simple-hour-clock-init-action/HourClock.json",
+			maxActions:    100,
+		},
 		//{
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
 		//	maxActions:    20,
