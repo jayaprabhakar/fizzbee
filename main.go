@@ -60,7 +60,9 @@ func main() {
     startTime := time.Now()
     rootNode, failedNode, err := p1.Start()
     endTime := time.Now()
-    fmt.Printf("Time taken: %v\n", endTime.Sub(startTime))
+    fmt.Printf("Time taken for model checking: %v\n", endTime.Sub(startTime))
+
+
 
     outDir, err := createOutputDir(dirPath)
     if err != nil {
@@ -94,15 +96,28 @@ func main() {
 
     //fmt.Println("root", root)
     if failedNode == nil {
-        fmt.Println("PASSED: Model checker completed successfully")
-        nodes, _ := modelchecker.GetAllNodes(rootNode)
-        nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir + "/")
-        if err != nil {
-            fmt.Println("Error generating proto files:", err)
-            return
-        }
-        fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
+        failurePath, failedInvariant := modelchecker.CheckStrictLiveness(rootNode)
+        fmt.Printf("IsLive: %t\n", failedInvariant == nil)
 
+        fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))
+        if failedInvariant == nil {
+            fmt.Println("PASSED: Model checker completed successfully")
+            nodes, _ := modelchecker.GetAllNodes(rootNode)
+            nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir+"/")
+            if err != nil {
+                fmt.Println("Error generating proto files:", err)
+                return
+            }
+            fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
+        } else {
+            fmt.Println("FAILED: Liveness check failed")
+            if failedInvariant.FileIndex >= 0 {
+                fmt.Printf("Only one file expected. Got %d\n", failedInvariant.FileIndex)
+            } else {
+                fmt.Printf("Invariant: %s\n", f.Invariants[failedInvariant.InvariantIndex].Name)
+            }
+            GenerateFailurePath(failurePath, failedInvariant, outDir)
+        }
 
         return
     }
@@ -122,7 +137,11 @@ func main() {
         node = node.Inbound[0].Node
     }
     slices.Reverse(failurePath)
-    for _,node := range failurePath {
+    GenerateFailurePath(failurePath, nil, outDir)
+}
+
+func GenerateFailurePath(failurePath []*modelchecker.Node, invariant *modelchecker.InvariantPosition, outDir string) {
+    for _, node := range failurePath {
         stepName := ""
         if len(node.Inbound) > 0 {
             stepName = node.Inbound[0].Name
@@ -148,7 +167,7 @@ func main() {
         return
     }
     fmt.Printf("Writen graph json: %s\n", errJsonFileName)
-    dotStr := modelchecker.GenerateFailurePath(failurePath)
+    dotStr := modelchecker.GenerateFailurePath(failurePath, invariant)
     //fmt.Println(dotStr)
     dotFileName := filepath.Join(outDir, "error-graph.dot")
     // Write the content to the file
@@ -157,7 +176,7 @@ func main() {
         fmt.Println("Error writing to file:", err)
         return
     }
-    fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n" +
+    fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n"+
         "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
 }
 

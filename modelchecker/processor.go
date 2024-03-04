@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/jayaprabhakar/fizzbee/lib"
 	"go.starlark.net/starlark"
+	"maps"
 	"runtime"
 	"sort"
 	"strings"
@@ -383,6 +384,10 @@ type Node struct {
 	// Note: This is the shorted path to this node from the root as we do BFS.
 	forkDepth  int
 	stacktrace string
+
+	// ancestors map is used to detect cycles in the graph.
+	// TODO(jp): Should this be an array instead?
+	ancestors map[string]bool
 }
 
 type Link struct {
@@ -399,6 +404,7 @@ func NewNode(process *Process) *Node {
 		actionDepth: 0,
 		forkDepth:   0,
 		stacktrace:  captureStackTrace(),
+		ancestors:   make(map[string]bool),
 	}
 }
 
@@ -409,11 +415,12 @@ func (n *Node) Duplicate(other *Node) {
 	parent := n.Inbound[0].Node
 	other.Inbound = append(other.Inbound, n.Inbound[0])
 	parent.Outbound = append(parent.Outbound, &Link{Node: other, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
+	maps.Copy(other.ancestors, n.ancestors)
 }
 
 func (n *Node) Stutter() {
-	n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
-	n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
+	//n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
+	//n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
 }
 
 func (n *Node) Attach() {
@@ -440,10 +447,12 @@ func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
 		actionDepth: n.actionDepth + 1,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
+		ancestors:   maps.Clone(n.ancestors),
 	}
 	forkNode.Process.Name = action.Name
 	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: action.Name})
 	forkNode.Process.Stats.Increment(action.Name)
+	forkNode.ancestors[n.HashCode()] = true
 	return forkNode
 }
 
@@ -456,8 +465,10 @@ func (n *Node) ForkForAlternatePaths(process *Process, name string) *Node {
 		actionDepth: n.actionDepth,
 		forkDepth:   n.forkDepth + 1,
 		stacktrace:  captureStackTrace(),
+		ancestors:   maps.Clone(n.ancestors),
 	}
 	forkNode.Inbound = append(forkNode.Inbound, &Link{Node: n, Name: name})
+	forkNode.ancestors[n.HashCode()] = true
 	return forkNode
 }
 
@@ -590,6 +601,12 @@ func (p *Processor) processNode(node *Node) bool {
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
 		node.Duplicate(other)
+		if other.ancestors[node.Inbound[0].Node.HashCode()] {
+			fmt.Println("Cycle detected")
+			// TODO: Check if we can find the liveness here, incrementally.
+			// Naively calling the liveness checker here will make it very
+			// slow and expensive.
+		}
 		return false
 	} else {
 		node.Attach()

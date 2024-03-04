@@ -266,26 +266,37 @@ func printGraph(node *Node) {
 	}
 }
 
-func GenerateFailurePath(nodes []*Node) string {
+func GenerateFailurePath(nodes []*Node, invariant *InvariantPosition) string {
 	re := regexp.MustCompile(`\\+`)
 
 	builder := strings.Builder{}
 	builder.WriteString("digraph G {\n")
 
 	parentID := ""
+
+	visited := map[*Node]string{}
 	for i, node := range nodes {
 		nodeID := fmt.Sprintf("\"%d\"", i)
+		if visited[node] != "" {
+			//parentID = visited[node]
+			nodeID = visited[node]
 
-		color := "black"
-		if node.Process.HasFailedInvariants() {
-			color = "red"
+		} else {
+			visited[node] = nodeID
+			color := "black"
+			if node.Process.HasFailedInvariants() {
+				color = "red"
+			} else if invariant != nil && node.Process.Witness != nil && node.Process.Witness[invariant.FileIndex][invariant.InvariantIndex] {
+				color = "green"
+			}
+			penwidth := 1
+			if node.Process != nil && len(node.Threads) == 0 {
+				penwidth = 2
+			}
+			stateString := re.ReplaceAllString(node.String(), "\\")
+			builder.WriteString(fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, stateString, color, penwidth))
+
 		}
-		penwidth := 1
-		if node.Process != nil && len(node.Threads) == 0 {
-			penwidth = 2
-		}
-		stateString := re.ReplaceAllString(node.String(), "\\")
-		builder.WriteString(fmt.Sprintf("  %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, stateString, color, penwidth))
 
 		if parentID != "" {
 			label := ""
