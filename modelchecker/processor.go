@@ -393,11 +393,14 @@ func (n *Node) Duplicate(other *Node) {
 }
 
 func (n *Node) Stutter() {
-	n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
-	n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
+	//n.Outbound = append(n.Outbound, &Link{Node: n, Name: "stutter"})
+	//n.Inbound = append(n.Inbound, &Link{Node: n, Name: "stutter"})
 }
 
 func (n *Node) Attach() {
+	if len(n.Inbound) == 0 {
+		return
+	}
 	parent := n.Inbound[0].Node
 	parent.Outbound = append(parent.Outbound, &Link{Node: n, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
 }
@@ -476,22 +479,32 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	}
 	startTime := time.Now()
 	process := NewProcess("init", p.Files, nil)
-	init = NewNode(process)
-	globals, err := process.Evaluator.ExecInit(p.Files[0].States)
-	if err != nil {
-		panic(err)
-	}
-	process.Heap.globals = globals
-	p.Init = init
 
-	failed := CheckInvariants(process)
-	if len(failed[0]) > 0 {
-		init.Process.FailedInvariants = failed
-		if !p.config.ContinuePathOnInvariantFailures {
-			return p.Init, nil, nil
+	p.Init = NewNode(process)
+
+	if p.Files[0].Actions[0].Name != "Init" {
+		globals, err := process.Evaluator.ExecInit(p.Files[0].States)
+		if err != nil {
+			panic(err)
 		}
+		process.Heap.globals = globals
+		failed := CheckInvariants(process)
+		if len(failed[0]) > 0 {
+			init.Process.FailedInvariants = failed
+			if !p.config.ContinuePathOnInvariantFailures {
+				return p.Init, nil, nil
+			}
+		}
+		process.NewThread()
+	} else {
+		// This is init node
+		action := p.Files[0].Actions[0]
+
+		thread := p.Init.Process.NewThread()
+		thread.currentFrame().pc = fmt.Sprintf("Actions[%d]", 0)
+		thread.currentFrame().Name = action.Name
+		p.Init.Name = action.Name
 	}
-	process.NewThread()
 
 	_ = p.queue.Push(p.Init)
 	prevCount := 0
@@ -533,13 +546,18 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 
 func (p *Processor) processNode(node *Node) bool {
 	if node.Process.currentThread().currentPc() == "" && node.Name == "init" {
-		return p.processInit(node)
+		if node.Process.Files[0].Actions[0].Name != "Init" {
+			return p.processInit(node)
+		}
+
 	}
 	forks, yield := node.currentThread().Execute()
 	// Add the labels from the process to the inbound links
 	// This must be done even for duplicate nodes
 	// The labels for the outbound links are added when the node is merged/attached
-	node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
+	if len(node.Inbound) > 0 {
+		node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
+	}
 
 	// If the node is already visited, merge the nodes and return
 	// In this case, we are skipping checking invariants as well.
@@ -646,7 +664,9 @@ func (p *Processor) YieldNode(node *Node) {
 		return
 	}
 	for i, action := range p.Files[0].Actions {
-
+		if action.Name == "Init" {
+			continue
+		}
 		if p.config.ActionOptions[action.Name] != nil &&
 			node.Stats.Counts[action.Name] >= int(p.config.ActionOptions[action.Name].MaxActions) {
 			continue
@@ -678,6 +698,9 @@ func (p *Processor) YieldFork(node *Node, process *Process) {
 		return
 	}
 	for i, action := range p.Files[0].Actions {
+		if action.Name == "Init" {
+			continue
+		}
 		if p.config.ActionOptions[action.Name] != nil &&
 			process.Stats.Counts[action.Name] >= int(p.config.ActionOptions[action.Name].MaxActions) {
 			continue

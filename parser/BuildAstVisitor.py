@@ -40,7 +40,10 @@ class BuildAstVisitor(FizzParserVisitor):
                 if isinstance(childProto, ast.StateVars):
                     file.states.CopyFrom(childProto)
                 elif isinstance(childProto, ast.Action):
-                    file.actions.append(childProto)
+                    if childProto.name == "Init":
+                        file.actions.insert(0, childProto)
+                    else:
+                        file.actions.append(childProto)
                 elif isinstance(childProto, ast.Function):
                     file.functions.append(childProto)
                 elif isinstance(childProto, ast.Invariant):

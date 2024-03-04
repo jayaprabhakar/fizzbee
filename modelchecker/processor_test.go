@@ -481,6 +481,11 @@ func TestProcessor_Tutorials(t *testing.T) {
 			stateConfig:   "examples/tutorials/39-actions-limit/fizz.yaml",
 			expectedNodes: 5,
 		},
+		{
+			filename:      "examples/tutorials/40-simple-hour-clock-init-action/HourClock.json",
+			maxActions:    100,
+			expectedNodes: 12,
+		},
 		//{
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",
 		//	maxActions:    30,
@@ -545,7 +550,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 			//fmt.Printf("Removing merge nodes, elapsed: %s\n", time.Since(startTime))
 			//fmt.Println("\nModified Graph:")
 
-			//dotString := generateDotFile(root, make(map[*Node]bool))
+			//dotString := GenerateDotFile(root, make(map[*Node]bool))
 			//fmt.Printf("Generating dotfile, elapsed: %s\n", time.Since(startTime))
 			////dotFileName := RemoveLastSegment(filename, ".json") + ".dot"
 			////WriteFile(t, tempDir, dotFileName, []byte(dotString))

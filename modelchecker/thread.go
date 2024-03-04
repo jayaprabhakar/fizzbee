@@ -104,6 +104,11 @@ func (h *Heap) update(k string, v starlark.Value) bool {
 	return false
 }
 
+func (h *Heap) insert(k string, v starlark.Value) bool {
+	h.globals[k] = v
+	return true
+}
+
 func (h *Heap) Clone() *Heap {
 	return &Heap{CloneDict(h.globals)}
 }
@@ -750,11 +755,21 @@ func (t *Thread) executeEndOfBlock() bool {
 		return false
 	}
 	for {
+		
+		oldScope := frame.scope
 		frame.scope = frame.scope.parent
 		if frame.scope == nil {
 			//t.popFrame()
 			actionPath := strings.Split(frame.pc, ".")[0]
 			protobuf := GetProtoFieldByPath(t.currentFileAst(), actionPath)
+			if action, ok := protobuf.(*ast.Action); ok {
+				if action.Name == "Init" {
+					variables := oldScope.GetAllVisibleVariables()
+					for s, value := range variables {
+						t.Process.Heap.insert(s, value)
+					}
+				}
+			}
 			oldFrame := t.popFrame()
 
 			if t.Stack.Len() == 0 {
