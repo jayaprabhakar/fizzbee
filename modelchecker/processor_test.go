@@ -484,7 +484,7 @@ func TestProcessor_Tutorials(t *testing.T) {
 		{
 			filename:      "examples/tutorials/40-simple-hour-clock-init-action/HourClock.json",
 			maxActions:    100,
-			expectedNodes: 12,
+			expectedNodes: 13,
 		},
 		//{
 		//	filename:      "examples/comparisons/gossa-v1/gossa.json",

@@ -1,6 +1,6 @@
 {
   "states": {
-    "code": "N = 5\nM = 4\nNODES = range(0, N)\ncounters = [0 for i in NODES]\n# At present init should produce a single state, no non determinism allowed yet\ndisrupted = False\n\n\n"
+    "code": "N = 5\nM = 4\nNODES = range(0, N)\ncounters = [0 for i in NODES]\n# At present init should produce a single state, no non determinism allowed yet\ndisrupted = False\n\n"
   },
   "invariants": [
     {

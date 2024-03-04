@@ -19,18 +19,18 @@ atomic action Start:
 atomic action CorrectlyDetectDeadNode:
     any local in nodes:
         any remote in nodes:
-            if local != remote and running[local]
+            if (local != remote and running[local]
                     and not running[remote]
-                    and peer_status[local][remote]:
+                    and peer_status[local][remote]):
                 peer_status[local][remote] = False
 
 atomic action FalselyDetectDeadNode:
     any local in nodes:
         any remote in nodes:
-            if local != remote
+            if (local != remote
                     and running[local]
                     and running[remote]
-                    and peer_status[local][remote]:
+                    and peer_status[local][remote]):
                 peer_status[local][remote] = False
 
 
@@ -40,4 +40,3 @@ atomic action Gossip:
             if local != remote and running[local] and running[remote]:
                 peer_status[local] = [peer_status[remote][i] for i in nodes ]
                 peer_status[local][local] = True
-
