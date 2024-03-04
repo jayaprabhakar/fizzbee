@@ -117,7 +117,10 @@ func main() {
     }
     slices.Reverse(failurePath)
     for _,node := range failurePath {
-        stepName := node.Inbound[0].Name
+        stepName := ""
+        if len(node.Inbound) > 0 {
+            stepName = node.Inbound[0].Name
+        }
         if stepName == "" || stepName == "stutter" {
             stepName = node.GetName()
         }
