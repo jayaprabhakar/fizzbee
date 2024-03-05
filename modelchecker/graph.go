@@ -194,6 +194,10 @@ func GenerateDotFile(node *Node, visited map[*Node]bool) string {
 		}
 		visited[n] = true
 
+		if n.Process != nil && !n.Process.Enabled {
+			return
+		}
+
 		nodeID := fmt.Sprintf("\"%p\"", n)
 
 		color := "black"
@@ -220,9 +224,10 @@ func GenerateDotFile(node *Node, visited map[*Node]bool) string {
 
 		// Recursively visit Outbound nodes
 		for _, child := range n.Outbound {
-			//for child.Process == nil && len(child.Outbound) == 1 {
-			//	child = child.Outbound[0]
-			//}
+			if child.Node.Process != nil && !child.Node.Process.Enabled {
+				continue
+			}
+
 			childID := fmt.Sprintf("\"%p\"", child.Node)
 			label := child.Name
 			if child.Labels != nil && len(child.Labels) > 0 {

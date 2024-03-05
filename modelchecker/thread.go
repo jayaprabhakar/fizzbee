@@ -440,6 +440,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 		_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", stmt.PyStmt, vars)
 		t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", stmt.PyStmt.GetCode()), err)
 		t.Process.updateAllVariablesInScope(vars)
+		t.Process.Enable()
 	} else if stmt.Block != nil {
 		currentFrame.pc = currentFrame.pc + ".Block"
 		forks := t.executeBlock()
@@ -569,6 +570,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			t.Process.removeCurrentThread()
 			if val != starlark.None {
 				t.Process.Returns[convertToAction(action).Name] = val
+				t.Process.Enable()
 			}
 			return nil, true
 		} else {
@@ -616,14 +618,17 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", pyEquivStmt, vars)
 			t.Process.PanicOnError(fmt.Sprintf("Error executing statement: %s", pyEquivStmt.GetCode()), err)
 			t.Process.updateAllVariablesInScope(vars)
-		}
-		newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block", Name: stmt.CallStmt.Name}
-		newFrame.callerAssignVarNames = stmt.CallStmt.Vars
-		t.Process.Labels = append(t.Process.Labels, newFrame.Name + ".call")
-		// TODO: Handle args
-		t.pushFrame(newFrame)
+			t.Process.Enable()
+		} else {
 
-		return nil, false
+			newFrame := &CallFrame{FileIndex: def.fileIndex, pc: def.path + ".Block", Name: stmt.CallStmt.Name}
+			newFrame.callerAssignVarNames = stmt.CallStmt.Vars
+			t.Process.Labels = append(t.Process.Labels, newFrame.Name+".call")
+			// TODO: Handle args
+			t.pushFrame(newFrame)
+			return nil, false
+		}
+
 	} else {
 		panic(fmt.Sprintf("Unknown statement type: %v at path %s", stmt, t.currentPc()))
 	}
@@ -774,7 +779,6 @@ func (t *Thread) executeEndOfBlock() bool {
 
 			if t.Stack.Len() == 0 {
 				t.Process.removeCurrentThread()
-				//t.Process.Returns[convertToAction(action).Name] = starlark.None
 				return true
 			} else {
 				frame = t.currentFrame()
