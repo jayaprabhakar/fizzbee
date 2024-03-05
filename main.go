@@ -43,8 +43,14 @@ func main() {
     fmt.Println("configFileName:", configFileName)
     stateConfig, err := modelchecker.ReadOptionsFromYaml(configFileName)
     if err != nil {
-        fmt.Println("Error reading fizz.yaml:", err)
-        os.Exit(1)
+        if errors.Is(err, os.ErrNotExist) {
+            fmt.Println("fizz.yaml not found. Using default options")
+            stateConfig = &ast.StateSpaceOptions{Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 5}}
+        } else {
+            fmt.Println("Error reading fizz.yaml:", err)
+            os.Exit(1)
+        }
+
     }
     if stateConfig.Options.MaxConcurrentActions == 0 {
         stateConfig.Options.MaxConcurrentActions = stateConfig.Options.MaxActions

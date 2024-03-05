@@ -5,7 +5,7 @@ to specify distributed systems.
 
 # Docs
 If you are familiar with [TLA+](https://lamport.azurewebsites.net/tla/tla.html), this would be a quick start
-[From TLA+ to Fizz](https://github.com/jayaprabhakar/fizzbee/blob/main/docs/language_design_for_review.md)
+[From TLA+ to Fizz](https://github.com/jayaprabhakar/fizzbee/blob/main/docs/fizzbee-quick-start-for-tlaplus-users.md)
 
 # Run a model checker
 For now, no prebuilt binaries. 
@@ -21,6 +21,8 @@ Example:
 ./fizz examples/tutorials/19-for-stmt-serial-check-again/ForLoop.fizz 
 ```
 
+Note: Generally, you won't need to rebuild the binary,
+but most likely will be required after each `git pull`.
 
 # Development
 
