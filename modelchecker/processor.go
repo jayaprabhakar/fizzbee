@@ -499,16 +499,18 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	process := NewProcess("init", p.Files, nil)
 
 	p.Init = NewNode(process)
+	init = p.Init
 
 	if p.Files[0].Actions[0].Name != "Init" {
 		globals, err := process.Evaluator.ExecInit(p.Files[0].States)
 		if err != nil {
 			panic(err)
 		}
+		process.Enable()
 		process.Heap.globals = globals
 		failed := CheckInvariants(process)
 		if len(failed[0]) > 0 {
-			init.Process.FailedInvariants = failed
+			p.Init.Process.FailedInvariants = failed
 			if !p.config.ContinuePathOnInvariantFailures {
 				return p.Init, nil, nil
 			}
