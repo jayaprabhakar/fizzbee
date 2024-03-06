@@ -234,6 +234,56 @@ This is equivalent to `<>[]` in TLA+. For liveness properties.
 Note: at this time, we don't have a way to nest these temporal operators.
 
 
+## Guard clauses / Enabling conditions
+
+Guard clauses are required to check deadlocks.
+> Note: Deadlocks are not checked yet. But it will be implemented soon.
+
+Guard clauses or enabling conditions are the predicates that tell whether
+an action/transition is allowed or not. In some model checkers like Event-B, PRISM,
+etc, the guard clauses are explicit. In TLA+, the guard clauses are implicit.
+We follow the same approach as TLA+. The major benefit of this approach is, it is
+typically how programmers write code. So, it is more natural to write and read.
+
+An action is enabled if there is any valid transition (including self-loop).
+
+For example:
+```
+# This action is always enabled
+atomic action StartAlwaysEnabled:
+  running = True
+
+# This action is enabled only if running is False  
+atomic action StartIfNotRunning:
+  if not running:
+    running = True
+```
+This approach works even in the case of nesting, method calls, etc.
+
+```
+# This action is always enabled
+atomic action StartAlwaysEnabled:
+  any node in nodes:
+      running[node] = True
+
+# This action is enabled only if running is False  
+atomic action StartIfNotRunning:
+  any node in nodes:
+    if not running[node]:
+        running[node] = True
+```
+In some extremely rare case, you might explicitly want to enable an action even if the predicate failed.
+In that case, use pass statement, like in python.
+
+```
+atomic action ReportNodeFailure:
+  if running:
+    pass  # This action is enabled even if running is True
+  else:
+    msgs.append({type: "node_failure", node: node})
+
+```
+
 ----
 ## Running the model checker
 
