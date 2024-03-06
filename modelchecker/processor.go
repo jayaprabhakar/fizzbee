@@ -513,7 +513,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 		if len(failed[0]) > 0 {
 			p.Init.Process.FailedInvariants = failed
 			if !p.config.ContinuePathOnInvariantFailures {
-				return p.Init, nil, nil
+				return p.Init, p.Init, nil
 			}
 		}
 		process.NewThread()
