@@ -66,7 +66,7 @@ func main() {
     if err != nil {
         return
     }
-    if p1.GetVisitedNodesCount() < 100 {
+    if p1.GetVisitedNodesCount() < 150 {
         dotString := modelchecker.GenerateDotFile(rootNode, make(map[*modelchecker.Node]bool))
         dotFileName := filepath.Join(outDir, "graph.dot")
         // Write the content to the file
@@ -115,7 +115,7 @@ func main() {
     //fmt.Println(node.String())
     for node != nil {
         failurePath = append(failurePath, node)
-        if len(node.Inbound) == 0 || node.Name == "init" {
+        if len(node.Inbound) == 0 || node.Name == "init" || node == rootNode {
             break
         }
         //node.Name = node.Name + "/" + node.Inbound[0].Name
