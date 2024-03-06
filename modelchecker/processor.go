@@ -216,7 +216,8 @@ func (n *Node) String() string {
 		return "DUPLICATE"
 	}
 	buf := &strings.Builder{}
-	buf.WriteString(fmt.Sprintf("%s\n", p.Name))
+	escapedName := strings.ReplaceAll(p.Name, "\"", "\\\"")
+	buf.WriteString(fmt.Sprintf("%s\n", escapedName))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 	buf.WriteString(fmt.Sprintf("Enabled: %t\n", n.Process.Enabled))
 

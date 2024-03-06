@@ -278,11 +278,11 @@ def analyze_sparse(matrix, cost_matrices, initial_distribution, num_iterations=2
     n = matrix.shape[0]
     dist = sp.coo_array(initial_distribution)
     alt_dist = sp.coo_array(initial_distribution)
-    print("matrix\n", matrix)
+    # print("matrix\n", matrix)
     matrix = sp.csr_matrix(matrix)
-    print(matrix)
-    print("matrix.getformat()", matrix.getformat())
-    print("dist.getformat()", dist.getformat())
+    # print(matrix)
+    # print("matrix.getformat()", matrix.getformat())
+    # print("dist.getformat()", dist.getformat())
     # dist = initial_distribution.copy()
     # alt_dist = initial_distribution.copy()
 
@@ -338,11 +338,11 @@ def analyze_sparse(matrix, cost_matrices, initial_distribution, num_iterations=2
         non_zero_sum = np.sum(new_dist.data)
         new_dist.data /= non_zero_sum
 
-        if i % 100 == 0:
-            # print(i, dist)
-            print(i, new_dist.nnz, new_dist)
-            # print(i, alt_dist)
-            # print(i, mean_counters)
+        # if i % 100 == 0:
+        #     # print(i, dist)
+        #     print(i, new_dist.nnz, new_dist)
+        #     # print(i, alt_dist)
+        #     # print(i, mean_counters)
 
         if termination_prob > prev_termination_prob:
             metrics.add_histogram(termination_prob, raw_counters)
