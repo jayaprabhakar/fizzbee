@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "queue.go",
         "stack.go",
+        "tri_state.go",
         "yaml.go",
     ],
     importpath = "github.com/jayaprabhakar/fizzbee/lib",
