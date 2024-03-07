@@ -427,6 +427,57 @@ always assertion AlwaysBelowLimit:
     return all([counters[key] <= 4 for key in C])
 ```
 
+## Liveness check
+Note: This is very early, and will be slow. But it is a work in progress.
+
+FizzBee supports TLA+ style strict liveness check and also probabilistic evaluation.
+
+To enable strict liveness check, add the following to the fizz.yaml file.
+
+fizz.yaml
+```
+liveness: strict
+```
+The other possible value is `probabilistic`. To trigger it, see [Liveness with probabilistic evaluation](https://github.com/jayaprabhakar/fizzbee/blob/main/docs/fizzbee-quick-start-for-tlaplus-users.md#liveness-with-probabilistic-evaluation).
+At present, it is not triggered automatically.
+```
+atomic action Init:
+  n = 0
+  any i in range(-2, 2)
+    n = i
+
+always eventually assertion StayPositive:
+  return n == 0
+
+atomic action Add:
+  if n >= 3:
+    n = 0
+  else:
+    n = n + 1
+
+```
+This model specifies, a will be initialized to be one of (-2,-1,0,1).
+And, the numbers will be incremented at each step. But, it will be reset to 0, if it reaches 3.
+
+The liveness property is that, n will eventually be 0. It can change to a non-zero number, but it should eventually be 0.
+
+This spec will pass.
+
+1. Make it fail by changing the add method to reset to 1 instead of 0, and rerun. You'll see the error trace.
+2. Change the `always eventually` to `eventually always` and change the assertion to `n > 1`, and rerun.
+```
+
+always eventually assertion StayPositive:
+  return n > 0
+  
+atomic action Add:
+  if n >= 3:
+    n = 1
+  else:
+    n = n + 1
+```
+3. Make it fail again, by resetting n to 0 in the Add method, and rerun.
+
 ## Probabilisitic Evaluation
 Probabilistic evaluation is not implemented fully yet. This is a work in progress
 and a bit spammy logs. Probabilistic evaluation is critical for performance evaluation

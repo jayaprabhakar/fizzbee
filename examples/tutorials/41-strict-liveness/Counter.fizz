@@ -4,8 +4,8 @@ atomic action Init:
   any x in range(-2, 2)
     a = x
 
-always eventually assertion StayPositive:
-  return a == 3
+eventually always assertion StayPositive:
+  return a > 0
 
 atomic action Add:
   if a >= 3:
