@@ -13,6 +13,8 @@ message StateSpaceOptions {
   // This is almost equivalent to not having the invariant at all, but it can be useful
   // for debugging
   bool continue_path_on_invariant_failures = 4;
+
+  string liveness = 5;
 }
 
 message Options {

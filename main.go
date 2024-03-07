@@ -96,10 +96,16 @@ func main() {
 
     //fmt.Println("root", root)
     if failedNode == nil {
-        failurePath, failedInvariant := modelchecker.CheckStrictLiveness(rootNode)
-        fmt.Printf("IsLive: %t\n", failedInvariant == nil)
+        //failurePath := nil
+        //failedInvariant := nil
+        var failurePath []*modelchecker.Node
+        var failedInvariant *modelchecker.InvariantPosition
+        if stateConfig.GetLiveness() == "strict" {
+            failurePath, failedInvariant = modelchecker.CheckStrictLiveness(rootNode)
+            fmt.Printf("IsLive: %t\n", failedInvariant == nil)
+            fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))
+        }
 
-        fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))
         if failedInvariant == nil {
             fmt.Println("PASSED: Model checker completed successfully")
             nodes, _ := modelchecker.GetAllNodes(rootNode)
@@ -111,7 +117,7 @@ func main() {
             fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
         } else {
             fmt.Println("FAILED: Liveness check failed")
-            if failedInvariant.FileIndex >= 0 {
+            if failedInvariant.FileIndex > 0 {
                 fmt.Printf("Only one file expected. Got %d\n", failedInvariant.FileIndex)
             } else {
                 fmt.Printf("Invariant: %s\n", f.Invariants[failedInvariant.InvariantIndex].Name)
