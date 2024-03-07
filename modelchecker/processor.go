@@ -601,12 +601,12 @@ func (p *Processor) processNode(node *Node) bool {
 	if other, ok := p.visited[node.HashCode()]; ok {
 		// Check if visited before scheduling children
 		node.Duplicate(other)
-		if other.ancestors[node.Inbound[0].Node.HashCode()] {
-			fmt.Println("Cycle detected")
-			// TODO: Check if we can find the liveness here, incrementally.
-			// Naively calling the liveness checker here will make it very
-			// slow and expensive.
-		}
+		//if other.ancestors[node.Inbound[0].Node.HashCode()] {
+		//	fmt.Println("Cycle detected")
+		//	// TODO: Check if we can find the liveness here, incrementally.
+		//	// Naively calling the liveness checker here will make it very
+		//	// slow and expensive.
+		//}
 		return false
 	} else {
 		node.Attach()
