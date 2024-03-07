@@ -92,7 +92,7 @@ func CheckStrictLiveness(node *Node) ([]*Node, *InvariantPosition) {
 	for i, file := range process.Files {
 		for j, invariant := range file.Invariants {
 			predicate := func(n *Node) (bool, bool) {
-				return len(process.Threads) == 0, n.Process.Witness[i][j]
+				return len(n.Process.Threads) == 0, n.Process.Witness[i][j]
 			}
 			eventuallyAlways := false
 			alwaysEventually := false

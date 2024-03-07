@@ -1,0 +1,14 @@
+
+atomic action Init:
+  a = -2
+  any x in range(-2, 2)
+    a = x
+
+always eventually assertion StayPositive:
+  return a == 3
+
+atomic action Add:
+  if a >= 3:
+    a = 0
+  else:
+    a = a + 1

@@ -156,6 +156,7 @@ func GenerateFailurePath(failurePath []*modelchecker.Node, invariant *modelcheck
             fmt.Printf("returns: %s\n", node.Returns.String())
         }
     }
+    fmt.Println("------")
     errJsonFileName := filepath.Join(outDir, "error-graph.json")
     bytes, err := json.MarshalIndent(failurePath, "", "  ")
     if err != nil {
