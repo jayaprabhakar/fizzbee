@@ -1,5 +1,6 @@
 
 from antlr4 import *
+import sys
 
 from parser.FizzParser import FizzParser
 from parser.FizzParserVisitor import FizzParserVisitor
@@ -51,8 +52,10 @@ class BuildAstVisitor(FizzParserVisitor):
                 elif BuildAstVisitor.is_list_of_type(childProto, ast.Invariant):
                     file.invariants.extend(childProto)
                 else:
-                    print("visitFile_input childProto (unknown) type",childProto.__class__.__name__, dir(childProto), childProto)
-                    raise Exception("visitFile_input childProto (unknown) type")
+                    print("visitFile_input childProto (unknown) type",childProto.__class__.__name__, dir(child), dir(child.start), childProto)
+                    errorStr = f"Error: Line: {child.start.line}: Unexpected {self.get_py_str(child)}"
+                    print(errorStr, file=sys.stderr)
+                    raise Exception(errorStr)
             elif hasattr(child, 'getSymbol'):
                 if child.getSymbol().type == FizzParser.LINE_BREAK:
                     continue
