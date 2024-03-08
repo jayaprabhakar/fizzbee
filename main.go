@@ -101,6 +101,11 @@ func main() {
         var failurePath []*modelchecker.Node
         var failedInvariant *modelchecker.InvariantPosition
         if stateConfig.GetLiveness() == "strict" {
+            nodes, _ := modelchecker.GetAllNodes(rootNode)
+            failurePath, failedInvariant = modelchecker.CheckFastLiveness(nodes)
+            fmt.Printf("IsLive: %t\n", failedInvariant == nil)
+            fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))
+        } else if stateConfig.GetLiveness() == "strict/bfs" {
             failurePath, failedInvariant = modelchecker.CheckStrictLiveness(rootNode)
             fmt.Printf("IsLive: %t\n", failedInvariant == nil)
             fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))

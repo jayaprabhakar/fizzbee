@@ -132,6 +132,175 @@ func CheckStrictLiveness(node *Node) ([]*Node, *InvariantPosition) {
 	return nil, nil
 }
 
+func CheckFastLiveness(allNodes []*Node) ([]*Node, *InvariantPosition) {
+	fmt.Println("Checking strict liveness fast approach")
+	node := allNodes[0]
+	process := node.Process
+	if len(process.Files) > 1 {
+		panic("Invariant checking not supported for multiple files yet")
+	}
+	for i, file := range process.Files {
+		for j, invariant := range file.Invariants {
+			predicate := func(n *Node) (bool, bool) {
+				return len(n.Process.Threads) == 0, n.Process.Witness[i][j]
+			}
+			eventuallyAlways := false
+			alwaysEventually := false
+			if invariant.Block == nil {
+				if invariant.Always && invariant.Eventually {
+					alwaysEventually = true
+				} else if invariant.Eventually && invariant.GetNested().GetAlways() {
+					eventuallyAlways = true
+				}
+			} else {
+				if slices.Contains(invariant.TemporalOperators, "eventually") &&
+					invariant.TemporalOperators[0] == "eventually" && invariant.TemporalOperators[1] == "always" {
+					eventuallyAlways = true
+				} else if slices.Contains(invariant.TemporalOperators, "eventually") &&
+					invariant.TemporalOperators[0] == "always" && invariant.TemporalOperators[1] == "eventually" {
+					alwaysEventually = true
+				}
+			}
+			if eventuallyAlways {
+				fmt.Println("Checking eventually always", invariant.Name)
+				// TODO(jp): Come up with a fast way to check eventually always
+				failurePath, isLive := EventuallyAlwaysFinal(node, predicate)
+				if !isLive {
+					return failurePath, NewInvariantPosition(i,j)
+				}
+			} else if alwaysEventually {
+				fmt.Println("Checking always eventually", invariant.Name)
+				// Always Eventually
+				failurePath, isLive := AlwaysEventuallyFast(allNodes, predicate)
+				if !isLive {
+					return failurePath, NewInvariantPosition(i,j)
+				}
+			}
+		}
+
+	}
+	return nil, nil
+}
+
+func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
+	// The logic is, start from the nodes that satisfy the predicate and then traverse the graph in reverse order
+	// marking each of these nodes as live. At the end, the nodes left over are those that do not have a path to the
+	// nodes that satisfy the predicate. So, these nodes will not always eventually satisfy the predicate.
+	// There are some nuances, but this is the basic idea.
+
+	outLinksCount := make(map[*Node]int, len(nodes))
+
+	queue := lib.NewQueue[*Node]()
+	for _, node := range nodes {
+		if len(node.Outbound) == 0 {
+			fmt.Println("Deadlock detected, at node: ", node.String())
+			panic("Deadlock detected, at node: " + node.String())
+		}
+		relevant, value := predicate(node)
+		if relevant && value {
+			queue.Enqueue(node)
+		} else {
+			outLinksCount[node] = len(node.Outbound)
+		}
+	}
+	for queue.Count() > 0 {
+		node, _ := queue.Dequeue()
+
+		for _, link := range node.Inbound {
+			if outLinksCount[link.Node] <= 0 {
+				continue
+			}
+			outLinksCount[link.Node]--
+			if outLinksCount[link.Node] == 0 {
+				delete(outLinksCount, link.Node)
+				queue.Enqueue(link.Node)
+			}
+		}
+	}
+	if len(outLinksCount) > 0 {
+		//fmt.Println("Always eventually invariant failed")
+		//fmt.Println("Dead nodes:", len(outLinksCount))
+		var closestDeadNode *Node
+
+		for node, _ := range outLinksCount {
+			//fmt.Println("-\n",node.String(), count)
+			if closestDeadNode == nil || (len(closestDeadNode.Threads) > 0 && len(node.Threads) == 0) {
+				closestDeadNode = node
+				continue
+			}
+			if node.actionDepth > closestDeadNode.actionDepth {
+				continue
+			} else if node.actionDepth < closestDeadNode.actionDepth {
+				closestDeadNode = node
+			} else if node.forkDepth < closestDeadNode.forkDepth {
+				closestDeadNode = node
+			}
+		}
+		//fmt.Println("Closest dead node:", closestDeadNode.String())
+		failurePath := pathToInit(nodes, closestDeadNode)
+		path := findCyclePath(closestDeadNode, outLinksCount)
+		path = append(failurePath, path...)
+		return path, false
+	} else {
+		fmt.Println("Always eventually  invariant passed")
+	}
+	return nil, true
+}
+
+func pathToInit(nodes []*Node, closestDeadNode *Node) []*Node {
+	failurePath := make([]*Node, 0)
+
+	node := closestDeadNode
+	for node != nil {
+		failurePath = append(failurePath, node)
+		if len(node.Inbound) == 0 || node.Name == "init" || node == nodes[0] {
+			break
+		}
+		node = node.Inbound[0].Node
+	}
+	slices.Reverse(failurePath)
+	return failurePath
+}
+
+func findCyclePath(startNode *Node, nodes map[*Node]int) []*Node {
+	type Wrapper struct {
+		node *Node
+		path []*Node
+		visited map[*Node]bool
+	}
+	queue := lib.NewQueue[*Wrapper]()
+	queue.Enqueue(&Wrapper{node: startNode, path: make([]*Node, 0), visited: make(map[*Node]bool)})
+
+	for queue.Count() > 0 {
+		element, _ := queue.Dequeue()
+		node := element.node
+		path := element.path
+		visited := element.visited
+		for _, link := range node.Outbound {
+			if count, ok := nodes[link.Node]; !ok || count <= 0 {
+				continue
+			}
+			pathCopy := slices.Clone(path)
+			visitedCopy := maps.Clone(visited)
+
+			pathCopy = append(pathCopy, link.Node)
+			if visitedCopy[node] {
+				return path
+			}
+			visitedCopy[node] = true
+			queue.Enqueue(&Wrapper{node: link.Node, path: pathCopy, visited: visitedCopy})
+		}
+	}
+	// TODO: Should this panic?
+	panic("Cycle not found")
+	//return nil
+}
+
+func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
+	panic("Not implemented")
+}
+
+
 type Predicate func(n *Node) (bool, bool)
 
 type CycleCallback func(path []*Node) bool
