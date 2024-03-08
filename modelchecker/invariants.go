@@ -3,6 +3,7 @@ package modelchecker
 import (
 	ast "fizz/proto"
 	"fmt"
+	"github.com/jayaprabhakar/fizzbee/lib"
 	"go.starlark.net/starlark"
 	"maps"
 	"slices"
@@ -153,7 +154,7 @@ func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Node, bool) {
 		//fmt.Println("Live node NOT FOUND in the path")
 		return false
 	}
-	return CycleFinderFinal(root, f)
+	return CycleFinderFinalBfs(root, f)
 }
 
 func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Node, bool) {
@@ -174,7 +175,7 @@ func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Node, bool) {
 		//fmt.Println("Dead node NOT FOUND in the path")
 		return true
 	}
-	return CycleFinderFinal(root, f)
+	return CycleFinderFinalBfs(root, f)
 }
 
 func CycleFinderFinal(node *Node, callback CycleCallback) ([]*Node, bool) {
@@ -202,6 +203,50 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 		failedPath, success := cycleFinderHelper(link.Node, callback, visitedCopy, pathCopy)
 		if !success {
 			return failedPath,false
+		}
+	}
+	return nil, true
+}
+
+func CycleFinderFinalBfs(node *Node, callback CycleCallback) ([]*Node, bool) {
+	visited := make(map[*Node]bool)
+	path := make([]*Node, 0)
+	return cycleFinderHelperBfs(node, callback, visited, path)
+}
+
+func cycleFinderHelperBfs(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Node) ([]*Node, bool) {
+	type Wrapper struct {
+		node *Node
+		path []*Node
+		visited map[*Node]bool
+	}
+	queue := lib.NewQueue[*Wrapper]()
+	queue.Enqueue(&Wrapper{node: node, path: path, visited: visited})
+	for queue.Count() > 0 {
+		element, _ := queue.Dequeue()
+		node = element.node
+		path = element.path
+		visited = element.visited
+
+		if visited[node] {
+			path = append(path, node)
+			//fmt.Println("\n\nCycle detected in the path:")
+			//fmt.Println("Path:", path)
+			live := callback(path)
+			if live {
+				continue
+			}
+			return path, false
+		}
+		visited[node] = true
+		path = append(path, node)
+
+		// Traverse outbound links
+		for _, link := range node.Outbound {
+			pathCopy := slices.Clone(path)
+			visitedCopy := maps.Clone(visited)
+			queue.Enqueue(&Wrapper{node: link.Node, path: pathCopy, visited: visitedCopy})
+
 		}
 	}
 	return nil, true
