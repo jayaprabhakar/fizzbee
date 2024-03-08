@@ -344,16 +344,17 @@ func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Node, bool) {
 		//fmt.Println("Dead node NOT FOUND in the path")
 		return true
 	}
-	return CycleFinderFinalBfs(root, f)
+	return CycleFinderFinal(root, f)
 }
 
 func CycleFinderFinal(node *Node, callback CycleCallback) ([]*Node, bool) {
 	visited := make(map[*Node]bool)
+	globalVisited := make(map[*Node]bool)
 	path := make([]*Node, 0)
-	return cycleFinderHelper(node, callback, visited, path)
+	return cycleFinderHelper(node, callback, visited, path, globalVisited)
 }
 
-func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Node) ([]*Node, bool) {
+func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Node, globalVisited map[*Node]bool) ([]*Node, bool) {
 	if visited[node] {
 		path = append(path, node)
 
@@ -364,12 +365,17 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 
 	visited[node] = true
 	path = append(path, node)
+	if globalVisited[node] {
+		//fmt.Println("Skipping node", node.String())
+		return nil, true
+	}
+	globalVisited[node] = true
 
 	// Traverse outbound links
 	for _, link := range node.Outbound {
 		pathCopy := slices.Clone(path)
 		visitedCopy := maps.Clone(visited)
-		failedPath, success := cycleFinderHelper(link.Node, callback, visitedCopy, pathCopy)
+		failedPath, success := cycleFinderHelper(link.Node, callback, visitedCopy, pathCopy, globalVisited)
 		if !success {
 			return failedPath,false
 		}
