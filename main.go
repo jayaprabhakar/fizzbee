@@ -100,8 +100,15 @@ func main() {
         //failedInvariant := nil
         var failurePath []*modelchecker.Node
         var failedInvariant *modelchecker.InvariantPosition
+        nodes, deadlock, _ := modelchecker.GetAllNodes(rootNode)
+        if deadlock != nil && stateConfig.GetDeadlockDetection() {
+            fmt.Println("DEADLOCK detected")
+            fmt.Println("FAILED: Model checker failed")
+            dumpFailedNode(deadlock, rootNode, outDir)
+            return
+        }
         if stateConfig.GetLiveness() == "strict" {
-            nodes, _ := modelchecker.GetAllNodes(rootNode)
+
             failurePath, failedInvariant = modelchecker.CheckFastLiveness(nodes)
             fmt.Printf("IsLive: %t\n", failedInvariant == nil)
             fmt.Printf("Time taken to check liveness: %v\n", time.Now().Sub(endTime))
@@ -113,7 +120,7 @@ func main() {
 
         if failedInvariant == nil {
             fmt.Println("PASSED: Model checker completed successfully")
-            nodes, _ := modelchecker.GetAllNodes(rootNode)
+            //nodes, _, _ := modelchecker.GetAllNodes(rootNode)
             nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir+"/")
             if err != nil {
                 fmt.Println("Error generating proto files:", err)
@@ -134,11 +141,12 @@ func main() {
     }
     fmt.Println("FAILED: Model checker failed")
 
-    // newStack of *Node
-    failurePath := make([]*modelchecker.Node, 0)
+    dumpFailedNode(failedNode, rootNode, outDir)
+}
 
+func dumpFailedNode(failedNode *modelchecker.Node, rootNode *modelchecker.Node, outDir string) {
+    failurePath := make([]*modelchecker.Node, 0)
     node := failedNode
-    //fmt.Println(node.String())
     for node != nil {
         failurePath = append(failurePath, node)
         if len(node.Inbound) == 0 || node.Name == "init" || node == rootNode {
