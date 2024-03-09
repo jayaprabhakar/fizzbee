@@ -3,6 +3,7 @@ package modelchecker
 import (
 	"fizz/proto"
 	"fmt"
+	"github.com/jayaprabhakar/fizzbee/lib"
 	"math"
 )
 
@@ -110,7 +111,7 @@ func steadyStateDistribution(root *Node, perfModel *proto.PerformanceModel) ([]f
 
 
 	// Create the transition matrix
-	nodes, _ := getAllNodes(root)
+	nodes, _, _ := getAllNodes(root)
 	initialDistribution := make([]float64, len(nodes))
 	initialDistribution[0] = 1.0 // Start from the root node
 	
@@ -209,7 +210,7 @@ func markovChainAnalysis(nodes []*Node, perfModel *proto.PerformanceModel, trans
 
 func FindAbsorptionCosts(root *Node, perfModel *proto.PerformanceModel, fileId int, invariantId int) ([]float64, *Histogram) {
 	// Create the transition matrix
-	nodes, yields := getAllNodes(root)
+	nodes, _, yields := getAllNodes(root)
 	//fmt.Println("Yields", yields)
 	yields += 1 // Add the root node
 
@@ -257,7 +258,7 @@ func createAbsorptionTransitionMatrix(nodes []*Node, fileId int, invariantId int
 
 func checkLivenessAndCost(root *Node, perfModel *proto.PerformanceModel, fileId int, invariantId int) ([]float64, *Histogram) {
 	// Create the transition matrix
-	nodes, yields := getAllNodes(root)
+	nodes, _, yields := getAllNodes(root)
 	fmt.Println("Yields", yields)
 	yields += 1 // Add the root node
 
@@ -278,7 +279,7 @@ func checkLivenessAndCost(root *Node, perfModel *proto.PerformanceModel, fileId 
 
 func checkLiveness(root *Node, fileId int, invariantId int) []float64 {
 	// Create the transition matrix
-	nodes, _ := getAllNodes(root)
+	nodes, _, _ := getAllNodes(root)
 
 	transitionMatrix := createTransitionMatrix(nodes)
 	//fmt.Printf("\nTransition Matrix:\n%v\n", transitionMatrix)
@@ -428,23 +429,24 @@ func transpose(matrix [][]float64) [][]float64 {
 	return result
 }
 
-func GetAllNodes(root *Node) ([]*Node, int) {
+func GetAllNodes(root *Node) ([]*Node, *Node, int) {
 	return getAllNodes(root)
 
 }
-func getAllNodes(root *Node) ([]*Node, int) {
+func getAllNodes(root *Node) ([]*Node, *Node, int) {
 	// Implement a traversal to get all nodes in the graph
 	// This can be a simple depth-first or breadth-first traversal
 	// depending on your requirements and graph structure.
 	// For simplicity, let's assume a simple depth-first traversal here.
 
-	visited := make(map[*Node]bool)
-	var result []*Node
-	yield := 0
-	maxDepth := 0
-	traverseDFS(root, visited, &result, &yield, &maxDepth)
-	fmt.Println("Max Depth", maxDepth)
-	return result, yield
+	result, deadlock, yield := traverseBFS(root)
+	//visited := make(map[*Node]bool)
+	//var result []*Node
+	//yield := 0
+	//maxDepth := 0
+	//traverseDFS(root, visited, &result, &yield, &maxDepth)
+	//fmt.Println("Max Depth", maxDepth)
+	return result, deadlock, yield
 }
 
 func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int, maxDepth *int) {
@@ -478,4 +480,51 @@ func traverseDFS(node *Node, visited map[*Node]bool, result *[]*Node, yield *int
 	for _, outboundNode := range node.Outbound {
 		traverseDFS(outboundNode.Node, visited, result, yield, maxDepth)
 	}
+}
+
+func traverseBFS(rootNode *Node) ([]*Node, *Node, int) {
+	var deadlock *Node
+	visited := make(map[*Node]bool)
+	var result []*Node
+	queue := lib.NewQueue[*Node]()
+	queue.Enqueue(rootNode)
+	yield := 0
+	maxDepth := 0
+	for queue.Count() > 0 {
+		node, _ := queue.Dequeue()
+
+		if visited[node] {
+			continue
+		}
+		visited[node] = true
+
+		if node.Process != nil && !node.Process.Enabled {
+			continue
+		}
+
+		result = append(result, node)
+		if node.Name == "yield" {
+			yield++
+		}
+		if node.forkDepth > maxDepth {
+			maxDepth = node.forkDepth
+		}
+		enabledLinks := make([]*Link, 0)
+		for _, link := range node.Outbound {
+			if !link.Node.Enabled {
+				continue
+			}
+			enabledLinks = append(enabledLinks, link)
+		}
+		node.Outbound = enabledLinks
+		if len(enabledLinks) == 0 && deadlock == nil {
+			deadlock = node
+		}
+
+		for _, link := range node.Outbound {
+			queue.Enqueue(link.Node)
+		}
+	}
+	fmt.Println("Max Depth", maxDepth)
+	return result, deadlock, yield
 }
