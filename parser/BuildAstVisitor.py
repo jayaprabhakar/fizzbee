@@ -6,6 +6,7 @@ from parser.FizzParser import FizzParser
 from parser.FizzParserVisitor import FizzParserVisitor
 import proto.fizz_ast_pb2 as ast
 
+
 class BuildAstVisitor(FizzParserVisitor):
     def __init__(self, input_stream):
         super().__init__()
@@ -94,7 +95,6 @@ class BuildAstVisitor(FizzParserVisitor):
 
         return transformed_code
 
-
     # Visit a parse tree produced by FizzParser#visitActiondef.
     def visitActiondef(self, ctx:FizzParser.ActiondefContext):
         print("\n\nvisitActiondef",ctx.__class__.__name__)
@@ -116,6 +116,8 @@ class BuildAstVisitor(FizzParserVisitor):
                 childProto = self.visit(child)
                 if isinstance(childProto, ast.Block):
                     action.block.CopyFrom(childProto)
+                if isinstance(childProto, ast.Fairness):
+                    action.fairness.CopyFrom(childProto)
 
                 print("visitActiondef childProto",childProto)
             elif hasattr(child, 'getSymbol'):
@@ -151,8 +153,50 @@ class BuildAstVisitor(FizzParserVisitor):
             action.block.flow =  ast.Flow.FLOW_SERIAL
             action.flow = ast.Flow.FLOW_SERIAL
 
+        print("action.fairness", action.fairness)
+        print("action.fairness.level", action.fairness.level)
+        if action.fairness.level == ast.FairnessLevel.FAIRNESS_LEVEL_UNKNOWN:
+            print("visitActiondef action.fairness not set")
+            action.fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_UNFAIR
+
         print("action", action)
         return action
+
+    # Visit a parse tree produced by FizzParser#fairness.
+    def visitFairness(self, ctx:FizzParser.FairnessContext):
+        fairness = ast.Fairness()
+        for i, child in enumerate(ctx.getChildren()):
+            print()
+            print("visitFairness child index",i,child.getText())
+            if hasattr(child, 'toStringTree'):
+                if isinstance(child, FizzParser.NameContext):
+                    levelStr = child.getText()
+                    print("visitFairness child name", levelStr)
+                    if levelStr == "strong":
+                        fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_STRONG
+                    elif levelStr == "weak":
+                        fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_WEAK
+                    else:
+                        raise Exception("Fairness can only be weak or strong.", levelStr)
+                    break
+                self.log_childtree(child)
+                childProto = self.visit(child)
+                print("visitFairness childProto",childProto)
+            elif hasattr(child, 'getSymbol'):
+                if (child.getSymbol().type == FizzParser.LESS_THAN
+                        or child.getSymbol().type == FizzParser.FAIR
+                        or child.getSymbol().type == FizzParser.GREATER_THAN
+                ):
+                    continue
+                self.log_symbol(child)
+            else:
+                print("visitFairness child (unknown) type",child.__class__.__name__, dir(child))
+                raise Exception("visitFairness child (unknown) type")
+
+        if fairness.level == ast.FairnessLevel.FAIRNESS_LEVEL_UNKNOWN:
+            fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_WEAK
+        return fairness
+
 
     # Visit a parse tree produced by FizzParser#assertiondef.
     def visitAssertiondef(self, ctx:FizzParser.AssertiondefContext):

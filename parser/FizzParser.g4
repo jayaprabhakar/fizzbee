@@ -140,7 +140,11 @@ funcdef
 
 // Fizz specific
 actiondef
-    : (ATOMIC | PARALLEL | SERIAL | ONEOF)? ACTION name COLON suite
+    : (ATOMIC | PARALLEL | SERIAL | ONEOF)? fairness? ACTION name COLON suite
+    ;
+
+fairness
+    : FAIR (LESS_THAN name GREATER_THAN)?
     ;
 
 functiondef

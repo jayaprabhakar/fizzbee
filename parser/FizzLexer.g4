@@ -92,6 +92,7 @@ ONEOF    : 'oneof';
 ANY      : 'any';
 ACTION   : 'action';
 FUNC     : 'func';
+FAIR     : 'fair';
 
 
 PARAMS   : 'params';

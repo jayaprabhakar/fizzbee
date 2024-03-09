@@ -287,6 +287,15 @@ class FizzParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by FizzParser#fairness.
+    def enterFairness(self, ctx:FizzParser.FairnessContext):
+        pass
+
+    # Exit a parse tree produced by FizzParser#fairness.
+    def exitFairness(self, ctx:FizzParser.FairnessContext):
+        pass
+
+
     # Enter a parse tree produced by FizzParser#functiondef.
     def enterFunctiondef(self, ctx:FizzParser.FunctiondefContext):
         pass
