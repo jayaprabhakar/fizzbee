@@ -164,6 +164,11 @@ class FizzParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FizzParser#fairness.
+    def visitFairness(self, ctx:FizzParser.FairnessContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FizzParser#functiondef.
     def visitFunctiondef(self, ctx:FizzParser.FunctiondefContext):
         return self.visitChildren(ctx)

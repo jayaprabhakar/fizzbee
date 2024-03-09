@@ -32,7 +32,6 @@ enum Flow {
 message Fairness {
   SourceInfo source_info = 1;
   FairnessLevel level = 2;
-  repeated string variables = 3;
 }
 
 message Block {
