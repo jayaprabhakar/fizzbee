@@ -281,6 +281,8 @@ type Thread struct {
 	Process *Process      `json:"-"`
 	Files   []*ast.File   `json:"-"`
 	Stack   *CallStack	  `json:"stack"`
+
+	Fairness ast.FairnessLevel `json:"fairness"`
 }
 
 func NewThread(Process *Process, files []*ast.File, fileIndex int, action string) *Thread {
@@ -351,7 +353,7 @@ func (t *Thread) popFrame() *CallFrame {
 }
 
 func (t *Thread) Clone() *Thread {
-	return &Thread{Process: t.Process, Files: t.Files, Stack: t.Stack.Clone()}
+	return &Thread{Process: t.Process, Files: t.Files, Stack: t.Stack.Clone(), Fairness: t.Fairness}
 }
 
 func (t *Thread) Execute() ([]*Process, bool) {
@@ -367,8 +369,9 @@ func (t *Thread) Execute() ([]*Process, bool) {
 		frame := t.currentFrame()
 		protobuf := GetProtoFieldByPath(t.currentFileAst(), frame.pc)
 
-		switch protobuf.(type) {
+		switch msg := protobuf.(type) {
 		case *ast.Action:
+			t.Fairness = msg.GetFairness().GetLevel()
 			t.executeAction()
 		case *ast.Block:
 			forks = t.executeBlock()
@@ -435,6 +438,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 	if stmt.Label != "" {
 		t.Process.Labels = append(t.Process.Labels, currentFrame.Name + "." + stmt.Label)
 	}
+	t.Process.Fairness = t.Fairness
 	if stmt.PyStmt != nil {
 		vars := t.Process.GetAllVariables()
 		_, err := t.Process.Evaluator.ExecPyStmt("filename.fizz", stmt.PyStmt, vars)

@@ -234,9 +234,17 @@ func GenerateDotFile(node *Node, visited map[*Node]bool) string {
 				label += "[" + strings.Join(child.Labels, ", ") + "]"
 
 			}
-
+			edgewidth := 1
+			edgecolor := "black"
+			if child.Fairness != proto.FairnessLevel_FAIRNESS_LEVEL_UNKNOWN &&
+				child.Fairness != proto.FairnessLevel_FAIRNESS_LEVEL_UNFAIR {
+				edgecolor = "forestgreen"
+				if child.Fairness == proto.FairnessLevel_FAIRNESS_LEVEL_STRONG {
+					edgewidth = 3
+				}
+			}
 			//if color != "green" {
-			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", nodeID, childID, label)
+			dotGraph += fmt.Sprintf("  %s -> %s [label=\"%s\", color=\"%s\" penwidth=\"%d\" ];\n", nodeID, childID, label, edgecolor, edgewidth)
 			//}
 
 			dfs(child.Node)
