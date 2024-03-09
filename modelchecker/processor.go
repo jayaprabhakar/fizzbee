@@ -90,6 +90,13 @@ type Process struct {
 	SymbolTable map[string]*Definition `json:"-"`
 	Labels 		[]string               `json:"-"`
 
+	// Fairness is actually a property of the transition/link. But to determine whether
+	// the link is fair, we need to know if the process stepped through at least one
+	// fair statement. To determine that, each thread maintains the fairness level
+	// of the action that started. If that thread executed a statement, that process becomes fair,
+	// that in-turn makes the link fair.
+	Fairness    ast.FairnessLevel      `json:"-"`
+
 	Enabled		bool                   `json:"-"`
 }
 
@@ -221,6 +228,7 @@ func (n *Node) String() string {
 	buf.WriteString(fmt.Sprintf("%s\n", escapedName))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
 	buf.WriteString(fmt.Sprintf("Enabled: %t\n", n.Process.Enabled))
+	//buf.WriteString(fmt.Sprintf("Fair: %s\n", n.Process.Fairness))
 
 	n.appendState(p, buf)
 	buf.WriteString("\n")
@@ -393,7 +401,8 @@ type Node struct {
 type Link struct {
 	Node *Node
 	Name string
-	Labels []string
+	Labels   []string
+	Fairness ast.FairnessLevel
 }
 
 func NewNode(process *Process) *Node {
@@ -414,7 +423,12 @@ func (n *Node) Duplicate(other *Node) {
 	}
 	parent := n.Inbound[0].Node
 	other.Inbound = append(other.Inbound, n.Inbound[0])
-	parent.Outbound = append(parent.Outbound, &Link{Node: other, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
+	parent.Outbound = append(parent.Outbound, &Link{
+		Node:     other,
+		Name:     n.Inbound[0].Name,
+		Labels:   n.Inbound[0].Labels,
+		Fairness: n.Inbound[0].Fairness,
+	})
 	maps.Copy(other.ancestors, n.ancestors)
 }
 
@@ -428,7 +442,12 @@ func (n *Node) Attach() {
 		return
 	}
 	parent := n.Inbound[0].Node
-	parent.Outbound = append(parent.Outbound, &Link{Node: n, Name: n.Inbound[0].Name, Labels: n.Inbound[0].Labels})
+	parent.Outbound = append(parent.Outbound, &Link{
+		Node:     n,
+		Name:     n.Inbound[0].Name,
+		Labels:   n.Inbound[0].Labels,
+		Fairness: n.Inbound[0].Fairness,
+	})
 }
 
 func (n *Node) ForkForAction(process *Process, action *ast.Action) *Node {
@@ -589,6 +608,7 @@ func (p *Processor) processNode(node *Node) bool {
 	// The labels for the outbound links are added when the node is merged/attached
 	if len(node.Inbound) > 0 {
 		node.Inbound[0].Labels = append(node.Inbound[0].Labels, node.Process.Labels...)
+		node.Inbound[0].Fairness = node.Process.Fairness
 	}
 
 	// If the node is already visited, merge the nodes and return
