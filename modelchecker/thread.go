@@ -583,6 +583,7 @@ func (t *Thread) executeStatement() ([]*Process, bool) {
 			}
 			for _, name := range oldFrame.callerAssignVarNames {
 				t.currentFrame().scope.vars[name] = val
+				t.Process.Enable()
 			}
 			return t.executeEndOfStatement()
 		}

@@ -202,7 +202,7 @@ func (p *Process) Fork() *Process {
 func (p *Process) Enable() {
 	if !p.Enabled {
 		parent := p.Parent
-		for parent != nil && !parent.Enabled {
+		for parent != nil && len(parent.Threads) != 0 && !parent.Enabled {
 			parent.Enabled = true
 			parent = parent.Parent
 
