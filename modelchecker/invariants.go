@@ -183,13 +183,12 @@ func CheckFastLiveness(allNodes []*Node) ([]*Node, *InvariantPosition) {
 }
 
 func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
-	// The logic is, start from the nodes that satisfy the predicate and then traverse the graph in reverse order
-	// marking each of these nodes as live. At the end, the nodes left over are those that do not have a path to the
-	// nodes that satisfy the predicate. So, these nodes will not always eventually satisfy the predicate.
-	// There are some nuances, but this is the basic idea.
+	// For strong fairness.
+	// For each good node, walk up the Strongly Fair inbound links, and mark them good as well. Eventually, you will
+	// end up with nodes that cannot reach a good node either because of a cycle or because of stuttering
 
-	outLinksCount := make(map[*Node]int, len(nodes))
-
+	falseNodes := make(map[*Node]bool)
+	visited := make(map[*Node]bool)
 	queue := lib.NewQueue[*Node]()
 	for _, node := range nodes {
 		if len(node.Outbound) == 0 {
@@ -200,29 +199,28 @@ func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
 		if relevant && value {
 			queue.Enqueue(node)
 		} else {
-			outLinksCount[node] = len(node.Outbound)
+			falseNodes[node] = true
 		}
 	}
 	for queue.Count() > 0 {
 		node, _ := queue.Dequeue()
-
+		if visited[node] {
+			continue
+		}
+		visited[node] = true
 		for _, link := range node.Inbound {
-			if outLinksCount[link.Node] <= 0 {
-				continue
+			if visited[link.Node] || link.Node == node ||
+				link.Fairness != ast.FairnessLevel_FAIRNESS_LEVEL_STRONG {
+                continue
 			}
-			outLinksCount[link.Node]--
-			if outLinksCount[link.Node] == 0 {
-				delete(outLinksCount, link.Node)
-				queue.Enqueue(link.Node)
-			}
+			delete(falseNodes, link.Node)
+			queue.Enqueue(link.Node)
 		}
 	}
-	if len(outLinksCount) > 0 {
-		//fmt.Println("Always eventually invariant failed")
-		//fmt.Println("Dead nodes:", len(outLinksCount))
+	if len(falseNodes) > 0 {
 		var closestDeadNode *Node
 
-		for node, _ := range outLinksCount {
+		for node, _ := range falseNodes {
 			//fmt.Println("-\n",node.String(), count)
 			if closestDeadNode == nil || (len(closestDeadNode.Threads) > 0 && len(node.Threads) == 0) {
 				closestDeadNode = node
@@ -238,7 +236,7 @@ func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
 		}
 		//fmt.Println("Closest dead node:", closestDeadNode.String())
 		failurePath := pathToInit(nodes, closestDeadNode)
-		path := findCyclePath(closestDeadNode, outLinksCount)
+		path := findCyclePath(closestDeadNode, falseNodes)
 		path = append(failurePath, path...)
 		return path, false
 	} else {
@@ -262,7 +260,7 @@ func pathToInit(nodes []*Node, closestDeadNode *Node) []*Node {
 	return failurePath
 }
 
-func findCyclePath(startNode *Node, nodes map[*Node]int) []*Node {
+func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Node {
 	type Wrapper struct {
 		node *Node
 		path []*Node
@@ -276,10 +274,15 @@ func findCyclePath(startNode *Node, nodes map[*Node]int) []*Node {
 		node := element.node
 		path := element.path
 		visited := element.visited
+		fairCount := 0
 		for _, link := range node.Outbound {
-			if count, ok := nodes[link.Node]; !ok || count <= 0 {
+			if link.Fairness != ast.FairnessLevel_FAIRNESS_LEVEL_STRONG {
 				continue
 			}
+			if !nodes[link.Node] {
+				continue
+			}
+			fairCount++
 			pathCopy := slices.Clone(path)
 			visitedCopy := maps.Clone(visited)
 
@@ -289,6 +292,11 @@ func findCyclePath(startNode *Node, nodes map[*Node]int) []*Node {
 			}
 			visitedCopy[node] = true
 			queue.Enqueue(&Wrapper{node: link.Node, path: pathCopy, visited: visitedCopy})
+		}
+		if fairCount == 0 {
+			pathCopy := slices.Clone(path)
+			pathCopy = append(pathCopy, node)
+			return pathCopy
 		}
 	}
 	// TODO: Should this panic?
