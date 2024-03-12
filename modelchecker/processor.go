@@ -21,6 +21,7 @@ import (
 	"github.com/jayaprabhakar/fizzbee/lib"
 	"go.starlark.net/starlark"
 	"maps"
+	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -535,6 +536,7 @@ func (p *Processor) Start() (init *Node, failedNode *Node, err error) {
 	if p.Files[0].Actions[0].Name != "Init" {
 		globals, err := process.Evaluator.ExecInit(p.Files[0].States)
 		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error in executing init: ", p.Files[0].States, err)
 			panic(err)
 		}
 		process.Enable()

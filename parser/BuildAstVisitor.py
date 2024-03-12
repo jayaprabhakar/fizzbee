@@ -145,6 +145,9 @@ class BuildAstVisitor(FizzParserVisitor):
                 print("visitActiondef child (unknown) type",child.__class__.__name__, dir(child))
                 raise Exception("visitActiondef child (unknown) type")
 
+        if action.name == "Init":
+            action.fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_STRONG
+            action.flow = ast.Flow.FLOW_ATOMIC
         if action.flow == ast.Flow.FLOW_UNKNOWN and action.block.flow != ast.Flow.FLOW_UNKNOWN:
             action.flow = action.block.flow
         elif action.flow != ast.Flow.FLOW_UNKNOWN and action.block.flow == ast.Flow.FLOW_UNKNOWN:
@@ -155,6 +158,7 @@ class BuildAstVisitor(FizzParserVisitor):
 
         print("action.fairness", action.fairness)
         print("action.fairness.level", action.fairness.level)
+
         if action.fairness.level == ast.FairnessLevel.FAIRNESS_LEVEL_UNKNOWN:
             print("visitActiondef action.fairness not set")
             action.fairness.level = ast.FairnessLevel.FAIRNESS_LEVEL_UNFAIR
