@@ -3,8 +3,8 @@
     {
       "name": "Stabilized",
       "temporalOperators": [
-        "always",
-        "eventually"
+        "eventually",
+        "always"
       ],
       "block": {
         "flow": "FLOW_ATOMIC",
@@ -23,6 +23,9 @@
     {
       "name": "Init",
       "flow": "FLOW_ATOMIC",
+      "fairness": {
+        "level": "FAIRNESS_LEVEL_STRONG"
+      },
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
@@ -92,6 +95,9 @@
     {
       "name": "CreateToken",
       "flow": "FLOW_ATOMIC",
+      "fairness": {
+        "level": "FAIRNESS_LEVEL_STRONG"
+      },
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [
@@ -120,6 +126,9 @@
     {
       "name": "PassToken",
       "flow": "FLOW_ATOMIC",
+      "fairness": {
+        "level": "FAIRNESS_LEVEL_STRONG"
+      },
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [

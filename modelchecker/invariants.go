@@ -164,7 +164,7 @@ func CheckFastLiveness(allNodes []*Node) ([]*Node, *InvariantPosition) {
 			if eventuallyAlways {
 				fmt.Println("Checking eventually always", invariant.Name)
 				// TODO(jp): Come up with a fast way to check eventually always
-				failurePath, isLive := EventuallyAlwaysFinal(node, predicate)
+				failurePath, isLive := EventuallyAlwaysFast(allNodes, predicate)
 				if !isLive {
 					return failurePath, NewInvariantPosition(i,j)
 				}
@@ -305,7 +305,65 @@ func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Node {
 }
 
 func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
-	panic("Not implemented")
+	// For strong fairness to support Eventually Always. The logic is,
+	// For each bad node, walk up the Strongly Fair inbound links, and mark them bad as well. Eventually, you will
+	// end up with only nodes that can never reach a bad node.
+	// This is the list of good nodes.
+	// Then use this fact to create a Predicate that can be used to check Always Eventually. That is,
+	// if any behavior can reach these known good state via strong fair nodes, we know for sure that it will
+	// never reach a bad state.
+
+	trueNodes := make(map[*Node]bool)
+	visited := make(map[*Node]bool)
+	queue := lib.NewQueue[*Node]()
+	for _, node := range nodes {
+		if len(node.Outbound) == 0 {
+			fmt.Println("Deadlock detected, at node: ", node.String())
+			panic("Deadlock detected, at node: " + node.String())
+		}
+		relevant, value := predicate(node)
+		if relevant && !value {
+			queue.Enqueue(node)
+		} else if relevant {
+			trueNodes[node] = true
+		}
+	}
+	//fmt.Println("True nodes len:", len(trueNodes))
+	//fmt.Println("Queue len:", queue.Count())
+	for queue.Count() > 0 {
+		node, _ := queue.Dequeue()
+		//fmt.Println("Dequeued Node:", node.String())
+		if visited[node] {
+			continue
+		}
+		visited[node] = true
+		for _, link := range node.Inbound {
+			//fmt.Println("Link:", link.Node.String())
+			if visited[link.Node] {
+				continue
+			}
+			delete(trueNodes, link.Node)
+			queue.Enqueue(link.Node)
+		}
+	}
+	//fmt.Println("True nodes len:", len(trueNodes))
+	//fmt.Println("True nodes:", trueNodes)
+	if len(trueNodes) > 0 {
+		// Create a predicate that can be used to check Always Eventually
+		predicate := func(n *Node) (bool, bool) {
+			return true, trueNodes[n]
+		}
+		// Always Eventually
+		failurePath, isLive := AlwaysEventuallyFast(nodes, predicate)
+
+		return failurePath, isLive
+
+	}
+	fmt.Println("Every behavior leads to a bad state eventually")
+
+	return CycleFinderFinalBfs(nodes[0], func(path []*Node) bool {
+		return false
+	})
 }
 
 
