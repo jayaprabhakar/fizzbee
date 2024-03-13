@@ -1,6 +1,6 @@
 
 invariants:
-  always eventually state == "committed"
+  eventually always state == "committed"
 
 action Init:
   state = "in_progress"

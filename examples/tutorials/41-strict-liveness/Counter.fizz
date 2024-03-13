@@ -5,7 +5,7 @@ action Init:
   any x in range(-2, 2):
     a = x
 
-always eventually  assertion StayPositive:
+eventually always assertion StayPositive:
   return a == 0
 
 atomic fair<strong> action Add:
