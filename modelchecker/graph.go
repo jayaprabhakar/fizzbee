@@ -274,7 +274,7 @@ func printGraph(node *Node) {
 	}
 }
 
-func GenerateFailurePath(nodes []*Node, invariant *InvariantPosition) string {
+func GenerateFailurePath(nodes []*Link, invariant *InvariantPosition) string {
 	re := regexp.MustCompile(`\\+`)
 
 	builder := strings.Builder{}
@@ -283,7 +283,8 @@ func GenerateFailurePath(nodes []*Node, invariant *InvariantPosition) string {
 	parentID := ""
 
 	visited := map[*Node]string{}
-	for i, node := range nodes {
+	for i, link := range nodes {
+		node := link.Node
 		nodeID := fmt.Sprintf("\"%d\"", i)
 		if visited[node] != "" {
 			//parentID = visited[node]
@@ -307,10 +308,7 @@ func GenerateFailurePath(nodes []*Node, invariant *InvariantPosition) string {
 		}
 
 		if parentID != "" {
-			label := ""
-			if len(node.Inbound) > 0 {
-				label = node.Inbound[0].Name
-			}
+			label := link.Name
 			builder.WriteString(fmt.Sprintf("  %s -> %s [label=\"%s\"];\n", parentID, nodeID, label))
 		}
 		parentID = nodeID
@@ -320,4 +318,12 @@ func GenerateFailurePath(nodes []*Node, invariant *InvariantPosition) string {
 
 	builder.WriteString("}\n")
 	return builder.String()
+}
+
+func ReverseLink(node *Node, link *Link) *Link {
+	// Shallow copy link.
+	// change the link.Node to node
+	tmp := *link
+	tmp.Node = node
+	return &tmp
 }

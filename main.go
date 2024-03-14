@@ -98,7 +98,7 @@ func main() {
     if failedNode == nil {
         //failurePath := nil
         //failedInvariant := nil
-        var failurePath []*modelchecker.Node
+        var failurePath []*modelchecker.Link
         var failedInvariant *modelchecker.InvariantPosition
         nodes, deadlock, _ := modelchecker.GetAllNodes(rootNode)
         if deadlock != nil && stateConfig.GetDeadlockDetection() {
@@ -145,13 +145,17 @@ func main() {
 }
 
 func dumpFailedNode(failedNode *modelchecker.Node, rootNode *modelchecker.Node, outDir string) {
-    failurePath := make([]*modelchecker.Node, 0)
+    failurePath := make([]*modelchecker.Link, 0)
     node := failedNode
     for node != nil {
-        failurePath = append(failurePath, node)
+
         if len(node.Inbound) == 0 || node.Name == "init" || node == rootNode {
+            link := modelchecker.InitNodeToLink(node)
+            failurePath = append(failurePath, link)
             break
         }
+        outLink := modelchecker.ReverseLink(node, node.Inbound[0])
+        failurePath = append(failurePath, outLink)
         //node.Name = node.Name + "/" + node.Inbound[0].Name
         node = node.Inbound[0].Node
     }
@@ -159,15 +163,11 @@ func dumpFailedNode(failedNode *modelchecker.Node, rootNode *modelchecker.Node, 
     GenerateFailurePath(failurePath, nil, outDir)
 }
 
-func GenerateFailurePath(failurePath []*modelchecker.Node, invariant *modelchecker.InvariantPosition, outDir string) {
-    for _, node := range failurePath {
-        stepName := ""
-        if len(node.Inbound) > 0 {
-            stepName = node.Inbound[0].Name
-        }
-        if stepName == "" || stepName == "stutter" {
-            stepName = node.GetName()
-        }
+func GenerateFailurePath(failurePath []*modelchecker.Link, invariant *modelchecker.InvariantPosition, outDir string) {
+    for _, link := range failurePath {
+        node := link.Node
+        stepName := link.Name
+
         fmt.Printf("------\n%s\n", stepName)
 
         fmt.Printf("--\nstate: %s\n", node.Heap.ToJson())
@@ -197,7 +197,7 @@ func GenerateFailurePath(failurePath []*modelchecker.Node, invariant *modelcheck
         return
     }
     fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n"+
-        "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
+        "dot -Tpng %s -o error-graph.png && open error-graph.png\n", dotFileName, dotFileName)
 }
 
 func createOutputDir(dirPath string) (string, error) {

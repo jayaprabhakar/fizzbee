@@ -84,7 +84,7 @@ func CheckAssertion(process *Process, invariant *ast.Invariant) bool {
 	return bool(vars["__retval__"].Truth())
 }
 
-func CheckStrictLiveness(node *Node) ([]*Node, *InvariantPosition) {
+func CheckStrictLiveness(node *Node) ([]*Link, *InvariantPosition) {
 	fmt.Println("Checking strict liveness")
 	process := node.Process
 	if len(process.Files) > 1 {
@@ -132,7 +132,7 @@ func CheckStrictLiveness(node *Node) ([]*Node, *InvariantPosition) {
 	return nil, nil
 }
 
-func CheckFastLiveness(allNodes []*Node) ([]*Node, *InvariantPosition) {
+func CheckFastLiveness(allNodes []*Node) ([]*Link, *InvariantPosition) {
 	fmt.Println("Checking strict liveness fast approach")
 	node := allNodes[0]
 	process := node.Process
@@ -182,7 +182,7 @@ func CheckFastLiveness(allNodes []*Node) ([]*Node, *InvariantPosition) {
 	return nil, nil
 }
 
-func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
+func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Link, bool) {
 	// For strong fairness.
 	// For each good node, walk up the Strongly Fair inbound links, and mark them good as well. Eventually, you will
 	// end up with nodes that cannot reach a good node either because of a cycle or because of stuttering
@@ -245,33 +245,45 @@ func AlwaysEventuallyFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
 	return nil, true
 }
 
-func pathToInit(nodes []*Node, closestDeadNode *Node) []*Node {
-	failurePath := make([]*Node, 0)
+func pathToInit(nodes []*Node, closestDeadNode *Node) []*Link {
+	failurePath := make([]*Link, 0)
 
 	node := closestDeadNode
 	for node != nil {
-		failurePath = append(failurePath, node)
+
 		if len(node.Inbound) == 0 || node.Name == "init" || node == nodes[0] {
+			failurePath = append(failurePath, InitNodeToLink(node))
 			break
 		}
+
+		failurePath = append(failurePath, ReverseLink(node, node.Inbound[0]))
 		node = node.Inbound[0].Node
 	}
 	slices.Reverse(failurePath)
 	return failurePath
 }
 
-func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Node {
+func InitNodeToLink(node *Node) *Link {
+	return &Link{
+		Node:     node,
+		Name:     "Init",
+		Labels:   node.Labels,
+		Fairness: node.Fairness,
+	}
+}
+
+func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Link {
 	type Wrapper struct {
-		node *Node
-		path []*Node
+		link *Link
+		path []*Link
 		visited map[*Node]bool
 	}
 	queue := lib.NewQueue[*Wrapper]()
-	queue.Enqueue(&Wrapper{node: startNode, path: make([]*Node, 0), visited: make(map[*Node]bool)})
+	queue.Enqueue(&Wrapper{link: InitNodeToLink(startNode), path: make([]*Link, 0), visited: make(map[*Node]bool)})
 
 	for queue.Count() > 0 {
 		element, _ := queue.Dequeue()
-		node := element.node
+		node := element.link.Node
 		path := element.path
 		visited := element.visited
 		fairCount := 0
@@ -286,16 +298,19 @@ func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Node {
 			pathCopy := slices.Clone(path)
 			visitedCopy := maps.Clone(visited)
 
-			pathCopy = append(pathCopy, link.Node)
+			pathCopy = append(pathCopy, link)
 			if visitedCopy[node] {
 				return path
 			}
 			visitedCopy[node] = true
-			queue.Enqueue(&Wrapper{node: link.Node, path: pathCopy, visited: visitedCopy})
+			queue.Enqueue(&Wrapper{link: link, path: pathCopy, visited: visitedCopy})
 		}
 		if fairCount == 0 {
 			pathCopy := slices.Clone(path)
-			pathCopy = append(pathCopy, node)
+			pathCopy = append(pathCopy, &Link{
+				Node:     node,
+				Name:     "stutter",
+			})
 			return pathCopy
 		}
 	}
@@ -304,7 +319,7 @@ func findCyclePath(startNode *Node, nodes map[*Node]bool) []*Node {
 	//return nil
 }
 
-func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
+func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Link, bool) {
 	// For strong fairness to support Eventually Always. The logic is,
 	// For each bad node, walk up the Strongly Fair inbound links, and mark them bad as well. Eventually, you will
 	// end up with only nodes that can never reach a bad node.
@@ -361,7 +376,7 @@ func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
 	}
 	fmt.Println("Every behavior leads to a bad state eventually")
 
-	return CycleFinderFinalBfs(nodes[0], func(path []*Node) bool {
+	return CycleFinderFinalBfs(nodes[0], func(path []*Link) bool {
 		return false
 	})
 }
@@ -369,14 +384,14 @@ func EventuallyAlwaysFast(nodes []*Node, predicate Predicate) ([]*Node, bool) {
 
 type Predicate func(n *Node) (bool, bool)
 
-type CycleCallback func(path []*Node) bool
+type CycleCallback func(path []*Link) bool
 
-func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Node, bool) {
-	f := func(path []*Node) bool {
+func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
+	f := func(path []*Link) bool {
 		mergeNode := path[len(path)-1]
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
-			relevant, value := predicate(path[i])
+			relevant, value := predicate(path[i].Node)
 			//fmt.Printf("Node: %s, Relevant: %t, Value: %t\n", path[i].String(), relevant, value)
 			if relevant && value {
 				//fmt.Println("Live node FOUND in the path")
@@ -392,12 +407,12 @@ func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Node, bool) {
 	return CycleFinderFinalBfs(root, f)
 }
 
-func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Node, bool) {
-	f := func(path []*Node) bool {
+func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Link, bool) {
+	f := func(path []*Link) bool {
 		mergeNode := path[len(path)-1]
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
-			relevant, value := predicate(path[i])
+			relevant, value := predicate(path[i].Node)
 			//fmt.Printf("Node: %s, Relevant: %t, Value: %t\n", path[i].String(), relevant, value)
 			if relevant && !value {
 				//fmt.Println("Dead node FOUND in the path")
@@ -413,24 +428,22 @@ func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Node, bool) {
 	return CycleFinderFinal(root, f)
 }
 
-func CycleFinderFinal(node *Node, callback CycleCallback) ([]*Node, bool) {
+func CycleFinderFinal(node *Node, callback CycleCallback) ([]*Link, bool) {
 	visited := make(map[*Node]bool)
 	globalVisited := make(map[*Node]bool)
-	path := make([]*Node, 0)
+	rootLink := InitNodeToLink(node)
+	path := []*Link{rootLink}
 	return cycleFinderHelper(node, callback, visited, path, globalVisited)
 }
 
-func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Node, globalVisited map[*Node]bool) ([]*Node, bool) {
+func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Link, globalVisited map[*Node]bool) ([]*Link, bool) {
 	if visited[node] {
-		path = append(path, node)
-
 		//fmt.Println("\n\nCycle detected in the path:")
 		//fmt.Println("Path:", path)
 		return path, callback(path)
 	}
 
 	visited[node] = true
-	path = append(path, node)
 	if globalVisited[node] {
 		//fmt.Println("Skipping node", node.String())
 		return nil, true
@@ -441,6 +454,7 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 	for _, link := range node.Outbound {
 		pathCopy := slices.Clone(path)
 		visitedCopy := maps.Clone(visited)
+		pathCopy = append(pathCopy, link)
 		failedPath, success := cycleFinderHelper(link.Node, callback, visitedCopy, pathCopy, globalVisited)
 		if !success {
 			return failedPath,false
@@ -449,28 +463,28 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 	return nil, true
 }
 
-func CycleFinderFinalBfs(node *Node, callback CycleCallback) ([]*Node, bool) {
+func CycleFinderFinalBfs(node *Node, callback CycleCallback) ([]*Link, bool) {
 	visited := make(map[*Node]bool)
-	path := make([]*Node, 0)
+	path := make([]*Link, 0)
 	return cycleFinderHelperBfs(node, callback, visited, path)
 }
 
-func cycleFinderHelperBfs(node *Node, callback CycleCallback, visited map[*Node]bool, path []*Node) ([]*Node, bool) {
+func cycleFinderHelperBfs(root *Node, callback CycleCallback, visited map[*Node]bool, path []*Link) ([]*Link, bool) {
 	type Wrapper struct {
-		node *Node
-		path []*Node
+		link *Link
+		path []*Link
 		visited map[*Node]bool
 	}
 	queue := lib.NewQueue[*Wrapper]()
-	queue.Enqueue(&Wrapper{node: node, path: path, visited: visited})
+	queue.Enqueue(&Wrapper{link: InitNodeToLink(root), path: path, visited: visited})
 	for queue.Count() > 0 {
 		element, _ := queue.Dequeue()
-		node = element.node
+		node := element.link.Node
 		path = element.path
 		visited = element.visited
 
 		if visited[node] {
-			path = append(path, node)
+			path = append(path, element.link)
 			//fmt.Println("\n\nCycle detected in the path:")
 			//fmt.Println("Path:", path)
 			live := callback(path)
@@ -480,13 +494,13 @@ func cycleFinderHelperBfs(node *Node, callback CycleCallback, visited map[*Node]
 			return path, false
 		}
 		visited[node] = true
-		path = append(path, node)
+		path = append(path, element.link)
 
 		// Traverse outbound links
-		for _, link := range node.Outbound {
+		for _, outLink := range node.Outbound {
 			pathCopy := slices.Clone(path)
 			visitedCopy := maps.Clone(visited)
-			queue.Enqueue(&Wrapper{node: link.Node, path: pathCopy, visited: visitedCopy})
+			queue.Enqueue(&Wrapper{link: outLink, path: pathCopy, visited: visitedCopy})
 
 		}
 	}
