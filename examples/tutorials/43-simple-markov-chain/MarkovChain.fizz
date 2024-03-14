@@ -19,5 +19,5 @@ atomic fair<strong> action Commit:
     state = "committed"
 
 atomic action StayDone:
-  if state == "committed" or state == "rollback":
+  if state == "committed":
     state = state
