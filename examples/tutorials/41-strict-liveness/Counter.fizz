@@ -8,7 +8,7 @@ action Init:
 eventually always assertion StayPositive:
   return a == 0
 
-atomic fair<strong> action Add:
+atomic fair<weak> action Add:
   if a >= 3:
     a = 0
   else:

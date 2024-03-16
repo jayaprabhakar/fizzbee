@@ -96,7 +96,7 @@
       "name": "CreateToken",
       "flow": "FLOW_ATOMIC",
       "fairness": {
-        "level": "FAIRNESS_LEVEL_STRONG"
+        "level": "FAIRNESS_LEVEL_WEAK"
       },
       "block": {
         "flow": "FLOW_ATOMIC",
@@ -127,7 +127,7 @@
       "name": "PassToken",
       "flow": "FLOW_ATOMIC",
       "fairness": {
-        "level": "FAIRNESS_LEVEL_STRONG"
+        "level": "FAIRNESS_LEVEL_WEAK"
       },
       "block": {
         "flow": "FLOW_ATOMIC",

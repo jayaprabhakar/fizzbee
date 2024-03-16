@@ -8,8 +8,7 @@ always eventually assertion Liveness:
 atomic func UnfairToss():
     oneof:
         `head` return "head"
-        `tail`
-        return "tail"
+        `tail` return "tail"
 
 atomic action FairToss:
     while True:

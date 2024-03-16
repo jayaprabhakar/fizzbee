@@ -163,7 +163,6 @@ func CheckFastLiveness(allNodes []*Node) ([]*Link, *InvariantPosition) {
 			}
 			if eventuallyAlways {
 				fmt.Println("Checking eventually always", invariant.Name)
-				// TODO(jp): Come up with a fast way to check eventually always
 				failurePath, isLive := EventuallyAlwaysFast(allNodes, predicate)
 				if !isLive {
 					return failurePath, NewInvariantPosition(i,j)
@@ -388,7 +387,7 @@ type CycleCallback func(path []*Link) bool
 
 func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 	f := func(path []*Link) bool {
-		mergeNode := path[len(path)-1]
+		mergeNode := path[len(path)-1].Node
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
 			relevant, value := predicate(path[i].Node)
@@ -397,28 +396,40 @@ func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 				//fmt.Println("Live node FOUND in the path")
 				return true
 			}
-			if i < len(path) - 1 && path[i] == mergeNode {
+			if i < len(path) - 1 && path[i].Node == mergeNode {
 				break
 			}
 		}
 		//fmt.Println("Live node NOT FOUND in the path")
-		return false
+		if isFairCycle(path) {
+			//fmt.Println("Fair cycle found")
+			return false
+		} else {
+			//fmt.Println("Not a fair cycle, and has fair exit link")
+			return true
+		}
 	}
-	return CycleFinderFinalBfs(root, f)
+	return CycleFinderFinal(root, f)
 }
 
 func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 	f := func(path []*Link) bool {
-		mergeNode := path[len(path)-1]
+		mergeNode := path[len(path)-1].Node
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
 			relevant, value := predicate(path[i].Node)
-			//fmt.Printf("Node: %s, Relevant: %t, Value: %t\n", path[i].String(), relevant, value)
+			//fmt.Printf("Node: %+v, Relevant: %t, Value: %t\n", path[i], relevant, value)
 			if relevant && !value {
 				//fmt.Println("Dead node FOUND in the path")
-				return false
+				if isFairCycle(path) {
+					//fmt.Println("Fair cycle found")
+					return false
+				} else {
+					//fmt.Println("Not a fair cycle, and has fair exit link")
+					return true
+				}
 			}
-			if i < len(path) - 1 && path[i] == mergeNode {
+			if i < len(path) - 1 && path[i].Node == mergeNode {
 				break
 			}
 		}
@@ -426,6 +437,53 @@ func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 		return true
 	}
 	return CycleFinderFinal(root, f)
+}
+
+func isFairCycle(path []*Link) bool {
+	strongFairLinksInChain := map[string]bool{}
+	strongFairLinksOutOfChain := map[string]bool{}
+
+	weakFairLinksInChain := map[string]bool{}
+	weakFairLinksOutOfChain := map[string]bool{}
+
+	chainLen := len(path)
+	for i, link := range path {
+		node := link.Node
+		unvisitedWeakFairLinksOutOfChain := map[string]bool{}
+		for _, outLink := range node.Outbound {
+			if outLink.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_STRONG {
+				if outLink.Node == path[(i+1)%chainLen].Node {
+					// outlink points to the next node in the chain
+					// It satisfies the strong fairness condition for that action
+					strongFairLinksInChain[outLink.Name] = true
+					delete(strongFairLinksOutOfChain, outLink.Name)
+				} else if _, ok := strongFairLinksInChain[outLink.Name]; !ok {
+					strongFairLinksOutOfChain[outLink.Name] = true
+				}
+			} else if outLink.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_WEAK {
+				if outLink.Node == path[(i+1)%chainLen].Node {
+					weakFairLinksInChain[outLink.Name] = true
+					delete(unvisitedWeakFairLinksOutOfChain, outLink.Name)
+				} else if _, ok := weakFairLinksInChain[outLink.Name]; !ok {
+					unvisitedWeakFairLinksOutOfChain[outLink.Name] = true
+				}
+			}
+		}
+		if i == 0 {
+			weakFairLinksOutOfChain = unvisitedWeakFairLinksOutOfChain
+		} else {
+			for k, _ := range weakFairLinksOutOfChain {
+				if _, ok := unvisitedWeakFairLinksOutOfChain[k]; !ok {
+					delete(weakFairLinksOutOfChain, k)
+				}
+			}
+
+		}
+	}
+	if len(strongFairLinksOutOfChain) > 0 || len(weakFairLinksOutOfChain) > 0 {
+		return false
+	}
+	return true
 }
 
 func CycleFinderFinal(node *Node, callback CycleCallback) ([]*Link, bool) {
@@ -449,9 +507,13 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 		return nil, true
 	}
 	globalVisited[node] = true
-
+	fairCount := 0
 	// Traverse outbound links
 	for _, link := range node.Outbound {
+		if link.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_STRONG ||
+			link.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_WEAK {
+			fairCount++
+		}
 		pathCopy := slices.Clone(path)
 		visitedCopy := maps.Clone(visited)
 		pathCopy = append(pathCopy, link)
@@ -459,6 +521,14 @@ func cycleFinderHelper(node *Node, callback CycleCallback, visited map[*Node]boo
 		if !success {
 			return failedPath,false
 		}
+	}
+	if fairCount == 0 {
+		pathCopy := slices.Clone(path)
+		pathCopy = append(pathCopy, &Link{
+			Node:     node,
+			Name:     "stutter",
+		})
+		return pathCopy, callback(pathCopy)
 	}
 	return nil, true
 }
@@ -496,11 +566,29 @@ func cycleFinderHelperBfs(root *Node, callback CycleCallback, visited map[*Node]
 		visited[node] = true
 		path = append(path, element.link)
 
+		fairCount := 0
 		// Traverse outbound links
 		for _, outLink := range node.Outbound {
+			if outLink.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_STRONG ||
+				outLink.Fairness == ast.FairnessLevel_FAIRNESS_LEVEL_WEAK {
+				fairCount++
+			}
 			pathCopy := slices.Clone(path)
 			visitedCopy := maps.Clone(visited)
 			queue.Enqueue(&Wrapper{link: outLink, path: pathCopy, visited: visitedCopy})
+
+		}
+		if fairCount == 0 {
+			pathCopy := slices.Clone(path)
+			pathCopy = append(pathCopy, &Link{
+				Node:     node,
+				Name:     "stutter",
+			})
+			live := callback(pathCopy)
+			if live {
+				continue
+			}
+			return pathCopy, false
 
 		}
 	}
