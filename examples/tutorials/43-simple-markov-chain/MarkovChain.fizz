@@ -5,10 +5,9 @@ invariants:
 action Init:
   state = "in_progress"
 
-atomic fair<strong> action Prepare:
+atomic fair<weak> action Prepare:
   if state == "in_progress":
     state = "prepared"
-
 
 atomic action BackToWork:
   if state == "prepared":

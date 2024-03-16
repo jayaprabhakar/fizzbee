@@ -40,6 +40,9 @@
     {
       "name": "FairToss",
       "flow": "FLOW_ATOMIC",
+      "fairness": {
+        "level": "FAIRNESS_LEVEL_UNFAIR"
+      },
       "block": {
         "flow": "FLOW_ATOMIC",
         "stmts": [

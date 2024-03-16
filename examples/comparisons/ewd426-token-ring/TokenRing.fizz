@@ -17,11 +17,11 @@ atomic action Init:
         any j in range(0, M):
             counters[i] = j
 
-atomic fair<strong> action CreateToken:
+atomic fair<weak> action CreateToken:
     if counters[0] == counters[N-1]:
         `createtoken` counters[0] = (counters[N-1] + 1) % M
 
-atomic fair<strong> action PassToken:
+atomic fair<weak> action PassToken:
     any i in NODES[1:]:
         if counters[i] != counters[i-1]:
             `passtoken`
