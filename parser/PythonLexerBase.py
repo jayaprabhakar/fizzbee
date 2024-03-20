@@ -78,7 +78,11 @@ class PythonLexerBase(Lexer):
             self.__process_new_line(0)
 
     def HandleSpaces(self) -> None:
-        next_char: str = chr(self._input.LA(1))
+        next_char_code = self._input.LA(1)
+        if next_char_code == Token.EOF:
+            return       
+        next_char: str = chr(next_char_code)
+        #next_char: str = chr(self._input.LA(1))
 
         if ((self.__last_token is None or self.__last_token.type == self.NEWLINE) and
                 self.__is_not_new_line_or_comment(next_char)):
