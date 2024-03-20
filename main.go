@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "errors"
     ast "fizz/proto"
+    "flag"
     "fmt"
     "github.com/jayaprabhakar/fizzbee/modelchecker"
     "google.golang.org/protobuf/encoding/protojson"
@@ -13,15 +14,21 @@ import (
     "time"
 )
 
+var isPlayground bool
+
 func main() {
+    flag.BoolVar(&isPlayground, "playground", false, "is for playground")
+    flag.Parse()
+
+    args := flag.Args()
     // Check if the correct number of arguments is provided
-    if len(os.Args) != 2 {
+    if len(args) != 1 {
         fmt.Println("Usage:", os.Args[0], "<json_file>")
         os.Exit(1)
     }
 
     // Get the input JSON file name from command line argument
-    jsonFilename := os.Args[1]
+    jsonFilename := args[0]
 
     // Read the content of the JSON file
     jsonContent, err := os.ReadFile(jsonFilename)
@@ -37,21 +44,29 @@ func main() {
     }
 
     dirPath := filepath.Dir(jsonFilename)
-    fmt.Println("dirPath:", dirPath)
+    //fmt.Println("dirPath:", dirPath)
     // Calculate the relative path
     configFileName := filepath.Join(dirPath, "fizz.yaml")
     fmt.Println("configFileName:", configFileName)
     stateConfig, err := modelchecker.ReadOptionsFromYaml(configFileName)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
-            fmt.Println("fizz.yaml not found. Using default options")
-            stateConfig = &ast.StateSpaceOptions{Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 5}}
+            if isPlayground {
+                stateConfig = &ast.StateSpaceOptions{
+                    Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 5},
+                    Liveness: "strict",
+                }
+            } else {
+                fmt.Println("fizz.yaml not found. Using default options")
+                stateConfig = &ast.StateSpaceOptions{Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 5}}
+            }
         } else {
             fmt.Println("Error reading fizz.yaml:", err)
             os.Exit(1)
         }
 
     }
+    fmt.Printf("StateSpaceOptions: %+v\n", stateConfig)
     if stateConfig.Options.MaxConcurrentActions == 0 {
         stateConfig.Options.MaxConcurrentActions = stateConfig.Options.MaxActions
     }
@@ -62,13 +77,11 @@ func main() {
     endTime := time.Now()
     fmt.Printf("Time taken for model checking: %v\n", endTime.Sub(startTime))
 
-
-
     outDir, err := createOutputDir(dirPath)
     if err != nil {
         return
     }
-    if p1.GetVisitedNodesCount() < 150 {
+    if p1.GetVisitedNodesCount() < 250 {
         dotString := modelchecker.GenerateDotFile(rootNode, make(map[*modelchecker.Node]bool))
         dotFileName := filepath.Join(outDir, "graph.dot")
         // Write the content to the file
@@ -77,8 +90,10 @@ func main() {
             fmt.Println("Error writing to file:", err)
             return
         }
-        fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n" +
-            "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
+        if !isPlayground {
+            fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n" +
+                "dot -Tpng %s -o graph.png && open graph.png\n", dotFileName, dotFileName)
+        }
     } else {
         fmt.Printf("Skipping dotfile generation. Too many nodes: %d\n", p1.GetVisitedNodesCount())
     }
@@ -120,12 +135,14 @@ func main() {
         if failedInvariant == nil {
             fmt.Println("PASSED: Model checker completed successfully")
             //nodes, _, _ := modelchecker.GetAllNodes(rootNode)
-            nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir+"/")
-            if err != nil {
-                fmt.Println("Error generating proto files:", err)
-                return
+            if !isPlayground {
+                nodeFiles, linkFileNames, err := modelchecker.GenerateProtoOfJson(nodes, outDir+"/")
+                if err != nil {
+                    fmt.Println("Error generating proto files:", err)
+                    return
+                }
+                fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
             }
-            fmt.Printf("Writen %d node files and %d link files to dir %s\n", len(nodeFiles), len(linkFileNames), outDir)
         } else {
             fmt.Println("FAILED: Liveness check failed")
             if failedInvariant.FileIndex > 0 {
@@ -175,28 +192,33 @@ func GenerateFailurePath(failurePath []*modelchecker.Link, invariant *modelcheck
         }
     }
     fmt.Println("------")
-    errJsonFileName := filepath.Join(outDir, "error-graph.json")
-    bytes, err := json.MarshalIndent(failurePath, "", "  ")
-    if err != nil {
-        fmt.Println("Error creating json:", err)
+    if !isPlayground {
+        errJsonFileName := filepath.Join(outDir, "error-graph.json")
+        bytes, err := json.MarshalIndent(failurePath, "", "  ")
+        if err != nil {
+            fmt.Println("Error creating json:", err)
+        }
+        err = os.WriteFile(errJsonFileName, bytes, 0644)
+        if err != nil {
+            fmt.Println("Error writing to file:", err)
+            return
+        }
+        fmt.Printf("Writen graph json: %s\n", errJsonFileName)
     }
-    err = os.WriteFile(errJsonFileName, bytes, 0644)
-    if err != nil {
-        fmt.Println("Error writing to file:", err)
-        return
-    }
-    fmt.Printf("Writen graph json: %s\n", errJsonFileName)
+
     dotStr := modelchecker.GenerateFailurePath(failurePath, invariant)
     //fmt.Println(dotStr)
     dotFileName := filepath.Join(outDir, "error-graph.dot")
     // Write the content to the file
-    err = os.WriteFile(dotFileName, []byte(dotStr), 0644)
+    err := os.WriteFile(dotFileName, []byte(dotStr), 0644)
     if err != nil {
         fmt.Println("Error writing to file:", err)
         return
     }
-    fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n"+
-        "dot -Tpng %s -o error-graph.png && open error-graph.png\n", dotFileName, dotFileName)
+    if !isPlayground {
+        fmt.Printf("Writen graph dotfile: %s\nTo generate png, run: \n"+
+            "dot -Tpng %s -o error-graph.png && open error-graph.png\n", dotFileName, dotFileName)
+    }
 }
 
 func createOutputDir(dirPath string) (string, error) {
