@@ -56,3 +56,19 @@ antlr4 -Dlanguage=Python3 -visitor *.g4
 ```
 and commit the py files.
 TODO: Automate this using gen-rule, so the generated files are not required in the repository
+
+## Cross compilation to linux
+Only the go model checker is cross compiled to linux.
+
+On local machine, run `bazel build //:fizzbee`
+
+To dockerize or to run on the linux server:
+```
+bazel build --platforms=//:linux_arm  //:fizzbee
+```
+or
+```
+bazel build --platforms=//:linux_x86  //:fizzbee
+```
+Python seems to work without platforms flag but unfortunately, 
+passing platforms flag actually breaks the build.
