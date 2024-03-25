@@ -388,6 +388,7 @@ type CycleCallback func(path []*Link) bool
 func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 	f := func(path []*Link) bool {
 		mergeNode := path[len(path)-1].Node
+		mergeIndex := 0
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
 			relevant, value := predicate(path[i].Node)
@@ -397,11 +398,12 @@ func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 				return true
 			}
 			if i < len(path) - 1 && path[i].Node == mergeNode {
+				mergeIndex = i
 				break
 			}
 		}
 		//fmt.Println("Live node NOT FOUND in the path")
-		if isFairCycle(path) {
+		if isFairCycle(path[mergeIndex:]) {
 			//fmt.Println("Fair cycle found")
 			return false
 		} else {
@@ -415,26 +417,29 @@ func AlwaysEventuallyFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 func EventuallyAlwaysFinal(root *Node, predicate Predicate) ([]*Link, bool) {
 	f := func(path []*Link) bool {
 		mergeNode := path[len(path)-1].Node
+		mergeIndex := 0
+		deadNodeFound := false
 		// iterate over the path in reverse order and check if the property holds
 		for i := len(path) - 1; i >= 0; i-- {
 			relevant, value := predicate(path[i].Node)
 			//fmt.Printf("Node: %+v, Relevant: %t, Value: %t\n", path[i], relevant, value)
 			if relevant && !value {
 				//fmt.Println("Dead node FOUND in the path")
-				if isFairCycle(path) {
-					//fmt.Println("Fair cycle found")
-					return false
-				} else {
-					//fmt.Println("Not a fair cycle, and has fair exit link")
-					return true
-				}
+				deadNodeFound = true
 			}
 			if i < len(path) - 1 && path[i].Node == mergeNode {
+				mergeIndex = i
 				break
 			}
 		}
+		if deadNodeFound && isFairCycle(path[mergeIndex:]) {
+			////fmt.Println("Fair cycle found")
+			return false
+		} else {
+			//fmt.Println("Not a fair cycle, and has fair exit link")
+			return true
+		}
 		//fmt.Println("Dead node NOT FOUND in the path")
-		return true
 	}
 	return CycleFinderFinal(root, f)
 }
