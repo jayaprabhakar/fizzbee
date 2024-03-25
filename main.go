@@ -53,8 +53,9 @@ func main() {
         if errors.Is(err, os.ErrNotExist) {
             if isPlayground {
                 stateConfig = &ast.StateSpaceOptions{
-                    Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 5},
+                    Options: &ast.Options{MaxActions: 100, MaxConcurrentActions: 2},
                     Liveness: "strict",
+                    DeadlockDetection: true,
                 }
             } else {
                 fmt.Println("fizz.yaml not found. Using default options")
