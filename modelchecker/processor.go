@@ -228,7 +228,7 @@ func (n *Node) String() string {
 	escapedName := strings.ReplaceAll(p.Name, "\"", "\\\"")
 	buf.WriteString(fmt.Sprintf("%s\n", escapedName))
 	buf.WriteString(fmt.Sprintf("Actions: %d, Forks: %d\n", n.actionDepth, n.forkDepth))
-	buf.WriteString(fmt.Sprintf("Enabled: %t\n", n.Process.Enabled))
+	//buf.WriteString(fmt.Sprintf("Enabled: %t\n", n.Process.Enabled))
 	//buf.WriteString(fmt.Sprintf("Fair: %s\n", n.Process.Fairness))
 
 	n.appendState(p, buf)
@@ -236,7 +236,7 @@ func (n *Node) String() string {
 	if len(p.Threads) > 0 {
 		buf.WriteString(fmt.Sprintf("Threads: %d/%d\n", p.Current, len(p.Threads)))
 	} else {
-		buf.WriteString("Threads: 0\n")
+		//buf.WriteString("Threads: 0\n")
 	}
 
 	return buf.String()
